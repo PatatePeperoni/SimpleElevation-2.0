@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.3 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.4 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -205,6 +205,85 @@
     .hdr-item{flex:1 1 100%}
     .sv-card{width:calc(100vw - 24px);right:12px;top:12px}
   }
+
+  /* Archive & Save header buttons + Modals */
+  .arch-hdr-btns{display:inline-flex;align-items:center;gap:6px;margin-left:2px}
+  .arch-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s}
+  .arch-btn:hover:not(:disabled){background:#f8fafc;border-color:#94a3b8}
+  .arch-btn.primary{background:#0f172a;color:#fff;border-color:#0f172a}
+  .arch-btn.primary:hover:not(:disabled){background:#1e293b}
+  .arch-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#eef2f7;color:#0f172a;font-size:10.5px;font-weight:800}
+  .arch-btn.primary .arch-badge{background:rgba(255,255,255,.2);color:#fff}
+
+  /* Street View Card mode tabs & fallback panel */
+  .sv-mode-bar{display:flex;align-items:center;gap:4px;padding:6px 10px;background:#1e293b;border-bottom:1px solid rgba(255,255,255,.08)}
+  .sv-mode-tab{border:none;background:transparent;color:#cbd5e1;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+  .sv-mode-tab:hover{color:#fff;background:rgba(255,255,255,.08)}
+  .sv-mode-tab.active{background:#f59e0b;color:#0f172a}
+  .sv-dot-avail{width:7px;height:7px;border-radius:50%;background:#22c55e;display:none;flex:0 0 auto}
+  .sv-dot-avail.show{display:inline-block}
+  .sv-placeholder{padding:18px;color:#e2e8f0;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;height:100%;font-size:12.5px;line-height:1.45}
+  .sv-placeholder input{max-width:290px;padding:7px 10px;font-size:12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff}
+  .sv-placeholder .sv-ph-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+  /* Modals (Save Track & Track Archive) */
+  .se-modal-backdrop{position:fixed;inset:0;z-index:5000;background:rgba(15,23,42,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:16px}
+  .se-modal-backdrop.open{display:flex}
+  .se-modal{background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.32);width:100%;max-width:860px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+  .se-modal.compact{max-width:500px}
+  .se-modal-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(180deg,#fff 0%,#f8fafc 100%)}
+  .se-modal-head h2{margin:0;font-size:16px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:8px}
+  .se-modal-close{border:1px solid var(--border);background:#fff;color:#475569;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+  .se-modal-close:hover{background:#f1f5f9;color:#0f172a}
+  .se-modal-body{padding:16px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;min-height:0}
+  .se-modal-foot{padding:12px 18px;border-top:1px solid var(--border);background:#f8fafc;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+  .arch-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .arch-toolbar input[type="search"]{flex:1 1 200px;padding:8px 12px;font-size:13px;border-radius:10px}
+  .arch-toolbar select{flex:0 0 165px;padding:8px 10px;font-size:12.5px;border-radius:10px}
+  .arch-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+  .arch-list{display:flex;flex-direction:column;gap:8px;min-height:120px}
+  .arch-empty{text-align:center;padding:34px 16px;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:14px;background:#fafcff}
+  .arch-row{border:1px solid var(--border);border-radius:14px;padding:11px 13px;background:#fff;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.25fr) auto auto;gap:10px 14px;align-items:center;transition:border-color .15s, box-shadow .15s}
+  .arch-row:hover{border-color:#cbd5e1;box-shadow:0 4px 14px rgba(15,23,42,.06)}
+  .arch-row.is-active{border-color:#93c5fd;background:#f8fbff}
+  .arch-title-col{min-width:0}
+  .arch-title{font-family:Montserrat,Inter,sans-serif;font-weight:800;font-size:14px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .arch-sub{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+  .arch-env-pill{font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase}
+  .arch-env-pill.draw{background:#e0f2fe;color:#0369a1}
+  .arch-env-pill.paint{background:#fce7f3;color:#be185d}
+  .arch-env-pill.both{background:#dcfce7;color:#15803d}
+  .arch-cities{min-width:0;font-size:12.5px;color:#334155;font-weight:600;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .arch-cities .city-arrow{color:#94a3b8;font-weight:800}
+  .arch-km-col{text-align:right;white-space:nowrap}
+  .arch-km{font-family:Montserrat,Inter,sans-serif;font-weight:800;font-size:14.5px;color:#0f172a}
+  .arch-ele{font-size:11px;color:var(--muted)}
+  .arch-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .arch-actions .sv-mini{padding:5px 8px;font-size:11.5px}
+  .arch-actions .sv-mini.open-draw{border-color:#bae6fd;background:#f0f9ff;color:#0369a1}
+  .arch-actions .sv-mini.open-draw:hover{background:#e0f2fe}
+  .arch-actions .sv-mini.open-paint{border-color:#fbcfe8;background:#fdf2f8;color:#be185d}
+  .arch-actions .sv-mini.open-paint:hover{background:#fce7f3}
+  .arch-actions .sv-mini.danger{border-color:#fecaca;color:#b91c1c}
+  .arch-actions .sv-mini.danger:hover{background:#fff5f5}
+
+  .arch-edit-inline{grid-column:1 / -1;border-top:1px dashed var(--border);padding-top:10px;margin-top:2px;display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:8px;align-items:end}
+  .arch-edit-inline label{margin-bottom:3px;font-size:11px;font-weight:600}
+  .arch-edit-inline input{padding:6px 9px;font-size:12.5px;border-radius:8px}
+
+  .save-stats-strip{display:flex;gap:12px;align-items:center;background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:9px 12px;font-size:12.5px;flex-wrap:wrap}
+  .save-stats-strip strong{font-family:Montserrat,Inter,sans-serif;font-weight:800;color:#0f172a}
+
+  #globalToast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(16px);z-index:6000;background:#0f172a;color:#fff;padding:8px 16px;border-radius:999px;font-size:12.5px;font-weight:600;box-shadow:0 10px 28px rgba(15,23,42,.3);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s}
+  #globalToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width: 760px){
+    .arch-row{grid-template-columns:1fr;gap:8px}
+    .arch-km-col{text-align:left;display:flex;gap:8px;align-items:baseline}
+    .arch-actions{justify-content:flex-start}
+    .arch-edit-inline{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body class="mode-draw">
@@ -215,6 +294,10 @@
     <div class="env-tabs" role="tablist" aria-label="Ambiente">
       <button id="tabDraw" class="env-tab active" role="tab" aria-selected="true">1. DRAW</button>
       <button id="tabPaint" class="env-tab" role="tab" aria-selected="false">2. PAINT</button>
+    </div>
+    <div class="arch-hdr-btns">
+      <button id="archiveSaveOpenBtn" class="arch-btn primary" title="Salva traccia nell'archivio locale o esporta JSON (Ctrl+S)">💾 Salva</button>
+      <button id="archiveOpenBtn" class="arch-btn" title="Apri archivio tracce locali e JSON">📂 Archivio <span id="archiveCountBadge" class="arch-badge">0</span></button>
     </div>
   </div>
 
@@ -316,14 +399,15 @@
       <button id="pegmanCfgBtn" class="pegman-cfg-btn" title="Opzioni Street View (API Key Embed opzionale)">⚙</button>
 
       <div id="pegmanCfgPop" class="pegman-cfg-pop">
-        <div style="font-size:12.5px;font-weight:700;color:#0f172a">Modalità Street View</div>
+        <div style="font-size:12.5px;font-weight:700;color:#0f172a">Opzioni Preview Street View</div>
         <div class="muted" style="font-size:11.5px;line-height:1.45">
-          <strong>Senza chiave (default):</strong> si apre subito Google Street View nella finestra popup dedicata.<br>
-          <strong>Con Google Maps Embed API Key (gratis):</strong> si apre nella card flottante sulla mappa.
+          La preview si apre sempre <strong>nella card interna</strong> (zero finestre duplicate, si aggiorna al clic sx e si chiude al clic dx).<br>
+          <strong>Con Google Maps Embed API Key (gratuita):</strong> attiva Google Street View 360° direttamente nella card.<br>
+          <strong>Senza chiave:</strong> usa Satellite HD + foto stradale 360° (Panoramax) nella card, con apertura su Google SV su richiesta.
         </div>
         <div>
-          <label for="svGmapsKey" style="margin-bottom:3px;font-size:11px;font-weight:600">Google Maps Embed API Key (opzionale)</label>
-          <input id="svGmapsKey" type="text" placeholder="AIzaSy… (lascia vuoto per popup diretto)" />
+          <label for="svGmapsKey" style="margin-bottom:3px;font-size:11px;font-weight:600">Google Maps Embed API Key (gratuita, opzionale)</label>
+          <input id="svGmapsKey" type="text" placeholder="AIzaSy… (attiva Google SV 360° nella card)" />
         </div>
         <div style="display:flex;justify-content:flex-end;gap:6px">
           <button id="svCfgCloseBtn" class="sv-mini">Chiudi</button>
@@ -332,17 +416,22 @@
       </div>
     </div>
 
-    <!-- Inline Google Street View Card (when Google Embed API Key is saved) -->
-    <div id="svCard" class="sv-card" role="dialog" aria-label="Google Street View">
+    <!-- Inline Street View / Preview Card (always stays in foreground, never spawns extra windows) -->
+    <div id="svCard" class="sv-card" role="dialog" aria-label="Anteprima punto / Street View">
       <div id="svHead" class="sv-head">
         <div class="sv-title">
-          <span class="sv-badge">Google SV</span>
+          <span id="svBadge" class="sv-badge">Preview</span>
           <span id="svCoords">Street View</span>
         </div>
         <div class="sv-head-btns">
           <button id="svResizeBtn" class="sv-icon-btn" title="Ingrandisci / riduci">⤢</button>
           <button id="svCloseBtn" class="sv-icon-btn" title="Chiudi (Esc o clic destro)">✕</button>
         </div>
+      </div>
+      <div class="sv-mode-bar" role="tablist" aria-label="Modalità preview">
+        <button id="svTabGsv" class="sv-mode-tab" data-sv-mode="gsv" title="Google Street View 360° integrato (richiede Embed API Key gratuita)">Google SV</button>
+        <button id="svTabSat" class="sv-mode-tab" data-sv-mode="sat" title="Vista Satellitare HD Google Maps (senza chiave)">Satellite HD</button>
+        <button id="svTabPano" class="sv-mode-tab" data-sv-mode="pano" title="Foto stradale 360° open-source Panoramax (senza chiave)">Strada 360° <span id="svPanoDot" class="sv-dot-avail" title="Foto stradale trovata in questo punto"></span></button>
       </div>
       <div id="svBody" class="sv-body"></div>
       <div class="sv-foot">
@@ -352,7 +441,7 @@
           <button id="svFlip" class="sv-mini" title="Gira 180°">180°</button>
         </div>
         <div class="sv-foot-group">
-          <button id="svGooglePopupBtn" class="sv-mini accent" title="Apri in finestra separata">Finestra ↗</button>
+          <button id="svGooglePopupBtn" class="sv-mini accent" title="Apri questo punto su Google Street View in una nuova scheda">Google SV ↗</button>
         </div>
       </div>
     </div>
@@ -569,6 +658,81 @@
     </section>
   </div>
 </div>
+
+<!-- ==================== MODAL: SALVA TRACCIA ==================== -->
+<div id="saveTrackModal" class="se-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="saveModalTitle">
+  <div class="se-modal compact">
+    <div class="se-modal-head">
+      <h2 id="saveModalTitle">💾 Salva traccia</h2>
+      <button id="saveModalClose" class="se-modal-close" title="Chiudi (Esc)">✕</button>
+    </div>
+    <div class="se-modal-body">
+      <div id="saveStatsStrip" class="save-stats-strip"></div>
+      <div>
+        <label for="saveTrackTitle">Titolo traccia</label>
+        <input id="saveTrackTitle" type="text" placeholder="Es. Giro delle Marche, Tappa 4…" />
+      </div>
+      <div class="row">
+        <div>
+          <label for="saveStartCity">Città di partenza</label>
+          <input id="saveStartCity" type="text" placeholder="Es. Ancona" />
+        </div>
+        <div>
+          <label for="saveEndCity">Città di arrivo</label>
+          <input id="saveEndCity" type="text" placeholder="Es. Ascoli Piceno" />
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <span id="saveGeoHint" class="muted">Le città vengono rilevate automaticamente dai punti di partenza e arrivo.</span>
+        <button id="saveDetectCitiesBtn" type="button" class="sv-mini" title="Rileva automaticamente comune di partenza e arrivo">↻ Rileva città</button>
+      </div>
+    </div>
+    <div class="se-modal-foot">
+      <button id="saveOnlyJsonBtn" type="button" class="ghost" title="Scarica solo il file JSON esterno senza salvare in archivio">⬇ Solo JSON</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <button id="saveUpdateExistingBtn" type="button" class="ghost" style="display:none" title="Aggiorna la traccia già presente in archivio">Aggiorna esistente</button>
+        <button id="saveArchiveAndJsonBtn" type="button" class="ghost" title="Salva in archivio locale e scarica anche il file JSON esterno">Salva + JSON</button>
+        <button id="saveToArchiveBtn" type="button" class="pink">Salva in Archivio</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: ARCHIVIO TRACCE ==================== -->
+<div id="archiveModal" class="se-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="archiveModalTitle">
+  <div class="se-modal">
+    <div class="se-modal-head">
+      <h2 id="archiveModalTitle">📂 Archivio Tracce <span id="archiveModalCount" class="arch-badge">0</span></h2>
+      <button id="archiveModalClose" class="se-modal-close" title="Chiudi (Esc)">✕</button>
+    </div>
+    <div class="se-modal-body">
+      <div class="arch-toolbar">
+        <input id="archiveSearchInput" type="search" placeholder="Cerca per titolo, città di partenza o arrivo…" />
+        <select id="archiveSortSelect" aria-label="Ordina tracce">
+          <option value="recent" selected>Più recenti</option>
+          <option value="title">Titolo (A → Z)</option>
+          <option value="km_desc">Km (decrescente)</option>
+          <option value="km_asc">Km (crescente)</option>
+        </select>
+        <button id="archiveExportAllBtn" type="button" class="ghost" title="Esporta l'intero archivio locale in un file JSON di backup">⬇ Esporta Archivio JSON</button>
+        <label class="ghost" style="display:inline-flex;align-items:center;gap:5px;margin:0;cursor:pointer" title="Importa un file JSON (singola traccia o backup archivio)">
+          ⬆ Importa JSON
+          <input id="archiveImportJsonInput" type="file" accept=".json,application/json" style="display:none" />
+        </label>
+      </div>
+      <div class="arch-summary">
+        <span id="archiveSummaryText">Salvataggio locale persistente (IndexedDB) + export/import JSON esterno.</span>
+      </div>
+      <div id="archiveList" class="arch-list"></div>
+    </div>
+    <div class="se-modal-foot">
+      <span class="muted">Suggerimento: usa <strong>Esporta Archivio JSON</strong> per creare un backup portatile tra dispositivi o browser.</span>
+      <button id="archiveSaveFromModalBtn" type="button" class="pink">+ Salva traccia corrente</button>
+    </div>
+  </div>
+</div>
+
+<div id="globalToast" role="status" aria-live="polite"></div>
 
 <script>
 "use strict";
@@ -1348,6 +1512,17 @@ svg.addEventListener('dblclick', e=>{ if(!state.points.length) return; const dMa
 
 document.addEventListener('keydown', (e)=>{
   const tag=(e.target&&e.target.tagName||'').toLowerCase();
+  if(e.key==='Escape' && window.TrackArchive?.hasOpenModal?.()){
+    window.TrackArchive.closeModals();
+    e.preventDefault();
+    return;
+  }
+  if((e.ctrlKey||e.metaKey) && (e.key==='s'||e.key==='S')){
+    e.preventDefault();
+    window.TrackArchive?.openSaveModal();
+    return;
+  }
+  if(window.TrackArchive?.hasOpenModal?.()) return;
   if(activeEnv === 'draw'){
     if(e.key==='Escape'){ window.DrawEnv?.onEscape(); return; }
     if(tag==='input'||tag==='textarea'||tag==='select') return;
@@ -1468,7 +1643,21 @@ refreshPresetList();
 function projectState(){ return { meta:{version:'2.3.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ vExag:state.vExag, yStep:parseInt(yStepSel.value,10), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
 function applyProject(p){ if(!p||!p.points) return; state.points=p.points; state.climbs=p.climbs||[]; state.pois=p.pois||[]; state.gravels=p.gravels||[]; state.tunnels=(p.tunnels||[]).filter(t=>Number.isInteger(t.startIdx)&&Number.isInteger(t.endIdx)&&t.startIdx>=0&&t.endIdx<state.points.length&&t.endIdx>t.startIdx); state.hoverIndex=null; state.profileElevations=[]; startLabel.value=p.labels?.start||'START'; finishLabel.value=p.labels?.finish||'FINISH'; state.vExag=p.settings?.vExag||state.vExag; vExagInput.value=state.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.settings?.yStep||200); smoothInput.value=p.settings?.smooth||500; tickInput.value=p.settings?.tick||10; fillColorInput.value=p.settings?.fill||state.fillColor; lineColorInput.value=p.settings?.line||state.lineColor; climbColorInput.value=p.settings?.climbLine||state.climbColor; climbFillColorInput.value=p.settings?.climbFill||state.climbFillColor; climbOverlayModeSel.value=((p.settings?.climbOverlayMode==='avggrade'||p.settings?.climbOverlayMode==='solid')?p.settings?.climbOverlayMode:(state.climbOverlayMode||'solid')); startOffInput.value=p.settings?.startOff||0; finishOffInput.value=p.settings?.finishOff||0; state.fillColor=fillColorInput.value; state.lineColor=lineColorInput.value; state.noProfileFill=!!p.settings?.noProfileFill; state.noProfileLine=!!p.settings?.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=climbColorInput.value; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=parseFloat(startOffInput.value)||0; state.finishOffset=parseFloat(finishOffInput.value)||0; { const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.viewStart=0; state.viewEnd=state.points[state.points.length-1].d; state.projectName = (p.meta && (p.meta.name||p.meta.projectName)) ? (p.meta.name||p.meta.projectName) : 'elevation'; sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois); setButtonsEnabled(true); resetUndo(); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
 exportJsonBtn.addEventListener('click',()=>{ if(!state.points.length) return; const blob=new Blob([JSON.stringify(projectState())],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=exportName('json'); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
-importJsonInput.addEventListener('change', async e=>{ try{ const f=e.target.files[0]; if(!f) return; const text=await f.text(); const data=JSON.parse(text); applyProject(data); }catch(_){ alert('Import failed'); } });
+importJsonInput.addEventListener('change', async e=>{
+  try{
+    const f=e.target.files[0]; if(!f) return;
+    const text=await f.text(); const data=JSON.parse(text);
+    if(data && data.type==='se_track_record' && data.track){
+      await window.TrackArchive?.loadRecordInPaint(data.track);
+    } else if(data && data.type==='se_archive_bundle' && Array.isArray(data.tracks)){
+      await window.TrackArchive?.importJsonObject(data);
+      window.TrackArchive?.openArchiveModal();
+    } else {
+      applyProject(data);
+    }
+  }catch(_){ alert('Import failed'); }
+  finally{ importJsonInput.value=''; }
+});
 
 const basemapSel=document.getElementById('basemap-select');
 if(basemapSel){ basemapSel.addEventListener('change', ()=>{ try{ setBasemap(basemapSel.value); }catch(_){} }); }
@@ -2022,8 +2211,9 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Dragged range selection highlight + compact pill ("8 km @ 5%")
+    // Dragged range selection highlight (background + highlighted profile + vertical bounds)
     const sel = computeSelectionMetrics();
+    let selPill = null;
     if(sel && dState.selection){
       const { a, b } = dState.selection;
       const xA = xOf(dState.track[a].d), xB = xOf(dState.track[b].d);
@@ -2047,23 +2237,10 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       ctx.moveTo(xB, pad.t); ctx.lineTo(xB, pad.t + ph);
       ctx.stroke();
 
-      const label = formatSelectionText(sel);
-      ctx.font = '700 12px Inter, sans-serif';
-      const tw = ctx.measureText(label).width;
-      const bw = tw + 16, bh = 22;
-      const bx = Math.max(pad.l + 4, Math.min(w - pad.r - bw - 4, (xA + xB)/2 - bw/2));
-      const by = pad.t + 4;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
-      ctx.beginPath();
-      if(ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 6);
-      else ctx.rect(bx, by, bw, bh);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'center';
-      ctx.fillText(label, bx + bw/2, by + 15);
+      selPill = { sel, xA, xB };
     }
 
-    // Hover guide
+    // Hover guide (drawn BEFORE selection tooltip so tooltip always stays in the foreground)
     if(dState.hoverIdx != null && dState.track[dState.hoverIdx]){
       const p = dState.track[dState.hoverIdx];
       const x = xOf(p.d), y = yOf(p.ele);
@@ -2075,6 +2252,30 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI*2);
       ctx.fillStyle = '#ff2d96'; ctx.fill();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    // Selection tooltip pill drawn LAST so it is always on top of the pink vertical line
+    if(selPill){
+      const { sel: sInfo, xA, xB } = selPill;
+      const label = formatSelectionText(sInfo);
+      ctx.save();
+      ctx.font = '700 12px Inter, sans-serif';
+      const tw = ctx.measureText(label).width;
+      const bw = tw + 18, bh = 23;
+      const bx = Math.max(pad.l + 4, Math.min(w - pad.r - bw - 4, (xA + xB)/2 - bw/2));
+      const by = pad.t + 4;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 7);
+      else ctx.rect(bx, by, bw, bh);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, bx + bw/2, by + 15.5);
+      ctx.restore();
     }
   }
 
@@ -2175,15 +2376,30 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   elCanvas.addEventListener('pointercancel', finishElevDrag);
   elCanvas.addEventListener('pointerleave', ()=>{ if(!elevDrag) setDrawHover(null); });
 
-  // Right-click on elevation preview: remove climb overlay first, else close Street View preview
+  // Right-click on elevation preview: close Street View preview cleanly (or remove selection if right-clicking inside it)
   elCanvas.addEventListener('contextmenu', (e)=>{
     e.preventDefault();
-    if(dState.selection){
+    e.stopPropagation();
+    const clickIdx = idxFromElevEvent(e);
+    const inSel = !!(dState.selection && clickIdx != null && clickIdx >= dState.selection.a && clickIdx <= dState.selection.b);
+    if(dState.selection && (!dState.pegman.active || inSel)){
       dState.selection = null;
       updateSelectionMapOverlay();
       drawElevCanvas();
       updateReadout();
     } else if(dState.pegman.active){
+      clearPegman();
+    } else if(dState.selection){
+      dState.selection = null;
+      updateSelectionMapOverlay();
+      drawElevCanvas();
+      updateReadout();
+    }
+  });
+  elElevBar.addEventListener('contextmenu', (e)=>{
+    if(e.target === elCanvas) return;
+    if(dState.pegman.active){
+      e.preventDefault();
       clearPegman();
     }
   });
@@ -2257,8 +2473,40 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     }
   }
 
+  const KEY_SV_MODE = 'se_sv_inline_mode';
+  const elSvBadge = document.getElementById('svBadge');
+  const elSvTabGsv = document.getElementById('svTabGsv');
+  const elSvTabSat = document.getElementById('svTabSat');
+  const elSvTabPano = document.getElementById('svTabPano');
+  const elSvPanoDot = document.getElementById('svPanoDot');
+  let svInlineMode = (()=>{ try{ return localStorage.getItem(KEY_SV_MODE) || ''; }catch(_){ return ''; } })();
+  let svPanoReqSeq = 0;
+  let svLastPano = null; // { key, picId, url }
+
+  function resolveSvMode(){
+    const hasKey = !!getGmapsKey();
+    if(svInlineMode === 'gsv' || svInlineMode === 'sat' || svInlineMode === 'pano'){
+      if(svInlineMode === 'gsv' && !hasKey) return 'sat';
+      return svInlineMode;
+    }
+    return hasKey ? 'gsv' : 'sat';
+  }
+
+  function updateSvTabsUi(mode){
+    [elSvTabGsv, elSvTabSat, elSvTabPano].forEach(btn=>{
+      if(!btn) return;
+      btn.classList.toggle('active', btn.dataset.svMode === mode);
+    });
+    if(elSvBadge){
+      elSvBadge.textContent = mode === 'gsv' ? 'Google SV' : mode === 'pano' ? 'Strada 360°' : 'Satellite HD';
+    }
+  }
+
   function clearPegman(){
+    svPanoReqSeq++;
     elSvCard.classList.remove('open');
+    elSvBody.innerHTML = '';
+    if(elSvPanoDot) elSvPanoDot.classList.remove('show');
     dState.pegman.active = false;
     if(dPegmanMarker){ dPegmanMarker.remove(); dPegmanMarker = null; }
     if(svPopupWin && !svPopupWin.closed){
@@ -2273,28 +2521,130 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     elMap.classList.toggle('pegman-pick-cursor', dState.pegmanPickMode);
   }
 
-  function openGoogleStreetViewPopup(){
+  function openGoogleStreetViewExternal(){
     if(dState.pegman.lat == null) return;
     const { lat, lon, heading } = dState.pegman;
     const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lon.toFixed(6)}&heading=${Math.round(heading)}&pitch=0`;
-    const w = 680, h = 520;
-    const left = Math.max(0, window.screenX + window.outerWidth - w - 24);
-    const top = Math.max(0, window.screenY + 80);
-    svPopupWin = window.open(url, 'se_gsv_popup', `width=${w},height=${h},left=${left},top=${top}`);
-    if(!svPopupWin){
-      flashStatus('Popup bloccato dal browser: consenti i popup per localhost e riprova', 4500);
-    } else {
-      try{ svPopupWin.focus(); }catch(_){}
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  async function lookupPanoramaxNear(lat, lon){
+    const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+    if(svLastPano && svLastPano.key === key) return svLastPano;
+    try{
+      const url = `https://api.panoramax.xyz/api/search?place_position=${lon.toFixed(6)},${lat.toFixed(6)}&place_distance=0-100&limit=1`;
+      const res = await fetch(url, { headers:{ 'Accept':'application/json' } });
+      if(!res.ok) return { key, picId:null, url:null };
+      const data = await res.json();
+      const feat = data?.features?.[0];
+      const picId = feat?.id || null;
+      const result = { key, picId, url: picId ? `https://api.panoramax.xyz/#focus=pic&pic=${encodeURIComponent(picId)}&map=17/${lat.toFixed(5)}/${lon.toFixed(5)}` : null };
+      svLastPano = result;
+      return result;
+    }catch(_){
+      return { key, picId:null, url:null };
     }
   }
 
-  function renderInlineGoogleStreetView(gKey){
-    const { lat, lon, heading } = dState.pegman;
-    elSvCoords.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)} · ${Math.round(heading)}°`;
-    const src = `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(gKey)}&location=${lat.toFixed(6)},${lon.toFixed(6)}&heading=${Math.round(heading)}&pitch=0&fov=90`;
-    elSvBody.innerHTML = `<iframe src="${src}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
-    elSvCard.classList.add('open');
+  function setSvIframe(src){
+    const existing = elSvBody.querySelector('iframe[data-sv-frame]');
+    if(existing){
+      existing.src = src;
+    } else {
+      elSvBody.innerHTML = `<iframe data-sv-frame="1" src="${src}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+    }
   }
+
+  function renderInlinePreview(forcedMode){
+    if(dState.pegman.lat == null) return;
+    const { lat, lon, heading } = dState.pegman;
+    const mode = forcedMode || resolveSvMode();
+    const gKey = getGmapsKey();
+    elSvCoords.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)} · ${Math.round(heading)}°`;
+    updateSvTabsUi(mode);
+    elSvCard.classList.add('open');
+
+    const reqId = ++svPanoReqSeq;
+
+    if(mode === 'gsv'){
+      if(gKey){
+        const src = `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(gKey)}&location=${lat.toFixed(6)},${lon.toFixed(6)}&heading=${Math.round(heading)}&pitch=0&fov=90`;
+        setSvIframe(src);
+      } else {
+        elSvBody.innerHTML = `
+          <div class="sv-placeholder">
+            <div style="font-weight:700;font-size:13.5px;color:#fff">Google Street View 360° integrato</div>
+            <div>Inserisci una <strong>Google Maps Embed API Key</strong> (gratuita) per vedere Google Street View direttamente qui dentro, senza mai aprire finestre esterne.</div>
+            <input id="svQuickKeyInput" type="text" placeholder="Incolla qui la chiave AIzaSy…" />
+            <div class="sv-ph-actions">
+              <button id="svQuickKeySave" class="pink" style="padding:6px 12px;font-size:12px">Attiva qui</button>
+              <button id="svQuickSwitchSat" class="sv-mini">Usa Satellite HD</button>
+              <button id="svQuickOpenExt" class="sv-mini accent">Apri Google SV ↗</button>
+            </div>
+          </div>`;
+        elSvBody.querySelector('#svQuickKeySave')?.addEventListener('click', ()=>{
+          const v = (elSvBody.querySelector('#svQuickKeyInput')?.value || '').trim();
+          if(!v) return;
+          saveGmapsKey(v);
+          elSvGmapsKey.value = v;
+          svInlineMode = 'gsv';
+          try{ localStorage.setItem(KEY_SV_MODE, 'gsv'); }catch(_){}
+          renderInlinePreview('gsv');
+          flashStatus('Google Street View 360° attivato nella card!');
+        });
+        elSvBody.querySelector('#svQuickSwitchSat')?.addEventListener('click', ()=> switchSvInlineMode('sat'));
+        elSvBody.querySelector('#svQuickOpenExt')?.addEventListener('click', openGoogleStreetViewExternal);
+      }
+      return;
+    }
+
+    if(mode === 'sat'){
+      const src = `https://maps.google.com/maps?q=${lat.toFixed(6)},${lon.toFixed(6)}&t=k&z=19&ie=UTF8&iwloc=&output=embed`;
+      setSvIframe(src);
+      // Background check for street-level Panoramax photo availability
+      if(elSvPanoDot) elSvPanoDot.classList.remove('show');
+      lookupPanoramaxNear(lat, lon).then(info=>{
+        if(reqId !== svPanoReqSeq || !dState.pegman.active) return;
+        if(elSvPanoDot) elSvPanoDot.classList.toggle('show', !!info.picId);
+      });
+      return;
+    }
+
+    if(mode === 'pano'){
+      elSvBody.innerHTML = `<div class="sv-placeholder"><div>Ricerca foto stradale 360° (Panoramax)…</div></div>`;
+      lookupPanoramaxNear(lat, lon).then(info=>{
+        if(reqId !== svPanoReqSeq || !dState.pegman.active) return;
+        if(elSvPanoDot) elSvPanoDot.classList.toggle('show', !!info.picId);
+        if(info.url){
+          elSvBody.innerHTML = '';
+          setSvIframe(info.url);
+        } else {
+          elSvBody.innerHTML = `
+            <div class="sv-placeholder">
+              <div style="font-weight:700;color:#fff">Nessuna foto Panoramax entro 100 m</div>
+              <div>Puoi passare alla vista Satellite HD oppure aprire questo punto su Google Street View.</div>
+              <div class="sv-ph-actions">
+                <button id="svPanoToSat" class="sv-mini">Vista Satellite HD</button>
+                <button id="svPanoToGsv" class="sv-mini accent">Apri Google SV ↗</button>
+              </div>
+            </div>`;
+          elSvBody.querySelector('#svPanoToSat')?.addEventListener('click', ()=> switchSvInlineMode('sat'));
+          elSvBody.querySelector('#svPanoToGsv')?.addEventListener('click', openGoogleStreetViewExternal);
+        }
+      });
+    }
+  }
+
+  function switchSvInlineMode(mode){
+    svInlineMode = mode;
+    try{ localStorage.setItem(KEY_SV_MODE, mode); }catch(_){}
+    renderInlinePreview(mode);
+  }
+
+  [elSvTabGsv, elSvTabSat, elSvTabPano].forEach(btn=>{
+    if(!btn) return;
+    btn.addEventListener('click', ()=> switchSvInlineMode(btn.dataset.svMode));
+  });
 
   function dropPegmanAt(latlng, keepHeading=false){
     dState.pegman.lat = latlng.lat;
@@ -2302,23 +2652,19 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     if(!keepHeading) dState.pegman.heading = autoHeadingNearRoute(latlng.lat, latlng.lng);
     dState.pegman.active = true;
     updatePegmanMarker();
-
-    const gKey = getGmapsKey();
-    if(gKey){
-      renderInlineGoogleStreetView(gKey);
-    } else {
-      elSvCard.classList.remove('open');
-      openGoogleStreetViewPopup();
-    }
+    // Always open/refocus the inline preview card (never spawns extra popup windows)
+    renderInlinePreview();
   }
 
   function rotatePegman(delta){
     if(dState.pegman.lat == null) return;
     dState.pegman.heading = (dState.pegman.heading + delta + 360) % 360;
     updatePegmanMarker();
-    const gKey = getGmapsKey();
-    if(gKey) renderInlineGoogleStreetView(gKey);
-    else openGoogleStreetViewPopup();
+    if(resolveSvMode() === 'gsv' && getGmapsKey()){
+      renderInlinePreview('gsv');
+    } else {
+      elSvCoords.textContent = `${dState.pegman.lat.toFixed(5)}, ${dState.pegman.lon.toFixed(5)} · ${Math.round(dState.pegman.heading)}°`;
+    }
   }
 
   // Drag-and-drop OR click on Pegman dock
@@ -2385,14 +2731,17 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   });
   document.getElementById('svCfgCloseBtn').addEventListener('click', ()=> elPegmanCfgPop.classList.remove('open'));
   document.getElementById('svSaveKeysBtn').addEventListener('click', ()=>{
-    saveGmapsKey(elSvGmapsKey.value.trim());
+    const k = elSvGmapsKey.value.trim();
+    saveGmapsKey(k);
     elPegmanCfgPop.classList.remove('open');
-    if(dState.pegman.active && dState.pegman.lat != null){
-      const k = getGmapsKey();
-      if(k) renderInlineGoogleStreetView(k);
-      else elSvCard.classList.remove('open');
+    if(k){
+      svInlineMode = 'gsv';
+      try{ localStorage.setItem(KEY_SV_MODE, 'gsv'); }catch(_){}
     }
-    flashStatus(getGmapsKey() ? 'Chiave salvata: Street View si aprirà nella card' : 'Street View impostato su popup diretto');
+    if(dState.pegman.active && dState.pegman.lat != null){
+      renderInlinePreview(k ? 'gsv' : 'sat');
+    }
+    flashStatus(k ? 'Chiave salvata: Google Street View 360° attivo nella card' : 'Chiave rimossa: preview inline su Satellite HD / Panoramax');
   });
   document.addEventListener('click', (e)=>{
     if(!e.target.closest('.pegman-wrap')) elPegmanCfgPop.classList.remove('open');
@@ -2401,7 +2750,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   document.getElementById('svRotLeft').addEventListener('click', ()=> rotatePegman(-45));
   document.getElementById('svRotRight').addEventListener('click', ()=> rotatePegman(45));
   document.getElementById('svFlip').addEventListener('click', ()=> rotatePegman(180));
-  document.getElementById('svGooglePopupBtn').addEventListener('click', openGoogleStreetViewPopup);
+  document.getElementById('svGooglePopupBtn').addEventListener('click', openGoogleStreetViewExternal);
   document.getElementById('svResizeBtn').addEventListener('click', ()=> elSvCard.classList.toggle('large'));
   document.getElementById('svCloseBtn').addEventListener('click', clearPegman);
 
@@ -2570,12 +2919,745 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       }
       if(dState.pegmanPickMode){ setPegmanPickMode(false); return; }
       if(dState.pegman.active) clearPegman();
+    },
+    getExportData(){
+      if(dState.track.length < 2) return null;
+      const st = computeStats(dState.track);
+      return {
+        name: elRouteName.value.trim(),
+        profile: dState.profile,
+        waypoints: JSON.parse(JSON.stringify(dState.waypoints)),
+        segments: JSON.parse(JSON.stringify(dState.segments)),
+        firstPt: { lat: dState.track[0].lat, lon: dState.track[0].lon },
+        lastPt: { lat: dState.track[dState.track.length-1].lat, lon: dState.track[dState.track.length-1].lon },
+        distanceKm: st.distKm,
+        elevationGain: st.gain
+      };
+    },
+    loadFromData(drawData, fallbackPts){
+      initMap();
+      pushDrawUndo();
+      if(drawData && Array.isArray(drawData.segments) && drawData.segments.length){
+        dState.waypoints = JSON.parse(JSON.stringify(drawData.waypoints || []));
+        dState.segments = JSON.parse(JSON.stringify(drawData.segments));
+        if(drawData.profile){
+          dState.profile = drawData.profile;
+          elProfile.value = drawData.profile;
+        }
+        elRouteName.value = drawData.name || '';
+      } else if(Array.isArray(fallbackPts) && fallbackPts.length >= 2){
+        const cleanPts = fallbackPts.map(p=>({ lat:p.lat, lon:p.lon, ele:Number.isFinite(p.ele)?p.ele:0 }));
+        const first = cleanPts[0], last = cleanPts[cleanPts.length-1];
+        dState.waypoints = [{ lat:first.lat, lon:first.lon }, { lat:last.lat, lon:last.lon }];
+        dState.segments = [cleanPts];
+        if(drawData && drawData.name) elRouteName.value = drawData.name;
+      } else {
+        return false;
+      }
+      rebuildDrawTrack();
+      if(dRouteLine){
+        const b = dRouteLine.getBounds();
+        if(b.isValid()) dMap.fitBounds(b.pad(0.08));
+      }
+      return true;
+    },
+    setRouteName(name){
+      elRouteName.value = name || '';
     }
   };
 
   initMap();
   updateDrawButtons();
   drawElevCanvas();
+})();
+
+/* ==================== TRACK ARCHIVE & LOCAL/JSON STORAGE MODULE ==================== */
+(function(){
+  const DB_NAME = 'se_track_archive_v1';
+  const DB_STORE = 'tracks';
+  const LS_FALLBACK_KEY = 'se_track_archive_ls_v1';
+
+  let dbPromise = null;
+  let cachedTracks = [];
+  let activeArchiveId = null;
+  let editingRowId = null;
+  let toastTimer = null;
+
+  const elSaveOpenBtn = document.getElementById('archiveSaveOpenBtn');
+  const elArchOpenBtn = document.getElementById('archiveOpenBtn');
+  const elCountBadge = document.getElementById('archiveCountBadge');
+  const elModalCount = document.getElementById('archiveModalCount');
+  const elToast = document.getElementById('globalToast');
+
+  // Save Modal elements
+  const elSaveModal = document.getElementById('saveTrackModal');
+  const elSaveClose = document.getElementById('saveModalClose');
+  const elSaveStats = document.getElementById('saveStatsStrip');
+  const elSaveTitle = document.getElementById('saveTrackTitle');
+  const elSaveStart = document.getElementById('saveStartCity');
+  const elSaveEnd = document.getElementById('saveEndCity');
+  const elSaveGeoHint = document.getElementById('saveGeoHint');
+  const elSaveDetectBtn = document.getElementById('saveDetectCitiesBtn');
+  const elSaveOnlyJson = document.getElementById('saveOnlyJsonBtn');
+  const elSaveUpdateBtn = document.getElementById('saveUpdateExistingBtn');
+  const elSaveAndJsonBtn = document.getElementById('saveArchiveAndJsonBtn');
+  const elSaveToArchBtn = document.getElementById('saveToArchiveBtn');
+
+  // Archive Modal elements
+  const elArchModal = document.getElementById('archiveModal');
+  const elArchClose = document.getElementById('archiveModalClose');
+  const elArchSearch = document.getElementById('archiveSearchInput');
+  const elArchSort = document.getElementById('archiveSortSelect');
+  const elArchExportAll = document.getElementById('archiveExportAllBtn');
+  const elArchImportJson = document.getElementById('archiveImportJsonInput');
+  const elArchList = document.getElementById('archiveList');
+  const elArchSummary = document.getElementById('archiveSummaryText');
+  const elArchSaveFromModal = document.getElementById('archiveSaveFromModalBtn');
+
+  let pendingSaveContext = null;
+
+  function showToast(msg, ms=2800){
+    clearTimeout(toastTimer);
+    elToast.textContent = msg;
+    elToast.classList.add('show');
+    toastTimer = setTimeout(()=> elToast.classList.remove('show'), ms);
+  }
+
+  function slugifyFile(name){
+    return String(name || 'traccia').trim().replace(/[^a-zA-Z0-9À-ÿ._-]+/g, '_').replace(/^_+|_+$/g, '') || 'traccia';
+  }
+
+  function downloadJsonFile(obj, filename){
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type:'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    download(filename.endsWith('.json') ? filename : filename + '.json', url);
+    setTimeout(()=> URL.revokeObjectURL(url), 1000);
+  }
+
+  function computeElevationGainFromPts(pts){
+    if(!Array.isArray(pts) || pts.length < 2) return 0;
+    const dists = pts.map(p=>p.d || 0);
+    const eles = pts.map(p=>Number.isFinite(p.ele) ? p.ele : (p.eleS || 0));
+    const sm = movingAverage(eles, 25, dists);
+    let gain = 0, ref = sm[0];
+    for(let i=1; i<sm.length; i++){
+      const diff = sm[i] - ref;
+      if(diff >= 1.5){ gain += diff; ref = sm[i]; }
+      else if(diff <= -1.5){ ref = sm[i]; }
+    }
+    return Math.round(gain);
+  }
+
+  /* ---- IndexedDB with localStorage fallback ---- */
+  function openDb(){
+    if(dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve)=>{
+      if(typeof indexedDB === 'undefined'){ resolve(null); return; }
+      try{
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = ()=>{
+          const db = req.result;
+          if(!db.objectStoreNames.contains(DB_STORE)){
+            db.createObjectStore(DB_STORE, { keyPath:'id' });
+          }
+        };
+        req.onsuccess = ()=> resolve(req.result);
+        req.onerror = ()=> resolve(null);
+      }catch(_){ resolve(null); }
+    });
+    return dbPromise;
+  }
+
+  function readLsFallback(){
+    try{
+      const arr = JSON.parse(localStorage.getItem(LS_FALLBACK_KEY) || '[]');
+      return Array.isArray(arr) ? arr : [];
+    }catch(_){ return []; }
+  }
+  function writeLsFallback(arr){
+    try{ localStorage.setItem(LS_FALLBACK_KEY, JSON.stringify(arr)); }catch(_){}
+  }
+
+  async function dbGetAll(){
+    const db = await openDb();
+    if(!db) return readLsFallback();
+    return new Promise((resolve)=>{
+      try{
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const req = tx.objectStore(DB_STORE).getAll();
+        req.onsuccess = ()=> resolve(Array.isArray(req.result) ? req.result : []);
+        req.onerror = ()=> resolve(readLsFallback());
+      }catch(_){ resolve(readLsFallback()); }
+    });
+  }
+
+  async function dbPut(record){
+    const db = await openDb();
+    if(!db){
+      const all = readLsFallback().filter(r=>r.id !== record.id);
+      all.push(record);
+      writeLsFallback(all);
+      return;
+    }
+    return new Promise((resolve, reject)=>{
+      try{
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).put(record);
+        tx.oncomplete = ()=> resolve();
+        tx.onerror = ()=> reject(tx.error);
+      }catch(err){ reject(err); }
+    });
+  }
+
+  async function dbDelete(id){
+    const db = await openDb();
+    if(!db){
+      writeLsFallback(readLsFallback().filter(r=>r.id !== id));
+      return;
+    }
+    return new Promise((resolve)=>{
+      try{
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).delete(id);
+        tx.oncomplete = ()=> resolve();
+        tx.onerror = ()=> resolve();
+      }catch(_){ resolve(); }
+    });
+  }
+
+  async function refreshCache(){
+    cachedTracks = await dbGetAll();
+    cachedTracks.sort((a,b)=> (b.updatedAt||'').localeCompare(a.updatedAt||''));
+    elCountBadge.textContent = String(cachedTracks.length);
+    elModalCount.textContent = String(cachedTracks.length);
+    return cachedTracks;
+  }
+
+  /* ---- Gather current active track from DRAW or PAINT ---- */
+  function collectCurrentTrackContext(){
+    const drawData = window.DrawEnv?.getExportData?.() || null;
+    const hasPaint = state.points && state.points.length >= 2;
+    const paintData = hasPaint ? projectState() : null;
+
+    let primary = activeEnv;
+    if(primary === 'draw' && !drawData && hasPaint) primary = 'paint';
+    if(primary === 'paint' && !hasPaint && drawData) primary = 'draw';
+    if(!drawData && !hasPaint) return null;
+
+    if(primary === 'draw'){
+      return {
+        primary: 'draw',
+        title: drawData.name || '',
+        startCity: '',
+        endCity: '',
+        firstPt: drawData.firstPt,
+        lastPt: drawData.lastPt,
+        distanceKm: Number(drawData.distanceKm.toFixed(1)),
+        elevationGain: drawData.elevationGain,
+        drawData: {
+          name: drawData.name,
+          profile: drawData.profile,
+          waypoints: drawData.waypoints,
+          segments: drawData.segments
+        },
+        paintData: null
+      };
+    } else {
+      const last = state.points[state.points.length - 1];
+      const first = state.points[0];
+      const sLbl = (startLabel.value || '').trim();
+      const fLbl = (finishLabel.value || '').trim();
+      return {
+        primary: 'paint',
+        title: (state.projectName && state.projectName !== 'elevation') ? state.projectName : '',
+        startCity: (sLbl && sLbl.toUpperCase() !== 'START') ? sLbl : '',
+        endCity: (fLbl && fLbl.toUpperCase() !== 'FINISH') ? fLbl : '',
+        firstPt: { lat: first.lat, lon: first.lon },
+        lastPt: { lat: last.lat, lon: last.lon },
+        distanceKm: Number((last.d / 1000).toFixed(1)),
+        elevationGain: computeElevationGainFromPts(state.points),
+        drawData: null,
+        paintData
+      };
+    }
+  }
+
+  async function detectCitiesIntoInputs(firstPt, lastPt, force=false){
+    if(!firstPt || !lastPt) return;
+    const needStart = force || !elSaveStart.value.trim();
+    const needEnd = force || !elSaveEnd.value.trim();
+    if(!needStart && !needEnd) return;
+    elSaveGeoHint.textContent = 'Rilevamento comuni di partenza e arrivo in corso…';
+    try{
+      if(needStart){
+        const sCity = await nearestComune(firstPt.lat, firstPt.lon);
+        if(sCity && (force || !elSaveStart.value.trim())) elSaveStart.value = sCity;
+      }
+      if(needEnd){
+        const same = haversine(firstPt.lat, firstPt.lon, lastPt.lat, lastPt.lon) < 120;
+        if(same && elSaveStart.value.trim()){
+          if(force || !elSaveEnd.value.trim()) elSaveEnd.value = elSaveStart.value.trim();
+        } else {
+          const eCity = await nearestComune(lastPt.lat, lastPt.lon);
+          if(eCity && (force || !elSaveEnd.value.trim())) elSaveEnd.value = eCity;
+        }
+      }
+      if(!elSaveTitle.value.trim() && (elSaveStart.value.trim() || elSaveEnd.value.trim())){
+        const s = elSaveStart.value.trim(), e = elSaveEnd.value.trim();
+        elSaveTitle.value = (s && e && s !== e) ? `${s} – ${e}` : (s || e);
+      }
+      elSaveGeoHint.textContent = 'Città rilevate automaticamente (puoi modificarle liberamente).';
+    }catch(_){
+      elSaveGeoHint.textContent = 'Inserisci manualmente città di partenza e arrivo se necessario.';
+    }
+  }
+
+  function closeModals(){
+    elSaveModal.classList.remove('open');
+    elArchModal.classList.remove('open');
+    editingRowId = null;
+  }
+  function hasOpenModal(){
+    return elSaveModal.classList.contains('open') || elArchModal.classList.contains('open');
+  }
+
+  async function openSaveModal(){
+    const ctx = collectCurrentTrackContext();
+    if(!ctx){
+      showToast('Nessuna traccia attiva da salvare (traccia un percorso in DRAW o carica un GPX in PAINT).', 3400);
+      return;
+    }
+    pendingSaveContext = ctx;
+    await refreshCache();
+    const existing = activeArchiveId ? cachedTracks.find(t=>t.id === activeArchiveId) : null;
+
+    elSaveTitle.value = ctx.title || existing?.title || '';
+    elSaveStart.value = ctx.startCity || existing?.startCity || '';
+    elSaveEnd.value = ctx.endCity || existing?.endCity || '';
+
+    const envBadge = ctx.primary === 'draw' ? 'DRAW' : 'PAINT';
+    elSaveStats.innerHTML = `
+      <span>Ambiente: <strong>${envBadge}</strong></span>
+      <span>Distanza: <strong>${ctx.distanceKm.toFixed(1)} km</strong></span>
+      <span>Dislivello: <strong>+${ctx.elevationGain} m</strong></span>
+    `;
+
+    elSaveUpdateBtn.style.display = existing ? 'inline-flex' : 'none';
+    elSaveToArchBtn.textContent = existing ? 'Salva come nuova' : 'Salva in Archivio';
+    elSaveGeoHint.textContent = 'Le città vengono rilevate automaticamente dai punti di partenza e arrivo.';
+
+    elArchModal.classList.remove('open');
+    elSaveModal.classList.add('open');
+    setTimeout(()=> elSaveTitle.focus(), 30);
+
+    if(!elSaveStart.value.trim() || !elSaveEnd.value.trim()){
+      detectCitiesIntoInputs(ctx.firstPt, ctx.lastPt, false);
+    }
+  }
+
+  function buildRecordFromSaveForm(updateExisting){
+    const ctx = pendingSaveContext;
+    if(!ctx) return null;
+    const existing = (updateExisting && activeArchiveId) ? cachedTracks.find(t=>t.id === activeArchiveId) : null;
+    const startCity = elSaveStart.value.trim() || '—';
+    const endCity = elSaveEnd.value.trim() || '—';
+    let title = elSaveTitle.value.trim();
+    if(!title){
+      title = (startCity !== '—' && endCity !== '—')
+        ? (startCity === endCity ? `Anello ${startCity}` : `${startCity} – ${endCity}`)
+        : `Percorso ${ctx.distanceKm.toFixed(1)} km`;
+    }
+
+    const drawData = ctx.drawData
+      ? { ...ctx.drawData, name: title }
+      : (existing?.drawData || null);
+
+    let paintData = ctx.paintData ? JSON.parse(JSON.stringify(ctx.paintData)) : (existing?.paintData || null);
+    if(paintData){
+      paintData.meta = { ...(paintData.meta || {}), version:'2.4.0', name: title };
+      if(!paintData.labels) paintData.labels = {};
+      if((!paintData.labels.start || paintData.labels.start.toUpperCase()==='START') && startCity !== '—') paintData.labels.start = startCity;
+      if((!paintData.labels.finish || paintData.labels.finish.toUpperCase()==='FINISH') && endCity !== '—') paintData.labels.finish = endCity;
+    }
+
+    const sourceEnv = (drawData && paintData) ? 'both' : (paintData ? 'paint' : 'draw');
+    return {
+      id: existing ? existing.id : ('trk_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7)),
+      title,
+      startCity,
+      endCity,
+      distanceKm: ctx.distanceKm,
+      elevationGain: ctx.elevationGain,
+      updatedAt: new Date().toISOString(),
+      sourceEnv,
+      drawData,
+      paintData
+    };
+  }
+
+  async function commitSave({ updateExisting=false, alsoDownloadJson=false, onlyJson=false }){
+    const rec = buildRecordFromSaveForm(updateExisting);
+    if(!rec) return;
+
+    if(onlyJson){
+      downloadJsonFile({ type:'se_track_record', version:'2.4.0', exportedAt:new Date().toISOString(), track: rec }, slugifyFile(rec.title) + '.json');
+      closeModals();
+      showToast(`JSON esportato: ${rec.title}`);
+      return;
+    }
+
+    try{
+      await dbPut(rec);
+      activeArchiveId = rec.id;
+      if(pendingSaveContext?.primary === 'draw') window.DrawEnv?.setRouteName(rec.title);
+      if(pendingSaveContext?.primary === 'paint'){
+        state.projectName = rec.title;
+        if(rec.startCity !== '—' && !startLabel.value.trim()) startLabel.value = rec.startCity;
+        if(rec.endCity !== '—' && !finishLabel.value.trim()) finishLabel.value = rec.endCity;
+        if(state.points.length) draw();
+      }
+      await refreshCache();
+      if(alsoDownloadJson){
+        downloadJsonFile({ type:'se_track_record', version:'2.4.0', exportedAt:new Date().toISOString(), track: rec }, slugifyFile(rec.title) + '.json');
+      }
+      closeModals();
+      showToast(alsoDownloadJson ? `Salvata in archivio e scaricata in JSON: ${rec.title}` : `Traccia salvata in archivio: ${rec.title}`);
+    }catch(err){
+      alert('Impossibile salvare in archivio locale (spazio esaurito o storage bloccato). Puoi comunque usare "Solo JSON".');
+    }
+  }
+
+  /* ---- Load Record into DRAW or PAINT ---- */
+  function extractRawPointsFromRecord(rec){
+    if(rec.drawData && Array.isArray(rec.drawData.segments) && rec.drawData.segments.length){
+      const pts = [];
+      for(let s=0; s<rec.drawData.segments.length; s++){
+        const seg = rec.drawData.segments[s] || [];
+        for(let i=0; i<seg.length; i++){
+          if(s > 0 && i === 0 && pts.length) continue;
+          pts.push({ lat:seg[i].lat, lon:seg[i].lon, ele:Number.isFinite(seg[i].ele)?seg[i].ele:0 });
+        }
+      }
+      if(pts.length >= 2) return pts;
+    }
+    if(rec.paintData && Array.isArray(rec.paintData.points) && rec.paintData.points.length >= 2){
+      return rec.paintData.points.map(p=>({ lat:p.lat, lon:p.lon, ele:Number.isFinite(p.ele)?p.ele:(p.eleS||0) }));
+    }
+    return [];
+  }
+
+  async function loadRecordInDraw(rec){
+    const fallbackPts = extractRawPointsFromRecord(rec);
+    switchEnv('draw');
+    closeModals();
+    requestAnimationFrame(()=>{
+      const ok = window.DrawEnv?.loadFromData(rec.drawData ? { ...rec.drawData, name: rec.title } : { name: rec.title }, fallbackPts);
+      if(ok){
+        activeArchiveId = rec.id;
+        showToast(`Caricata in DRAW: ${rec.title}`);
+      }
+    });
+  }
+
+  async function loadRecordInPaint(rec){
+    switchEnv('paint');
+    closeModals();
+    requestAnimationFrame(()=>{
+      if(rec.paintData && Array.isArray(rec.paintData.points) && rec.paintData.points.length >= 2){
+        applyProject(rec.paintData);
+        state.projectName = rec.title || state.projectName;
+        if(rec.startCity && rec.startCity !== '—' && (!startLabel.value || startLabel.value === 'START')) startLabel.value = rec.startCity;
+        if(rec.endCity && rec.endCity !== '—' && (!finishLabel.value || finishLabel.value === 'FINISH')) finishLabel.value = rec.endCity;
+        draw();
+      } else {
+        const rawPts = extractRawPointsFromRecord(rec);
+        if(rawPts.length < 2){ showToast('Nessun punto valido nella traccia.'); return; }
+        loadPointsIntoPaint(rawPts, [], rec.title || 'percorso');
+        if(rec.startCity && rec.startCity !== '—') startLabel.value = rec.startCity;
+        if(rec.endCity && rec.endCity !== '—') finishLabel.value = rec.endCity;
+        draw();
+      }
+      if(map){
+        map.invalidateSize();
+        if(routeLayer){ const b = routeLayer.getBounds(); if(b.isValid()) map.fitBounds(b.pad(0.05)); }
+      }
+      activeArchiveId = rec.id;
+      showToast(`Caricata in PAINT: ${rec.title}`);
+    });
+  }
+
+  /* ---- Normalize & Import External JSON (bundle, single record, or legacy PAINT JSON) ---- */
+  function normalizeImportedRecord(raw){
+    if(!raw || typeof raw !== 'object') return null;
+    if(raw.drawData || raw.paintData){
+      const pts = extractRawPointsFromRecord(raw);
+      let km = Number(raw.distanceKm);
+      if(!Number.isFinite(km) || km <= 0){
+        if(raw.paintData?.points?.length >= 2){
+          km = (raw.paintData.points[raw.paintData.points.length-1].d || 0) / 1000;
+        } else if(pts.length >= 2){
+          let d = 0;
+          for(let i=1; i<pts.length; i++) d += haversine(pts[i-1].lat, pts[i-1].lon, pts[i].lat, pts[i].lon);
+          km = d / 1000;
+        } else km = 0;
+      }
+      return {
+        id: raw.id || ('trk_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7)),
+        title: String(raw.title || raw.drawData?.name || raw.paintData?.meta?.name || 'Traccia importata').trim(),
+        startCity: String(raw.startCity || raw.paintData?.labels?.start || '—').trim() || '—',
+        endCity: String(raw.endCity || raw.paintData?.labels?.finish || '—').trim() || '—',
+        distanceKm: Number(km.toFixed(1)),
+        elevationGain: Number.isFinite(Number(raw.elevationGain)) ? Math.round(Number(raw.elevationGain)) : computeElevationGainFromPts(raw.paintData?.points || []),
+        updatedAt: raw.updatedAt || new Date().toISOString(),
+        sourceEnv: (raw.drawData && raw.paintData) ? 'both' : (raw.paintData ? 'paint' : 'draw'),
+        drawData: raw.drawData || null,
+        paintData: raw.paintData || null
+      };
+    }
+    // Legacy PAINT project JSON
+    if(Array.isArray(raw.points) && raw.points.length >= 2){
+      const last = raw.points[raw.points.length - 1];
+      const km = Number(((last.d || 0) / 1000).toFixed(1));
+      const sLbl = (raw.labels?.start || '').trim();
+      const fLbl = (raw.labels?.finish || '').trim();
+      return {
+        id: 'trk_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7),
+        title: String(raw.meta?.name || raw.meta?.projectName || 'Progetto PAINT').trim(),
+        startCity: (sLbl && sLbl.toUpperCase() !== 'START') ? sLbl : '—',
+        endCity: (fLbl && fLbl.toUpperCase() !== 'FINISH') ? fLbl : '—',
+        distanceKm: km,
+        elevationGain: computeElevationGainFromPts(raw.points),
+        updatedAt: new Date().toISOString(),
+        sourceEnv: 'paint',
+        drawData: null,
+        paintData: raw
+      };
+    }
+    return null;
+  }
+
+  async function importJsonObject(data){
+    let items = [];
+    if(data && data.type === 'se_archive_bundle' && Array.isArray(data.tracks)){
+      items = data.tracks;
+    } else if(data && data.type === 'se_track_record' && data.track){
+      items = [data.track];
+    } else if(Array.isArray(data)){
+      items = data;
+    } else {
+      items = [data];
+    }
+    let imported = 0;
+    for(const raw of items){
+      const rec = normalizeImportedRecord(raw);
+      if(!rec) continue;
+      await dbPut(rec);
+      imported++;
+    }
+    await refreshCache();
+    renderArchiveList();
+    if(imported > 0){
+      showToast(imported === 1 ? '1 traccia importata nell'archivio!' : `${imported} tracce importate nell'archivio!`);
+    } else {
+      alert('Il file JSON non contiene tracce valide.');
+    }
+    return imported;
+  }
+
+  /* ---- Render Archive Modal ---- */
+  function escapeHtml(s){
+    return String(s ?? '').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  function formatDateIt(iso){
+    try{
+      const d = new Date(iso);
+      return d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' });
+    }catch(_){ return ''; }
+  }
+
+  function renderArchiveList(){
+    const q = (elArchSearch.value || '').trim().toLowerCase();
+    const sort = elArchSort.value || 'recent';
+    let list = cachedTracks.slice();
+    if(q){
+      list = list.filter(t=>
+        (t.title||'').toLowerCase().includes(q) ||
+        (t.startCity||'').toLowerCase().includes(q) ||
+        (t.endCity||'').toLowerCase().includes(q)
+      );
+    }
+    if(sort === 'title') list.sort((a,b)=> (a.title||'').localeCompare(b.title||'', 'it'));
+    else if(sort === 'km_desc') list.sort((a,b)=> (b.distanceKm||0) - (a.distanceKm||0));
+    else if(sort === 'km_asc') list.sort((a,b)=> (a.distanceKm||0) - (b.distanceKm||0));
+    else list.sort((a,b)=> (b.updatedAt||'').localeCompare(a.updatedAt||''));
+
+    const totalKm = list.reduce((acc, t)=> acc + (Number(t.distanceKm)||0), 0);
+    elArchSummary.textContent = list.length
+      ? `${list.length} ${list.length === 1 ? 'traccia' : 'tracce'} visualizzate · Totale ${totalKm.toFixed(1)} km`
+      : 'Nessuna traccia corrispondente.';
+
+    elArchExportAll.disabled = cachedTracks.length === 0;
+
+    if(!list.length){
+      elArchList.innerHTML = `<div class="arch-empty">${cachedTracks.length ? 'Nessuna traccia corrisponde alla ricerca.' : 'L'archivio è vuoto.<br>Disegna una traccia in <strong>DRAW</strong> o carica un GPX in <strong>PAINT</strong> e clicca <strong>💾 Salva</strong>, oppure importa un file <strong>JSON</strong>.'}</div>`;
+      return;
+    }
+
+    elArchList.innerHTML = '';
+    for(const rec of list){
+      const row = document.createElement('div');
+      row.className = 'arch-row' + (rec.id === activeArchiveId ? ' is-active' : '');
+      const envCls = rec.sourceEnv === 'both' ? 'both' : rec.sourceEnv === 'paint' ? 'paint' : 'draw';
+      const envLbl = rec.sourceEnv === 'both' ? 'DRAW + PAINT' : rec.sourceEnv === 'paint' ? 'PAINT' : 'DRAW';
+      const eleTxt = rec.elevationGain ? `+${rec.elevationGain} m D+` : '';
+
+      row.innerHTML = `
+        <div class="arch-title-col">
+          <div class="arch-title" title="${escapeHtml(rec.title)}">${escapeHtml(rec.title)}</div>
+          <div class="arch-sub">
+            <span class="arch-env-pill ${envCls}">${envLbl}</span>
+            <span>${formatDateIt(rec.updatedAt)}</span>
+          </div>
+        </div>
+        <div class="arch-cities" title="${escapeHtml(rec.startCity)} → ${escapeHtml(rec.endCity)}">
+          <span>${escapeHtml(rec.startCity || '—')}</span>
+          <span class="city-arrow">→</span>
+          <span>${escapeHtml(rec.endCity || '—')}</span>
+        </div>
+        <div class="arch-km-col">
+          <div class="arch-km">${Number(rec.distanceKm || 0).toFixed(1)} km</div>
+          <div class="arch-ele">${eleTxt}</div>
+        </div>
+        <div class="arch-actions">
+          <button type="button" class="sv-mini open-draw" data-act="draw" title="Apri in DRAW">DRAW</button>
+          <button type="button" class="sv-mini open-paint" data-act="paint" title="Apri in PAINT">PAINT</button>
+          <button type="button" class="sv-mini" data-act="edit" title="Modifica titolo e città">✎</button>
+          <button type="button" class="sv-mini" data-act="json" title="Scarica questa traccia come JSON">⬇ JSON</button>
+          <button type="button" class="sv-mini danger" data-act="del" title="Elimina dall'archivio">🗑</button>
+        </div>
+      `;
+
+      row.querySelector('[data-act="draw"]').addEventListener('click', ()=> loadRecordInDraw(rec));
+      row.querySelector('[data-act="paint"]').addEventListener('click', ()=> loadRecordInPaint(rec));
+      row.querySelector('[data-act="json"]').addEventListener('click', ()=>{
+        downloadJsonFile({ type:'se_track_record', version:'2.4.0', exportedAt:new Date().toISOString(), track: rec }, slugifyFile(rec.title) + '.json');
+        showToast(`Esportato JSON: ${rec.title}`);
+      });
+      row.querySelector('[data-act="edit"]').addEventListener('click', ()=>{
+        editingRowId = (editingRowId === rec.id) ? null : rec.id;
+        renderArchiveList();
+      });
+      row.querySelector('[data-act="del"]').addEventListener('click', async ()=>{
+        if(!confirm(`Eliminare "${rec.title}" dall'archivio locale?`)) return;
+        await dbDelete(rec.id);
+        if(activeArchiveId === rec.id) activeArchiveId = null;
+        await refreshCache();
+        renderArchiveList();
+        showToast('Traccia eliminata dall'archivio');
+      });
+
+      if(editingRowId === rec.id){
+        const editBox = document.createElement('div');
+        editBox.className = 'arch-edit-inline';
+        editBox.innerHTML = `
+          <div><label>Titolo</label><input type="text" data-ef="title" value="${escapeHtml(rec.title)}" /></div>
+          <div><label>Città partenza</label><input type="text" data-ef="start" value="${escapeHtml(rec.startCity === '—' ? '' : rec.startCity)}" /></div>
+          <div><label>Città arrivo</label><input type="text" data-ef="end" value="${escapeHtml(rec.endCity === '—' ? '' : rec.endCity)}" /></div>
+          <div style="display:flex;gap:5px">
+            <button type="button" class="pink" style="padding:6px 10px;font-size:12px" data-ef="save">Salva</button>
+            <button type="button" class="sv-mini" data-ef="cancel">Annulla</button>
+          </div>
+        `;
+        editBox.querySelector('[data-ef="cancel"]').addEventListener('click', ()=>{ editingRowId = null; renderArchiveList(); });
+        editBox.querySelector('[data-ef="save"]').addEventListener('click', async ()=>{
+          const nt = editBox.querySelector('[data-ef="title"]').value.trim() || rec.title;
+          const ns = editBox.querySelector('[data-ef="start"]').value.trim() || '—';
+          const ne = editBox.querySelector('[data-ef="end"]').value.trim() || '—';
+          rec.title = nt; rec.startCity = ns; rec.endCity = ne;
+          rec.updatedAt = new Date().toISOString();
+          if(rec.drawData) rec.drawData.name = nt;
+          if(rec.paintData){
+            rec.paintData.meta = { ...(rec.paintData.meta||{}), name: nt };
+          }
+          await dbPut(rec);
+          editingRowId = null;
+          await refreshCache();
+          renderArchiveList();
+          showToast('Metadati aggiornati');
+        });
+        row.appendChild(editBox);
+      }
+
+      elArchList.appendChild(row);
+    }
+  }
+
+  async function openArchiveModal(){
+    await refreshCache();
+    elSaveModal.classList.remove('open');
+    elArchModal.classList.add('open');
+    renderArchiveList();
+  }
+
+  /* ---- Event Bindings ---- */
+  elSaveOpenBtn.addEventListener('click', openSaveModal);
+  elArchOpenBtn.addEventListener('click', openArchiveModal);
+  elSaveClose.addEventListener('click', closeModals);
+  elArchClose.addEventListener('click', closeModals);
+  elSaveModal.addEventListener('click', (e)=>{ if(e.target === elSaveModal) closeModals(); });
+  elArchModal.addEventListener('click', (e)=>{ if(e.target === elArchModal) closeModals(); });
+
+  elSaveDetectBtn.addEventListener('click', ()=>{
+    if(pendingSaveContext) detectCitiesIntoInputs(pendingSaveContext.firstPt, pendingSaveContext.lastPt, true);
+  });
+  elSaveToArchBtn.addEventListener('click', ()=> commitSave({ updateExisting:false, alsoDownloadJson:false }));
+  elSaveUpdateBtn.addEventListener('click', ()=> commitSave({ updateExisting:true, alsoDownloadJson:false }));
+  elSaveAndJsonBtn.addEventListener('click', ()=> commitSave({ updateExisting:!!(activeArchiveId && elSaveUpdateBtn.style.display!=='none'), alsoDownloadJson:true }));
+  elSaveOnlyJson.addEventListener('click', ()=> commitSave({ onlyJson:true }));
+
+  elArchSearch.addEventListener('input', renderArchiveList);
+  elArchSort.addEventListener('change', renderArchiveList);
+  elArchSaveFromModal.addEventListener('click', openSaveModal);
+
+  elArchExportAll.addEventListener('click', ()=>{
+    if(!cachedTracks.length) return;
+    const dStr = new Date().toISOString().slice(0,10);
+    downloadJsonFile({
+      type: 'se_archive_bundle',
+      version: '2.4.0',
+      exportedAt: new Date().toISOString(),
+      tracks: cachedTracks
+    }, `simple-elevation-archivio-${dStr}.json`);
+    showToast(`Esportate ${cachedTracks.length} tracce in JSON`);
+  });
+
+  elArchImportJson.addEventListener('change', async (e)=>{
+    const file = e.target.files?.[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const data = JSON.parse(text);
+      await importJsonObject(data);
+    }catch(_){
+      alert('Impossibile leggere il file JSON.');
+    }finally{
+      elArchImportJson.value = '';
+    }
+  });
+
+  window.TrackArchive = {
+    openSaveModal,
+    openArchiveModal,
+    closeModals,
+    hasOpenModal,
+    loadRecordInDraw,
+    loadRecordInPaint,
+    importJsonObject,
+    refreshCache
+  };
+
+  refreshCache();
 })();
 </script>
 </body>
