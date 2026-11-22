@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.2 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.3 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -17,17 +17,24 @@
   h1,h2,h3{font-family:Montserrat,Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;letter-spacing:.2px}
 
   /* Header & Environment Switcher */
-  header.top{padding:12px 18px;background:linear-gradient(180deg,#ffffff 0%, #f9fbff 100%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:30;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-  .brand-wrap{display:flex;align-items:center;gap:14px;flex:0 0 auto}
-  h1{margin:0;font-size:20px;font-weight:800;white-space:nowrap}
+  header.top{padding:10px 16px;background:linear-gradient(180deg,#ffffff 0%, #f9fbff 100%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:30;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .brand-wrap{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+  h1{margin:0;font-size:19px;font-weight:800;white-space:nowrap}
   .env-tabs{display:inline-flex;background:#eef2f7;border:1px solid var(--border);border-radius:12px;padding:3px;gap:3px}
-  .env-tab{border:none;background:transparent;color:#475569;font-family:Montserrat,Inter,sans-serif;font-weight:700;font-size:12px;padding:7px 14px;border-radius:9px;cursor:pointer;transition:all .15s;letter-spacing:.4px}
+  .env-tab{border:none;background:transparent;color:#475569;font-family:Montserrat,Inter,sans-serif;font-weight:700;font-size:12px;padding:6px 13px;border-radius:9px;cursor:pointer;transition:all .15s;letter-spacing:.4px}
   .env-tab:hover{color:#0f172a}
   .env-tab.active{background:#0f172a;color:#fff;box-shadow:0 2px 8px rgba(15,23,42,.18)}
 
-  .hdr-mode{display:none;align-items:center;gap:10px;flex:1 1 auto;justify-content:flex-end;min-width:0}
+  .hdr-mode{display:none;align-items:center;gap:6px;flex:1 1 auto;justify-content:flex-end;min-width:0;flex-wrap:wrap}
   body.mode-draw .hdr-draw{display:flex}
   body.mode-paint .hdr-paint{display:flex}
+  .hdr-group{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .hdr-sep{width:1px;height:22px;background:var(--border);margin:0 4px;flex:0 0 auto}
+  .hdr-draw .ghost{padding:6px 9px;font-size:12px;border-radius:9px}
+  .hdr-draw .pink{padding:7px 12px;font-size:12.5px;border-radius:9px}
+  .hdr-draw .ghost.danger{color:#b91c1c;border-color:#fecaca}
+  .hdr-draw .ghost.danger:hover:not(:disabled){background:#fff5f5}
+
   .env-view{display:none !important;flex:1 1 auto;min-height:0}
   body.mode-draw #drawView{display:flex !important}
   body.mode-paint #layout{display:flex !important}
@@ -48,7 +55,7 @@
   .muted{color:var(--muted);font-size:12px}
   .ghost{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;color:var(--text);font-weight:600;font-size:13px;white-space:nowrap}
   .ghost:hover:not(:disabled){background:#f8fafc;border-color:#cbd5e1}
-  .ghost:disabled{opacity:.45;cursor:not-allowed}
+  .ghost:disabled{opacity:.42;cursor:not-allowed}
   .pink{background:var(--pink);color:#fff;border:none;border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap}
   .pink:hover:not(:disabled){filter:brightness(.94)}
   .pink:disabled{opacity:.45;cursor:not-allowed}
@@ -58,17 +65,17 @@
   .draw-map-wrap{position:relative;flex:1 1 auto;min-height:0;width:100%}
   #drawMap{position:absolute;inset:0;width:100%;height:100%;z-index:1}
   #drawMap.pegman-pick-cursor{cursor:crosshair !important}
+  .leaflet-interactive.route-drag-hit{cursor:grab !important}
+  body.dragging-route, body.dragging-route *{cursor:grabbing !important}
 
-  /* Floating left DRAW panel */
-  .draw-panel{position:absolute;top:12px;left:12px;z-index:1000;width:274px;max-height:calc(100% - 24px);overflow-y:auto;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 28px rgba(15,23,42,.14);padding:12px;display:flex;flex-direction:column;gap:10px}
+  /* Floating left DRAW panel (compact now that action buttons live in top bar) */
+  .draw-panel{position:absolute;top:12px;left:12px;z-index:1000;width:264px;max-height:calc(100% - 24px);overflow-y:auto;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 28px rgba(15,23,42,.14);padding:12px;display:flex;flex-direction:column;gap:10px}
   .draw-panel.collapsed .draw-panel-body{display:none}
   .draw-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .draw-panel-head h2{margin:0;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#0f172a}
+  .draw-panel-head h2{margin:0;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#0f172a}
   .draw-panel-body{display:flex;flex-direction:column;gap:10px}
   .draw-panel input,.draw-panel select{padding:7px 10px;font-size:12.5px;border-radius:10px}
   .draw-panel label{margin-bottom:3px;font-size:11px;font-weight:600}
-  .draw-btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-  .draw-btn-grid button{padding:7px 8px;font-size:12px;border-radius:9px}
   .search-wrap{position:relative}
   .search-results{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:10px;margin-top:4px;box-shadow:0 8px 20px rgba(15,23,42,.15);z-index:20;max-height:190px;overflow:auto;display:none}
   .search-results.open{display:block}
@@ -93,7 +100,7 @@
   #pegmanGhost{position:fixed;z-index:9999;pointer-events:none;display:none;transform:translate(-50%,-85%);filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
   #pegmanGhost.visible{display:block}
 
-  /* Inline Google Embed Street View Card (used when user sets a Google Embed API Key) */
+  /* Inline Google Embed Street View Card (when Google Embed API Key is configured) */
   .sv-card{position:absolute;top:12px;right:12px;z-index:1050;width:410px;max-width:calc(100vw - 24px);background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 40px rgba(15,23,42,.26);overflow:hidden;display:none;flex-direction:column}
   .sv-card.open{display:flex}
   .sv-card.large{width:560px}
@@ -185,7 +192,8 @@
     h1{font-size:18px}
     header.top{padding:10px 14px}
     .hdr-fields{flex-basis:100%;max-width:none}
-    .draw-panel{width:240px}
+    .draw-panel{width:236px}
+    .hdr-sep{display:none}
   }
   @media (max-width: 560px){
     #map{height:240px}
@@ -212,13 +220,24 @@
 
   <!-- Header controls for DRAW -->
   <div class="hdr-mode hdr-draw">
-    <input id="drawRouteName" type="text" placeholder="Nome percorso (es. Giro del Passo)" style="max-width:240px;padding:7px 11px;border-radius:10px;font-size:13px" />
-    <label class="ghost" style="display:inline-flex;align-items:center;gap:6px;margin:0">
-      Importa GPX
-      <input id="drawGpxImport" type="file" accept=".gpx,.GPX" style="display:none" />
-    </label>
-    <button id="drawExportGpx" class="ghost" disabled>Esporta GPX</button>
-    <button id="sendToPaintBtn" class="pink" disabled>Invia a PAINT →</button>
+    <div class="hdr-group">
+      <button id="drawUndoBtn" class="ghost" disabled title="Annulla (Ctrl+Z)">↶ Annulla</button>
+      <button id="drawRedoBtn" class="ghost" disabled title="Ripeti (Ctrl+Maiusc+Z)">↷ Ripeti</button>
+      <button id="drawPopBtn" class="ghost" disabled title="Rimuovi l'ultimo punto inserito">⌫ Ultimo pt</button>
+      <button id="drawReverseBtn" class="ghost" disabled title="Inverti senso di marcia">⇄ Inverti</button>
+      <button id="drawLoopBtn" class="ghost" disabled title="Chiudi anello al punto di partenza">⟳ Anello</button>
+      <button id="drawClearBtn" class="ghost danger" disabled title="Cancella l'intera traccia">🗑 Cancella</button>
+    </div>
+    <span class="hdr-sep" aria-hidden="true"></span>
+    <div class="hdr-group">
+      <input id="drawRouteName" type="text" placeholder="Nome percorso" style="width:170px;padding:6px 10px;border-radius:9px;font-size:12.5px" />
+      <label class="ghost" style="display:inline-flex;align-items:center;gap:5px;margin:0">
+        Importa GPX
+        <input id="drawGpxImport" type="file" accept=".gpx,.GPX" style="display:none" />
+      </label>
+      <button id="drawExportGpx" class="ghost" disabled>Esporta GPX</button>
+      <button id="sendToPaintBtn" class="pink" disabled>Invia a PAINT →</button>
+    </div>
   </div>
 
   <!-- Header controls for PAINT -->
@@ -242,10 +261,10 @@
     <div id="drawMap"></div>
     <div id="drawStatus" class="draw-status">Calcolo percorso…</div>
 
-    <!-- Floating Routing Panel -->
+    <!-- Floating left DRAW panel -->
     <aside id="drawPanel" class="draw-panel">
       <div class="draw-panel-head">
-        <h2>Tracciamento</h2>
+        <h2>Mappa &amp; Profilo</h2>
         <button id="drawPanelToggle" class="sv-mini" title="Comprimi/espandi pannello">−</button>
       </div>
       <div class="draw-panel-body">
@@ -262,14 +281,14 @@
               <option value="fastbike-verylowtraffic">Corsa (poco traffico)</option>
               <option value="trekking">Gravel / Trekking</option>
               <option value="mtb">MTB</option>
-              <option value="direct">Linea retta (manuale)</option>
+              <option value="direct">Linea retta</option>
             </select>
           </div>
           <div>
             <label for="drawBasemap">Mappa</label>
             <select id="drawBasemap">
-              <option value="GoogleStreets" selected>Google Strade</option>
-              <option value="GoogleTerrain">Google Terreno</option>
+              <option value="GoogleTerrain" selected>Google Terreno</option>
+              <option value="GoogleStreets">Google Strade</option>
               <option value="GoogleHybrid">Google Satellite</option>
               <option value="CyclOSM">CyclOSM</option>
               <option value="OSM">OpenStreetMap</option>
@@ -278,16 +297,9 @@
             </select>
           </div>
         </div>
-        <div class="draw-btn-grid">
-          <button id="drawUndoBtn" class="ghost" disabled title="Annulla (Ctrl+Z)">↶ Annulla</button>
-          <button id="drawPopBtn" class="ghost" disabled>⌫ Ultimo pt</button>
-          <button id="drawReverseBtn" class="ghost" disabled>⇄ Inverti</button>
-          <button id="drawLoopBtn" class="ghost" disabled>⟳ Chiudi anello</button>
-        </div>
-        <button id="drawClearBtn" class="ghost" disabled style="color:#b91c1c;border-color:#fecaca">🗑 Cancella traccia</button>
         <div class="draw-tip">
-          <strong>Clic mappa:</strong> aggiungi punto · <strong>Trascina pallino:</strong> sposta · <strong>Clic destro pallino:</strong> elimina · <strong>Clic linea blu:</strong> inserisci punto.<br>
-          <strong>Altimetria:</strong> trascina per misurare un tratto · <strong>Omino:</strong> apre subito Google Street View.
+          <strong>Clic mappa:</strong> aggiungi punto · <strong>Trascina linea blu:</strong> inserisci e devia · <strong>Clic dx pallino:</strong> elimina.<br>
+          <strong>Altimetria:</strong> clic = Street View · trascina = misura · <strong>clic dx</strong> = chiudi selezione / SV.
         </div>
       </div>
     </aside>
@@ -306,8 +318,8 @@
       <div id="pegmanCfgPop" class="pegman-cfg-pop">
         <div style="font-size:12.5px;font-weight:700;color:#0f172a">Modalità Street View</div>
         <div class="muted" style="font-size:11.5px;line-height:1.45">
-          <strong>Senza chiave (default):</strong> rilasciando l'omino si apre subito Google Street View nella finestra popup dedicata.<br>
-          <strong>Con Google Maps Embed API Key (gratis):</strong> si apre direttamente nella card sulla mappa.
+          <strong>Senza chiave (default):</strong> si apre subito Google Street View nella finestra popup dedicata.<br>
+          <strong>Con Google Maps Embed API Key (gratis):</strong> si apre nella card flottante sulla mappa.
         </div>
         <div>
           <label for="svGmapsKey" style="margin-bottom:3px;font-size:11px;font-weight:600">Google Maps Embed API Key (opzionale)</label>
@@ -320,7 +332,7 @@
       </div>
     </div>
 
-    <!-- Inline Google Street View Card (shown only when a Google Embed API Key is saved) -->
+    <!-- Inline Google Street View Card (when Google Embed API Key is saved) -->
     <div id="svCard" class="sv-card" role="dialog" aria-label="Google Street View">
       <div id="svHead" class="sv-head">
         <div class="sv-title">
@@ -329,7 +341,7 @@
         </div>
         <div class="sv-head-btns">
           <button id="svResizeBtn" class="sv-icon-btn" title="Ingrandisci / riduci">⤢</button>
-          <button id="svCloseBtn" class="sv-icon-btn" title="Chiudi (Esc)">✕</button>
+          <button id="svCloseBtn" class="sv-icon-btn" title="Chiudi (Esc o clic destro)">✕</button>
         </div>
       </div>
       <div id="svBody" class="sv-body"></div>
@@ -437,10 +449,10 @@
           <div class="basemap-picker" style="margin:8px 0 10px 0; display:flex; align-items:center; gap:8px;">
             <label for="basemap-select" style="font-weight:600;margin:0">Basemap:</label>
             <select id="basemap-select">
+              <option value="GoogleTerrain" selected>Google Terreno</option>
               <option value="GoogleStreets">Google Strade</option>
-              <option value="GoogleTerrain">Google Terreno</option>
               <option value="GoogleHybrid">Google Satellite</option>
-              <option value="OSM" selected>OpenStreetMap</option>
+              <option value="OSM">OpenStreetMap</option>
               <option value="CyclOSM">CyclOSM</option>
               <option value="OpenTopoMap">OpenTopoMap</option>
               <option value="EsriSat">Satellite Esri</option>
@@ -566,7 +578,6 @@ const tabDraw = document.getElementById('tabDraw');
 const tabPaint = document.getElementById('tabPaint');
 
 function makeSharedBaseLayer(key){
-  // scale=2 delivers crisp 512x512 HiDPI tiles inside Leaflet's 256px slot (Retina full resolution)
   if(key==='GoogleStreets') return L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=it&scale=2&x={x}&y={y}&z={z}',{
     maxZoom:20, subdomains:['0','1','2','3'], tileSize:256, attribution:'&copy; Google'
   });
@@ -1340,7 +1351,17 @@ document.addEventListener('keydown', (e)=>{
   if(activeEnv === 'draw'){
     if(e.key==='Escape'){ window.DrawEnv?.onEscape(); return; }
     if(tag==='input'||tag==='textarea'||tag==='select') return;
-    if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){ window.DrawEnv?.undo(); e.preventDefault(); }
+    if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){
+      if(e.shiftKey) window.DrawEnv?.redo();
+      else window.DrawEnv?.undo();
+      e.preventDefault();
+      return;
+    }
+    if((e.ctrlKey||e.metaKey) && (e.key==='y'||e.key==='Y')){
+      window.DrawEnv?.redo();
+      e.preventDefault();
+      return;
+    }
     return;
   }
   if(e.key==='Escape'){ if(state.selecting||state.selectingPoi||state.selectingGravel||state.selectingTunnel||state.loopMode){ cancelSelection(); e.preventDefault(); } return; }
@@ -1386,7 +1407,7 @@ function setBasemap(key){
 function buildMap(){
   if(!map){
     map=L.map('map',{zoomControl:true,attributionControl:true});
-    setBasemap(document.getElementById('basemap-select')?.value||'OSM');
+    setBasemap(document.getElementById('basemap-select')?.value||'GoogleTerrain');
     map.on('mousemove',onMapMove);map.on('click',onMapClick);
   }
   const latlngs=state.points.map(p=>[p.lat,p.lon]);
@@ -1444,7 +1465,7 @@ deletePresetBtn.addEventListener('click',()=>{ const name=presetSelect.value; if
 refreshPresetList();
 
 /* JSON I/O */
-function projectState(){ return { meta:{version:'2.2.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ vExag:state.vExag, yStep:parseInt(yStepSel.value,10), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
+function projectState(){ return { meta:{version:'2.3.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ vExag:state.vExag, yStep:parseInt(yStepSel.value,10), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
 function applyProject(p){ if(!p||!p.points) return; state.points=p.points; state.climbs=p.climbs||[]; state.pois=p.pois||[]; state.gravels=p.gravels||[]; state.tunnels=(p.tunnels||[]).filter(t=>Number.isInteger(t.startIdx)&&Number.isInteger(t.endIdx)&&t.startIdx>=0&&t.endIdx<state.points.length&&t.endIdx>t.startIdx); state.hoverIndex=null; state.profileElevations=[]; startLabel.value=p.labels?.start||'START'; finishLabel.value=p.labels?.finish||'FINISH'; state.vExag=p.settings?.vExag||state.vExag; vExagInput.value=state.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.settings?.yStep||200); smoothInput.value=p.settings?.smooth||500; tickInput.value=p.settings?.tick||10; fillColorInput.value=p.settings?.fill||state.fillColor; lineColorInput.value=p.settings?.line||state.lineColor; climbColorInput.value=p.settings?.climbLine||state.climbColor; climbFillColorInput.value=p.settings?.climbFill||state.climbFillColor; climbOverlayModeSel.value=((p.settings?.climbOverlayMode==='avggrade'||p.settings?.climbOverlayMode==='solid')?p.settings?.climbOverlayMode:(state.climbOverlayMode||'solid')); startOffInput.value=p.settings?.startOff||0; finishOffInput.value=p.settings?.finishOff||0; state.fillColor=fillColorInput.value; state.lineColor=lineColorInput.value; state.noProfileFill=!!p.settings?.noProfileFill; state.noProfileLine=!!p.settings?.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=climbColorInput.value; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=parseFloat(startOffInput.value)||0; state.finishOffset=parseFloat(finishOffInput.value)||0; { const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.viewStart=0; state.viewEnd=state.points[state.points.length-1].d; state.projectName = (p.meta && (p.meta.name||p.meta.projectName)) ? (p.meta.name||p.meta.projectName) : 'elevation'; sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois); setButtonsEnabled(true); resetUndo(); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
 exportJsonBtn.addEventListener('click',()=>{ if(!state.points.length) return; const blob=new Blob([JSON.stringify(projectState())],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=exportName('json'); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
 importJsonInput.addEventListener('change', async e=>{ try{ const f=e.target.files[0]; if(!f) return; const text=await f.text(); const data=JSON.parse(text); applyProject(data); }catch(_){ alert('Import failed'); } });
@@ -1466,6 +1487,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     segments: [],         // [ [{lat, lon, ele}, ...], ... ]
     track: [],            // concatenated [{lat, lon, ele, d, segIdx}]
     undoStack: [],
+    redoStack: [],
     profile: 'fastbike',
     busyCount: 0,
     hoverIdx: null,
@@ -1477,6 +1499,9 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   let dMap = null, dBaseLayer = null, dRouteLine = null, dRouteHit = null, dSelLine = null;
   let dWpMarkers = [], dHoverMarker = null, dPegmanMarker = null;
   let statusToastTimer = null;
+  let svPopupWin = null;
+  let routeDrag = null;
+  let suppressMapClickUntil = 0;
 
   const elMap = document.getElementById('drawMap');
   const elStatus = document.getElementById('drawStatus');
@@ -1487,6 +1512,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   const elExportGpx = document.getElementById('drawExportGpx');
   const elSendPaint = document.getElementById('sendToPaintBtn');
   const elUndo = document.getElementById('drawUndoBtn');
+  const elRedo = document.getElementById('drawRedoBtn');
   const elPop = document.getElementById('drawPopBtn');
   const elRev = document.getElementById('drawReverseBtn');
   const elLoop = document.getElementById('drawLoopBtn');
@@ -1539,6 +1565,10 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     setDrawBasemap(elBasemap.value);
     dMap.on('click', onDrawMapClick);
     dMap.on('mousemove', onDrawMapMove);
+    // Right-click on empty map closes Street View preview
+    dMap.on('contextmenu', ()=>{
+      if(dState.pegman.active) clearPegman();
+    });
   }
 
   function setDrawBasemap(key){
@@ -1603,20 +1633,33 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     return await routeDirect(a, b);
   }
 
-  /* ---- Undo & Track Rebuild ---- */
-  function pushDrawUndo(){
-    dState.undoStack.push({
+  /* ---- Undo / Redo & Track Rebuild ---- */
+  function cloneDrawSnapshot(){
+    return {
       waypoints: JSON.parse(JSON.stringify(dState.waypoints)),
       segments: JSON.parse(JSON.stringify(dState.segments))
-    });
-    if(dState.undoStack.length > 40) dState.undoStack.shift();
+    };
+  }
+  function pushDrawUndo(){
+    dState.undoStack.push(cloneDrawSnapshot());
+    if(dState.undoStack.length > 50) dState.undoStack.shift();
+    dState.redoStack.length = 0;
     updateDrawButtons();
   }
   function undoDraw(){
     if(!dState.undoStack.length) return;
+    dState.redoStack.push(cloneDrawSnapshot());
     const prev = dState.undoStack.pop();
     dState.waypoints = prev.waypoints;
     dState.segments = prev.segments;
+    rebuildDrawTrack();
+  }
+  function redoDraw(){
+    if(!dState.redoStack.length) return;
+    dState.undoStack.push(cloneDrawSnapshot());
+    const next = dState.redoStack.pop();
+    dState.waypoints = next.waypoints;
+    dState.segments = next.segments;
     rebuildDrawTrack();
   }
 
@@ -1646,6 +1689,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     const hasPts = dState.track.length >= 2;
     const hasWp = dState.waypoints.length >= 1;
     elUndo.disabled = !dState.undoStack.length;
+    elRedo.disabled = !dState.redoStack.length;
     elPop.disabled = !hasWp;
     elClear.disabled = !hasWp && !hasPts;
     elRev.disabled = dState.waypoints.length < 2;
@@ -1663,6 +1707,71 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     dSelLine = L.polyline(slice, { color:'#ff2d96', weight:6, opacity:0.95, interactive:false }).addTo(dMap);
   }
 
+  /* ---- Click & Drag directly on the route line to insert a new control point ---- */
+  function startRouteDrag(e){
+    if(e.originalEvent.button !== 0) return;
+    if(dState.pegmanPickMode) return;
+    if(dState.track.length < 2 || dState.waypoints.length < 2) return;
+    L.DomEvent.stopPropagation(e);
+    L.DomEvent.preventDefault(e);
+
+    let bestI = 0, bestD = Infinity;
+    for(let i=0; i<dState.track.length; i++){
+      const d = haversine(e.latlng.lat, e.latlng.lng, dState.track[i].lat, dState.track[i].lon);
+      if(d < bestD){ bestD = d; bestI = i; }
+    }
+    const segIdx = dState.track[bestI].segIdx ?? 0;
+    const insertAt = Math.min(dState.waypoints.length - 1, segIdx + 1);
+    const prevWp = dState.waypoints[insertAt - 1];
+    const nextWp = dState.waypoints[insertAt];
+    if(!prevWp || !nextWp) return;
+
+    dMap.dragging.disable();
+    document.body.classList.add('dragging-route');
+
+    const ghostIcon = L.divIcon({
+      className: '',
+      html: '<div class="wp-dot" style="background:#ff2d96;transform:scale(1.18)"></div>',
+      iconSize: [16,16],
+      iconAnchor: [8,8]
+    });
+    const ghostMarker = L.marker(e.latlng, { icon: ghostIcon, interactive:false, zIndexOffset:950 }).addTo(dMap);
+    const rubberLine = L.polyline(
+      [[prevWp.lat, prevWp.lon], [e.latlng.lat, e.latlng.lng], [nextWp.lat, nextWp.lon]],
+      { color:'#ff2d96', weight:2.5, dashArray:'6 6', opacity:0.88, interactive:false }
+    ).addTo(dMap);
+
+    routeDrag = { segIdx, insertAt, prevWp, nextWp, latlng: e.latlng, ghostMarker, rubberLine };
+  }
+
+  window.addEventListener('mousemove', (ev)=>{
+    if(!routeDrag || !dMap) return;
+    const ll = dMap.mouseEventToLatLng(ev);
+    routeDrag.latlng = ll;
+    routeDrag.ghostMarker.setLatLng(ll);
+    routeDrag.rubberLine.setLatLngs([
+      [routeDrag.prevWp.lat, routeDrag.prevWp.lon],
+      [ll.lat, ll.lng],
+      [routeDrag.nextWp.lat, routeDrag.nextWp.lon]
+    ]);
+  });
+
+  window.addEventListener('mouseup', async ()=>{
+    if(!routeDrag) return;
+    const drag = routeDrag;
+    routeDrag = null;
+    dMap.dragging.enable();
+    document.body.classList.remove('dragging-route');
+    drag.ghostMarker.remove();
+    drag.rubberLine.remove();
+    suppressMapClickUntil = Date.now() + 260;
+
+    pushDrawUndo();
+    dState.waypoints.splice(drag.insertAt, 0, { lat: drag.latlng.lat, lon: drag.latlng.lng });
+    dState.segments.splice(drag.segIdx, 1, [], []);
+    await rerouteAround(drag.insertAt);
+  });
+
   function renderDrawMapLayers(){
     if(!dMap) return;
     if(dRouteLine){ dRouteLine.remove(); dRouteLine = null; }
@@ -1673,15 +1782,14 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     if(dState.track.length >= 2){
       const latlngs = dState.track.map(p=>[p.lat, p.lon]);
       dRouteLine = L.polyline(latlngs, { color:'#0284c7', weight:4.5, opacity:0.92, interactive:false }).addTo(dMap);
-      dRouteHit = L.polyline(latlngs, { color:'#000', weight:16, opacity:0, interactive:true }).addTo(dMap);
+      dRouteHit = L.polyline(latlngs, { color:'#000', weight:18, opacity:0, interactive:true, className:'route-drag-hit' }).addTo(dMap);
+      dRouteHit.on('mousedown', startRouteDrag);
       dRouteHit.on('click', (e)=>{
         L.DomEvent.stopPropagation(e);
         if(dState.pegmanPickMode){
           setPegmanPickMode(false);
           dropPegmanAt(e.latlng);
-          return;
         }
-        insertWaypointOnRoute(e.latlng);
       });
     }
 
@@ -1708,6 +1816,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   }
 
   async function onDrawMapClick(e){
+    if(Date.now() < suppressMapClickUntil) return;
     if(dState.pegmanPickMode){
       setPegmanPickMode(false);
       dropPegmanAt(e.latlng);
@@ -1744,21 +1853,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     } finally { popBusy(); }
   }
 
-  async function insertWaypointOnRoute(latlng){
-    if(!dState.track.length || dState.waypoints.length < 2) return;
-    let bestI = 0, bestD = Infinity;
-    for(let i=0; i<dState.track.length; i++){
-      const d = haversine(latlng.lat, latlng.lng, dState.track[i].lat, dState.track[i].lon);
-      if(d < bestD){ bestD = d; bestI = i; }
-    }
-    const segIdx = dState.track[bestI].segIdx ?? 0;
-    const insertAt = Math.min(dState.waypoints.length - 1, segIdx + 1);
-    pushDrawUndo();
-    dState.waypoints.splice(insertAt, 0, { lat:latlng.lat, lon:latlng.lng });
-    dState.segments.splice(segIdx, 1, [], []);
-    await rerouteAround(insertAt);
-  }
-
   async function removeWaypointAt(idx){
     pushDrawUndo();
     dState.waypoints.splice(idx, 1);
@@ -1787,7 +1881,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   function computeStats(track){
     if(track.length < 2) return { distKm:0, gain:0, loss:0, maxEle:null };
     const distKm = track[track.length-1].d / 1000;
-    // Light 25 m smoothing + 1.5 m threshold so short climbs are preserved
     const sm = movingAverage(track.map(p=>p.ele), 25, track.map(p=>p.d));
     let gain = 0, loss = 0, ref = sm[0], maxEle = -Infinity;
     for(let i=0; i<sm.length; i++){
@@ -1839,7 +1932,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       const g = localGradeAt(dState.hoverIdx);
       elHoverReadout.textContent = `km ${(p.d/1000).toFixed(2)} · ${Math.round(p.ele)} m · ${formatGradeNoPlus(g)}`;
     } else {
-      elHoverReadout.textContent = 'Trascina sul profilo per misurare un tratto';
+      elHoverReadout.textContent = 'Clic: Street View · Trascina: misura · Clic dx: chiudi';
     }
   }
 
@@ -1878,7 +1971,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     const ph = h - pad.t - pad.b;
     const dMax = Math.max(1, dState.track[dState.track.length-1].d);
 
-    // Tight vertical scaling (10 m steps, small padding) so short/low climbs remain clearly visible
     const [rawMin, rawMax] = minMax(dState.track.map(p=>p.ele));
     const rawSpan = Math.max(15, rawMax - rawMin);
     const padE = Math.max(4, rawSpan * 0.08);
@@ -1908,7 +2000,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       ctx.fillText(km + ' km', x, h - 6);
     }
 
-    // Area fill (raw elevation, zero visual over-smoothing)
+    // Area fill
     const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ph);
     grad.addColorStop(0, 'rgba(14,165,233,0.28)');
     grad.addColorStop(1, 'rgba(14,165,233,0.03)');
@@ -1986,7 +2078,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     }
   }
 
-  // Tighter 40 m (±20 m) window for instant grade so short ramps show accurately
   function localGradeAt(idx){
     const tr = dState.track;
     if(tr.length < 2) return 0;
@@ -2068,17 +2159,12 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     if(elCanvas.hasPointerCapture?.(e.pointerId)) elCanvas.releasePointerCapture(e.pointerId);
 
     if(!drag.dragging){
-      if(dState.selection){
-        dState.selection = null;
-        updateSelectionMapOverlay();
-        drawElevCanvas();
-        updateReadout();
-      }
+      // Left click on elevation chart always opens/refocuses Street View on the clicked point
       const p = dState.track[drag.anchorIdx];
       if(p){
         const ll = L.latLng(p.lat, p.lon);
         if(dMap) dMap.panTo(ll);
-        if(dState.pegman.active) dropPegmanAt(ll);
+        dropPegmanAt(ll);
       }
     } else {
       drawElevCanvas();
@@ -2089,8 +2175,21 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   elCanvas.addEventListener('pointercancel', finishElevDrag);
   elCanvas.addEventListener('pointerleave', ()=>{ if(!elevDrag) setDrawHover(null); });
 
+  // Right-click on elevation preview: remove climb overlay first, else close Street View preview
+  elCanvas.addEventListener('contextmenu', (e)=>{
+    e.preventDefault();
+    if(dState.selection){
+      dState.selection = null;
+      updateSelectionMapOverlay();
+      drawElevCanvas();
+      updateReadout();
+    } else if(dState.pegman.active){
+      clearPegman();
+    }
+  });
+
   function onDrawMapMove(e){
-    if(dState.track.length < 2 || !dMap || elevDrag) return;
+    if(dState.track.length < 2 || !dMap || elevDrag || routeDrag) return;
     const cursorPt = dMap.latLngToContainerPoint(e.latlng);
     let bestI = -1, bestPx = 30;
     const step = Math.max(1, Math.floor(dState.track.length / 800));
@@ -2162,6 +2261,10 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     elSvCard.classList.remove('open');
     dState.pegman.active = false;
     if(dPegmanMarker){ dPegmanMarker.remove(); dPegmanMarker = null; }
+    if(svPopupWin && !svPopupWin.closed){
+      try{ svPopupWin.close(); }catch(_){}
+    }
+    svPopupWin = null;
   }
 
   function setPegmanPickMode(on){
@@ -2177,11 +2280,11 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     const w = 680, h = 520;
     const left = Math.max(0, window.screenX + window.outerWidth - w - 24);
     const top = Math.max(0, window.screenY + 80);
-    const win = window.open(url, 'se_gsv_popup', `width=${w},height=${h},left=${left},top=${top}`);
-    if(!win){
+    svPopupWin = window.open(url, 'se_gsv_popup', `width=${w},height=${h},left=${left},top=${top}`);
+    if(!svPopupWin){
       flashStatus('Popup bloccato dal browser: consenti i popup per localhost e riprova', 4500);
     } else {
-      try{ win.focus(); }catch(_){}
+      try{ svPopupWin.focus(); }catch(_){}
     }
   }
 
@@ -2254,7 +2357,8 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     }
   });
 
-  // Draggable inline card header
+  // Draggable inline card header + right-click to close
+  elSvCard.addEventListener('contextmenu', (e)=>{ e.preventDefault(); clearPegman(); });
   let cardDrag = null;
   elSvHead.addEventListener('pointerdown', (e)=>{
     if(e.target.closest('button')) return;
@@ -2315,6 +2419,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   });
 
   elUndo.addEventListener('click', undoDraw);
+  elRedo.addEventListener('click', redoDraw);
   elPop.addEventListener('click', ()=>{
     if(!dState.waypoints.length) return;
     pushDrawUndo();
@@ -2391,7 +2496,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   function buildGpxXml(track, name){
     const esc = s => String(s||'').replace(/[<>&'"]/g, c=>({ '<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;' }[c]));
     const ptsXml = track.map(p=>`      <trkpt lat="${p.lat.toFixed(6)}" lon="${p.lon.toFixed(6)}"><ele>${(p.ele||0).toFixed(1)}</ele></trkpt>`).join('\n');
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Simple Elevation v2.2" xmlns="http://www.topografix.com/GPX/1/1">\n  <trk>\n    <name>${esc(name||'Percorso')}</name>\n    <trkseg>\n${ptsXml}\n    </trkseg>\n  </trk>\n</gpx>`;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Simple Elevation v2.3" xmlns="http://www.topografix.com/GPX/1/1">\n  <trk>\n    <name>${esc(name||'Percorso')}</name>\n    <trkseg>\n${ptsXml}\n    </trkseg>\n  </trk>\n</gpx>`;
   }
 
   elExportGpx.addEventListener('click', ()=>{
@@ -2454,6 +2559,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       drawElevCanvas();
     },
     undo: undoDraw,
+    redo: redoDraw,
     onEscape(){
       if(dState.selection){
         dState.selection = null;
