@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.4 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.5 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -34,6 +34,8 @@
   .hdr-draw .pink{padding:7px 12px;font-size:12.5px;border-radius:9px}
   .hdr-draw .ghost.danger{color:#b91c1c;border-color:#fecaca}
   .hdr-draw .ghost.danger:hover:not(:disabled){background:#fff5f5}
+  .hdr-draw .ghost.active-toggle{background:#0f172a;color:#fff;border-color:#0f172a;box-shadow:0 2px 8px rgba(15,23,42,.22)}
+  .hdr-draw .ghost.active-toggle:hover:not(:disabled){background:#1e293b;border-color:#1e293b}
 
   .env-view{display:none !important;flex:1 1 auto;min-height:0}
   body.mode-draw #drawView{display:flex !important}
@@ -128,13 +130,14 @@
   .draw-stat span{color:var(--muted);font-size:11.5px}
   .draw-hover-readout{font-size:12px;font-weight:700;color:#0369a1;background:#f0f9ff;border:1px solid #bae6fd;border-radius:999px;padding:2px 11px;min-height:22px;display:inline-flex;align-items:center;gap:6px}
   .draw-hover-readout.selection-active{color:#9d174d;background:#fdf2f8;border-color:#fbcfe8}
-  .draw-elev-canvas-wrap{position:relative;height:146px;width:100%;background:#fff}
+  .draw-elev-canvas-wrap{position:relative;height:164px;width:100%;background:#fff}
   .draw-elev-bar.collapsed .draw-elev-canvas-wrap{display:none}
   #drawElevCanvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
 
   /* Custom Leaflet Waypoint Icons */
   .wp-dot{width:16px;height:16px;border-radius:50%;border:2.5px solid #fff;background:#0ea5e9;box-shadow:0 2px 6px rgba(15,23,42,.38);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800}
   .wp-dot.start{width:20px;height:20px;background:#16a34a}
+  body.draw-prepend-mode .wp-dot.start{box-shadow:0 0 0 4px rgba(22,163,74,.38), 0 2px 6px rgba(15,23,42,.38)}
   .wp-dot.end{width:20px;height:20px;background:#ff2d96}
 
   /* ==================== PAINT ENVIRONMENT (v1.19 preserved) ==================== */
@@ -296,6 +299,7 @@
       <button id="drawUndoBtn" class="ghost" disabled title="Annulla (Ctrl+Z)">↶ Annulla</button>
       <button id="drawRedoBtn" class="ghost" disabled title="Ripeti (Ctrl+Maiusc+Z)">↷ Ripeti</button>
       <button id="drawPopBtn" class="ghost" disabled title="Rimuovi l'ultimo punto inserito">⌫ Ultimo pt</button>
+      <button id="drawPrependBtn" class="ghost" aria-pressed="false" title="Traccia a ritroso: i clic sulla mappa aggiungono punti prima della partenza (A)">⇤ Al contrario</button>
       <button id="drawReverseBtn" class="ghost" disabled title="Inverti senso di marcia">⇄ Inverti</button>
       <button id="drawLoopBtn" class="ghost" disabled title="Chiudi anello al punto di partenza">⟳ Anello</button>
       <button id="drawClearBtn" class="ghost danger" disabled title="Cancella l'intera traccia">🗑 Cancella</button>
@@ -922,11 +926,144 @@ function sortSegArr(arr){ arr.sort((a,b)=>{ const da=state.points[a.startIdx]?st
 function sortPoiArr(arr){ arr.sort((a,b)=>{ const da=state.points[a.idx]?state.points[a.idx].d:0; const db=state.points[b.idx]?state.points[b.idx].d:0; return da-db; }); }
 
 function autoPoiName(idx){ const pt=state.points[idx]; if(pt&&state.namedWaypoints.length){ let best=null,bestD=1e12; for(const w of state.namedWaypoints){ const d=haversine(pt.lat,pt.lon,w.lat,w.lon); if(d<bestD){bestD=d;best=w;} } if(best&&bestD<5000) return best.name; } return ''; }
+function makeSegGeo(startIdx, endIdx, pts=state.points){
+  const a=pts[startIdx], b=pts[endIdx];
+  if(!a||!b) return null;
+  return { startLat:a.lat, startLon:a.lon, endLat:b.lat, endLon:b.lon, spanD:Math.max(0, (b.d||0)-(a.d||0)) };
+}
+function makePoiGeo(idx, pts=state.points){
+  const p=pts[idx];
+  if(!p) return null;
+  return { lat:p.lat, lon:p.lon };
+}
+function ensureAllMarkerGeo(pts=state.points){
+  if(!pts||!pts.length) return;
+  for(const c of state.climbs){ if(!c.geo) c.geo=makeSegGeo(c.startIdx,c.endIdx,pts); }
+  for(const g of state.gravels){ if(!g.geo) g.geo=makeSegGeo(g.startIdx,g.endIdx,pts); }
+  for(const t of state.tunnels){ if(!t.geo) t.geo=makeSegGeo(t.startIdx,t.endIdx,pts); }
+  for(const p of state.pois){ if(!p.geo) p.geo=makePoiGeo(p.idx,pts); }
+}
+function findPassIndicesOn(pts, lat, lon, tolM){
+  const matches=[]; let runMinIdx=-1, runMinD=Infinity, inRun=false;
+  for(let i=0;i<pts.length;i++){
+    const p=pts[i]; const d=haversine(lat,lon,p.lat,p.lon);
+    if(d<=tolM){
+      if(!inRun){ inRun=true; runMinIdx=i; runMinD=d; }
+      else if(d<runMinD){ runMinD=d; runMinIdx=i; }
+    } else if(inRun){
+      matches.push({ idx:runMinIdx, dist:runMinD });
+      inRun=false;
+    }
+  }
+  if(inRun) matches.push({ idx:runMinIdx, dist:runMinD });
+  return matches;
+}
+function remapPoisByGeo(oldPois, oldPts, newPts){
+  const TOL=120;
+  const out=[];
+  const ordered=oldPois.map((p,order)=>({ item:p, order, d:oldPts[p.idx]?.d??0 })).sort((a,b)=>a.d-b.d||a.order-b.order);
+  const groupUsed=new Map();
+  for(const entry of ordered){
+    const p=entry.item;
+    const geo=p.geo || makePoiGeo(p.idx, oldPts);
+    if(!geo) continue;
+    const passes=findPassIndicesOn(newPts, geo.lat, geo.lon, TOL);
+    if(!passes.length) continue;
+    let chosen=null;
+    if(p.group){
+      const used=groupUsed.get(p.group)||[];
+      const avail=passes.filter(pa=>!used.some(uIdx=>Math.abs(newPts[pa.idx].d-newPts[uIdx].d)<150));
+      if(!avail.length) continue;
+      chosen=avail[0];
+      used.push(chosen.idx);
+      groupUsed.set(p.group, used);
+    } else {
+      chosen=passes.reduce((best,cur)=>cur.dist<best.dist?cur:best, passes[0]);
+    }
+    const copy={ ...p, idx:chosen.idx, geo:{ lat:newPts[chosen.idx].lat, lon:newPts[chosen.idx].lon } };
+    delete copy.__focus;
+    out.push(copy);
+  }
+  return out;
+}
+function remapSegmentsByGeo(oldSegs, oldPts, newPts, rejectOverlap=false){
+  const TOL=150;
+  const out=[];
+  const ordered=oldSegs.map((s,order)=>({ item:s, order, d:oldPts[s.startIdx]?.d??0 })).sort((a,b)=>a.d-b.d||a.order-b.order);
+  const groupUsed=new Map();
+  for(const entry of ordered){
+    const seg=entry.item;
+    const geo=seg.geo || makeSegGeo(seg.startIdx, seg.endIdx, oldPts);
+    if(!geo) continue;
+    const sPasses=findPassIndicesOn(newPts, geo.startLat, geo.startLon, TOL);
+    const ePasses=findPassIndicesOn(newPts, geo.endLat, geo.endLon, TOL);
+    if(!sPasses.length || !ePasses.length) continue;
+
+    let pairs=[];
+    if(sPasses.length===1 && ePasses.length===1 && ePasses[0].idx>sPasses[0].idx){
+      const s=sPasses[0], e=ePasses[0];
+      pairs.push({ sIdx:s.idx, eIdx:e.idx, spanErr:Math.abs((newPts[e.idx].d-newPts[s.idx].d)-geo.spanD), geoErr:s.dist+e.dist });
+    } else {
+      const maxSpanErr=Math.max(geo.spanD*0.55, 600);
+      for(const s of sPasses){
+        let bestE=null, bestScore=Infinity;
+        for(const e of ePasses){
+          if(e.idx<=s.idx) continue;
+          const spanErr=Math.abs((newPts[e.idx].d-newPts[s.idx].d)-geo.spanD);
+          if(spanErr<=maxSpanErr){
+            const score=spanErr + (s.dist+e.dist)*2;
+            if(score<bestScore){ bestScore=score; bestE={ sIdx:s.idx, eIdx:e.idx, spanErr, geoErr:s.dist+e.dist }; }
+          }
+        }
+        if(bestE) pairs.push(bestE);
+      }
+      if(!pairs.length){
+        // Fallback: closest forward pair if the climb itself was significantly shortened/lengthened
+        for(const s of sPasses){
+          const nextE=ePasses.find(e=>e.idx>s.idx);
+          if(nextE) pairs.push({ sIdx:s.idx, eIdx:nextE.idx, spanErr:Math.abs((newPts[nextE.idx].d-newPts[s.idx].d)-geo.spanD), geoErr:s.dist+nextE.dist });
+        }
+      }
+    }
+    if(!pairs.length) continue;
+
+    let chosen=null;
+    if(seg.group){
+      const used=groupUsed.get(seg.group)||[];
+      const avail=pairs.filter(pr=>!used.some(u=>Math.abs(newPts[pr.sIdx].d-newPts[u.sIdx].d)<200 && Math.abs(newPts[pr.eIdx].d-newPts[u.eIdx].d)<200));
+      if(!avail.length) continue;
+      avail.sort((a,b)=>a.sIdx-b.sIdx);
+      chosen=avail[0];
+      used.push(chosen);
+      groupUsed.set(seg.group, used);
+    } else {
+      pairs.sort((a,b)=>(a.spanErr+a.geoErr*2)-(b.spanErr+b.geoErr*2));
+      chosen=pairs[0];
+    }
+    if(rejectOverlap && out.some(t=>chosen.sIdx<t.endIdx && chosen.eIdx>t.startIdx)) continue;
+    const copy={
+      ...seg,
+      startIdx:chosen.sIdx,
+      endIdx:chosen.eIdx,
+      geo:{
+        startLat:newPts[chosen.sIdx].lat,
+        startLon:newPts[chosen.sIdx].lon,
+        endLat:newPts[chosen.eIdx].lat,
+        endLon:newPts[chosen.eIdx].lon,
+        spanD:Math.max(0, newPts[chosen.eIdx].d-newPts[chosen.sIdx].d)
+      }
+    };
+    delete copy.__focus;
+    out.push(copy);
+  }
+  return out;
+}
+
 function addClimbSel(startIdx,endIdx){
   pushUndo();
   const occ=buildSegmentOccurrences(startIdx,endIdx);
   const gid=occ.length>1?newGroupId():null; let focusObj=null;
-  occ.forEach(o=>{ const it={startIdx:o.startIdx,endIdx:o.endIdx,name:'',offsetY:8,group:gid}; state.climbs.push(it); if(o.startIdx===startIdx) focusObj=it; });
+  occ.forEach(o=>{ const it={startIdx:o.startIdx,endIdx:o.endIdx,name:'',offsetY:8,group:gid,geo:makeSegGeo(o.startIdx,o.endIdx)}; state.climbs.push(it); if(o.startIdx===startIdx) focusObj=it; });
   if(focusObj) focusObj.__focus=true;
   sortSegArr(state.climbs);
 }
@@ -934,7 +1071,7 @@ function addGravelSel(startIdx,endIdx){
   pushUndo();
   const occ=buildSegmentOccurrences(startIdx,endIdx);
   const gid=occ.length>1?newGroupId():null; let focusObj=null;
-  occ.forEach(o=>{ const it={startIdx:o.startIdx,endIdx:o.endIdx,name:'',offsetY:8,group:gid}; state.gravels.push(it); if(o.startIdx===startIdx) focusObj=it; });
+  occ.forEach(o=>{ const it={startIdx:o.startIdx,endIdx:o.endIdx,name:'',offsetY:8,group:gid,geo:makeSegGeo(o.startIdx,o.endIdx)}; state.gravels.push(it); if(o.startIdx===startIdx) focusObj=it; });
   if(focusObj) focusObj.__focus=true;
   sortSegArr(state.gravels);
 }
@@ -944,7 +1081,7 @@ function addTunnelSel(startIdx,endIdx){
   if(!available.some(o=>o.startIdx===startIdx&&o.endIdx===endIdx)) return false;
   pushUndo();
   const gid=available.length>1?newGroupId():null;
-  for(const o of available){ state.tunnels.push({startIdx:o.startIdx,endIdx:o.endIdx,name:'',group:gid}); }
+  for(const o of available){ state.tunnels.push({startIdx:o.startIdx,endIdx:o.endIdx,name:'',group:gid,geo:makeSegGeo(o.startIdx,o.endIdx)}); }
   sortSegArr(state.tunnels);
   return true;
 }
@@ -952,7 +1089,7 @@ function addPoiSel(idx){
   pushUndo();
   const wpName=autoPoiName(idx); const occ=buildPoiOccurrences(idx);
   const gid=occ.length>1?newGroupId():null; let focusObj=null; const created=[];
-  occ.forEach(i=>{ const it={idx:i,name:wpName||'',offsetY:8,group:gid}; state.pois.push(it); created.push(it); if(i===idx) focusObj=it; });
+  occ.forEach(i=>{ const it={idx:i,name:wpName||'',offsetY:8,group:gid,geo:makePoiGeo(i)}; state.pois.push(it); created.push(it); if(i===idx) focusObj=it; });
   if(focusObj) focusObj.__focus=true;
   sortPoiArr(state.pois);
   if(state.poiAutofillComune && !wpName){ const pt=state.points[idx]; if(pt){ queueComune(pt.lat,pt.lon,(nm)=>{ if(!nm) return; let changed=false; created.forEach(it=>{ if(!it.name){ it.name=nm; changed=true; } }); if(changed){ renderPoiList(); refreshMapOverlays(); draw(); } }); } }
@@ -1238,9 +1375,24 @@ function draw(){
   else if(mapCursor && state.points[0]) updateMapCursorAtIndex(0);
 }
 
-/* Shared Bridge: load raw [{lat,lon,ele}] into PAINT */
-function loadPointsIntoPaint(rawPts, namedWaypoints=[], projectName='elevation'){
-  if(!rawPts || rawPts.length < 2) return;
+/* Shared Bridge: load raw [{lat,lon,ele}] into PAINT (optionally preserving geo-anchored markers) */
+function loadPointsIntoPaint(rawPts, namedWaypoints=[], projectName='elevation', opts={}){
+  if(!rawPts || rawPts.length < 2) return { totalOld:0, kept:0 };
+  const preserve = !!opts.preserveMarkers && state.points.length >= 2;
+  const oldPts = preserve ? state.points : null;
+  const oldClimbs = preserve ? state.climbs : [];
+  const oldPois = preserve ? state.pois : [];
+  const oldGravels = preserve ? state.gravels : [];
+  const oldTunnels = preserve ? state.tunnels : [];
+  const totalOld = oldClimbs.length + oldPois.length + oldGravels.length + oldTunnels.length;
+  const oldStartLabel = preserve ? startLabel.value.trim() : '';
+  const oldFinishLabel = preserve ? finishLabel.value.trim() : '';
+
+  if(preserve){
+    ensureAllMarkerGeo(oldPts);
+    pushUndo();
+  }
+
   const pts=[]; let dCum=0;
   for(let i=0;i<rawPts.length;i++){
     const lat=rawPts[i].lat, lon=rawPts[i].lon, ele=Number.isFinite(rawPts[i].ele)?rawPts[i].ele:0;
@@ -1253,15 +1405,36 @@ function loadPointsIntoPaint(rawPts, namedWaypoints=[], projectName='elevation')
   pts.forEach((p,i)=>p.eleS=Number.isFinite(sm[i])?sm[i]:p.ele);
   const [mn,mx]=minMax(pts.map(p=>p.eleS));
   state.minEle=mn; state.maxEle=mx;
-  state.points=pts; state.tunnels=[]; state.climbs=[]; state.pois=[]; state.gravels=[];
+  state.points=pts;
+
+  let kept = 0;
+  if(preserve && totalOld > 0){
+    state.climbs = remapSegmentsByGeo(oldClimbs, oldPts, pts, false);
+    state.gravels = remapSegmentsByGeo(oldGravels, oldPts, pts, false);
+    state.tunnels = remapSegmentsByGeo(oldTunnels, oldPts, pts, true);
+    state.pois = remapPoisByGeo(oldPois, oldPts, pts);
+    sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois);
+    kept = state.climbs.length + state.gravels.length + state.tunnels.length + state.pois.length;
+  } else {
+    state.tunnels=[]; state.climbs=[]; state.pois=[]; state.gravels=[];
+  }
+
   state.hoverIndex=null; state.profileElevations=[];
   state.viewStart=0; state.viewEnd=pts[pts.length-1].d;
   state.namedWaypoints=namedWaypoints||[];
   state.projectName=(projectName||'elevation').trim()||'elevation';
-  startLabel.value=''; finishLabel.value='';
-  setButtonsEnabled(true); resetUndo();
+
+  // Keep custom start/finish labels if geographic endpoints stayed within 500 m
+  const keepStart = preserve && oldStartLabel && oldPts.length && haversine(oldPts[0].lat, oldPts[0].lon, pts[0].lat, pts[0].lon) <= 500;
+  const keepFinish = preserve && oldFinishLabel && oldPts.length && haversine(oldPts[oldPts.length-1].lat, oldPts[oldPts.length-1].lon, pts[pts.length-1].lat, pts[pts.length-1].lon) <= 500;
+  startLabel.value = keepStart ? oldStartLabel : '';
+  finishLabel.value = keepFinish ? oldFinishLabel : '';
+
+  setButtonsEnabled(true);
+  if(!preserve) resetUndo();
   buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList();
   draw(); autofillEndpointLabels();
+  return { totalOld, kept };
 }
 
 async function loadTextAsXml(text){ const xml=new DOMParser().parseFromString(text,'application/xml'); if(xml.querySelector('parsererror')) throw new Error('XML parse error'); return xml; }
@@ -1624,7 +1797,7 @@ refreshPresetList();
 
 /* JSON I/O */
 function projectState(){ return { meta:{version:'2.3.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ vExag:state.vExag, yStep:parseInt(yStepSel.value,10), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
-function applyProject(p){ if(!p||!p.points) return; state.points=p.points; state.climbs=p.climbs||[]; state.pois=p.pois||[]; state.gravels=p.gravels||[]; state.tunnels=(p.tunnels||[]).filter(t=>Number.isInteger(t.startIdx)&&Number.isInteger(t.endIdx)&&t.startIdx>=0&&t.endIdx<state.points.length&&t.endIdx>t.startIdx); state.hoverIndex=null; state.profileElevations=[]; startLabel.value=p.labels?.start||'START'; finishLabel.value=p.labels?.finish||'FINISH'; state.vExag=p.settings?.vExag||state.vExag; vExagInput.value=state.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.settings?.yStep||200); smoothInput.value=p.settings?.smooth||500; tickInput.value=p.settings?.tick||10; fillColorInput.value=p.settings?.fill||state.fillColor; lineColorInput.value=p.settings?.line||state.lineColor; climbColorInput.value=p.settings?.climbLine||state.climbColor; climbFillColorInput.value=p.settings?.climbFill||state.climbFillColor; climbOverlayModeSel.value=((p.settings?.climbOverlayMode==='avggrade'||p.settings?.climbOverlayMode==='solid')?p.settings?.climbOverlayMode:(state.climbOverlayMode||'solid')); startOffInput.value=p.settings?.startOff||0; finishOffInput.value=p.settings?.finishOff||0; state.fillColor=fillColorInput.value; state.lineColor=lineColorInput.value; state.noProfileFill=!!p.settings?.noProfileFill; state.noProfileLine=!!p.settings?.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=climbColorInput.value; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=parseFloat(startOffInput.value)||0; state.finishOffset=parseFloat(finishOffInput.value)||0; { const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.viewStart=0; state.viewEnd=state.points[state.points.length-1].d; state.projectName = (p.meta && (p.meta.name||p.meta.projectName)) ? (p.meta.name||p.meta.projectName) : 'elevation'; sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois); setButtonsEnabled(true); resetUndo(); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
+function applyProject(p){ if(!p||!p.points) return; state.points=p.points; state.climbs=p.climbs||[]; state.pois=p.pois||[]; state.gravels=p.gravels||[]; state.tunnels=(p.tunnels||[]).filter(t=>Number.isInteger(t.startIdx)&&Number.isInteger(t.endIdx)&&t.startIdx>=0&&t.endIdx<state.points.length&&t.endIdx>t.startIdx); state.hoverIndex=null; state.profileElevations=[]; startLabel.value=p.labels?.start||'START'; finishLabel.value=p.labels?.finish||'FINISH'; state.vExag=p.settings?.vExag||state.vExag; vExagInput.value=state.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.settings?.yStep||200); smoothInput.value=p.settings?.smooth||500; tickInput.value=p.settings?.tick||10; fillColorInput.value=p.settings?.fill||state.fillColor; lineColorInput.value=p.settings?.line||state.lineColor; climbColorInput.value=p.settings?.climbLine||state.climbColor; climbFillColorInput.value=p.settings?.climbFill||state.climbFillColor; climbOverlayModeSel.value=((p.settings?.climbOverlayMode==='avggrade'||p.settings?.climbOverlayMode==='solid')?p.settings?.climbOverlayMode:(state.climbOverlayMode||'solid')); startOffInput.value=p.settings?.startOff||0; finishOffInput.value=p.settings?.finishOff||0; state.fillColor=fillColorInput.value; state.lineColor=lineColorInput.value; state.noProfileFill=!!p.settings?.noProfileFill; state.noProfileLine=!!p.settings?.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=climbColorInput.value; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=parseFloat(startOffInput.value)||0; state.finishOffset=parseFloat(finishOffInput.value)||0; { const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.viewStart=0; state.viewEnd=state.points[state.points.length-1].d; state.projectName = (p.meta && (p.meta.name||p.meta.projectName)) ? (p.meta.name||p.meta.projectName) : 'elevation'; sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois); ensureAllMarkerGeo(state.points); setButtonsEnabled(true); resetUndo(); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
 exportJsonBtn.addEventListener('click',()=>{ if(!state.points.length) return; const blob=new Blob([JSON.stringify(projectState())],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=exportName('json'); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
 importJsonInput.addEventListener('change', async e=>{
   try{
@@ -1664,6 +1837,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     busyCount: 0,
     hoverIdx: null,
     selection: null,      // { a, b } indices into dState.track
+    prependMode: false,   // true = traccia a ritroso prima della partenza (A)
     pegmanPickMode: false,
     pegman: { lat:null, lon:null, heading:0, active:false }
   };
@@ -1686,6 +1860,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   const elUndo = document.getElementById('drawUndoBtn');
   const elRedo = document.getElementById('drawRedoBtn');
   const elPop = document.getElementById('drawPopBtn');
+  const elPrepend = document.getElementById('drawPrependBtn');
   const elRev = document.getElementById('drawReverseBtn');
   const elLoop = document.getElementById('drawLoopBtn');
   const elClear = document.getElementById('drawClearBtn');
@@ -1987,6 +2162,24 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     });
   }
 
+  function setPrependMode(on, silent=false){
+    dState.prependMode = !!on;
+    elPrepend.classList.toggle('active-toggle', dState.prependMode);
+    elPrepend.setAttribute('aria-pressed', String(dState.prependMode));
+    document.body.classList.toggle('draw-prepend-mode', dState.prependMode);
+    elPop.title = dState.prependMode
+      ? "Rimuovi il punto iniziale (appena aggiunto a ritroso)"
+      : "Rimuovi l'ultimo punto inserito";
+    if(!silent){
+      flashStatus(
+        dState.prependMode
+          ? "Modalità Al contrario attiva: i clic aggiungono tratti prima della partenza (A)"
+          : "Modalità normale: i clic proseguono dopo l'arrivo (B)",
+        2800
+      );
+    }
+  }
+
   async function onDrawMapClick(e){
     if(Date.now() < suppressMapClickUntil) return;
     if(dState.pegmanPickMode){
@@ -1996,16 +2189,34 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     }
     pushDrawUndo();
     const wp = { lat:e.latlng.lat, lon:e.latlng.lng };
-    dState.waypoints.push(wp);
-    if(dState.waypoints.length === 1){
+    if(dState.waypoints.length === 0){
+      dState.waypoints.push(wp);
       rebuildDrawTrack();
       return;
     }
-    const prev = dState.waypoints[dState.waypoints.length - 2];
+    if(dState.prependMode){
+      const oldFirst = dState.waypoints[0];
+      dState.waypoints.unshift(wp);
+      const placeholder = [];
+      dState.segments.unshift(placeholder);
+      pushBusy('Calcolo tratto a ritroso…');
+      try{
+        const seg = await routeSegment(wp, oldFirst, dState.profile);
+        const sIdx = dState.segments.indexOf(placeholder);
+        if(sIdx !== -1) dState.segments[sIdx] = seg;
+        rebuildDrawTrack();
+      } finally { popBusy(); }
+      return;
+    }
+    const prev = dState.waypoints[dState.waypoints.length - 1];
+    dState.waypoints.push(wp);
+    const placeholder = [];
+    dState.segments.push(placeholder);
     pushBusy('Calcolo tratto…');
     try{
       const seg = await routeSegment(prev, wp, dState.profile);
-      dState.segments.push(seg);
+      const sIdx = dState.segments.indexOf(placeholder);
+      if(sIdx !== -1) dState.segments[sIdx] = seg;
       rebuildDrawTrack();
     } finally { popBusy(); }
   }
@@ -2138,7 +2349,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       return;
     }
 
-    const pad = { l:46, r:16, t:14, b:22 };
+    const pad = { l:46, r:16, t:34, b:22 };
     const pw = w - pad.l - pad.r;
     const ph = h - pad.t - pad.b;
     const dMax = Math.max(1, dState.track[dState.track.length-1].d);
@@ -2237,27 +2448,36 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
     }
 
-    // Selection tooltip pill drawn LAST so it is always on top of the pink vertical line
+    // Selection tooltip pill drawn in dedicated free space ABOVE the elevation chart (never overlaps the curve)
     if(selPill){
       const { sel: sInfo, xA, xB } = selPill;
       const label = formatSelectionText(sInfo);
       ctx.save();
       ctx.font = '700 12px Inter, sans-serif';
       const tw = ctx.measureText(label).width;
-      const bw = tw + 18, bh = 23;
-      const bx = Math.max(pad.l + 4, Math.min(w - pad.r - bw - 4, (xA + xB)/2 - bw/2));
-      const by = pad.t + 4;
+      const bw = tw + 18, bh = 22;
+      const selMidX = (xA + xB) / 2;
+      const bx = Math.max(pad.l + 2, Math.min(w - pad.r - bw - 2, selMidX - bw/2));
+      const by = 4;
+      const ptrX = Math.max(bx + 9, Math.min(bx + bw - 9, selMidX));
+
       ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
       ctx.beginPath();
       if(ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 7);
       else ctx.rect(bx, by, bw, bh);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+
+      // Small pointer caret below the pill pointing down toward the selected range (stays above pad.t)
+      ctx.beginPath();
+      ctx.moveTo(ptrX - 4.5, by + bh - 0.5);
+      ctx.lineTo(ptrX + 4.5, by + bh - 0.5);
+      ctx.lineTo(ptrX, by + bh + 4.5);
+      ctx.closePath();
+      ctx.fill();
+
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
-      ctx.fillText(label, bx + bw/2, by + 15.5);
+      ctx.fillText(label, bx + bw/2, by + 15);
       ctx.restore();
     }
   }
@@ -2614,11 +2834,17 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
 
   elUndo.addEventListener('click', undoDraw);
   elRedo.addEventListener('click', redoDraw);
+  elPrepend.addEventListener('click', ()=> setPrependMode(!dState.prependMode));
   elPop.addEventListener('click', ()=>{
     if(!dState.waypoints.length) return;
     pushDrawUndo();
-    dState.waypoints.pop();
-    if(dState.segments.length) dState.segments.pop();
+    if(dState.prependMode){
+      dState.waypoints.shift();
+      if(dState.segments.length) dState.segments.shift();
+    } else {
+      dState.waypoints.pop();
+      if(dState.segments.length) dState.segments.pop();
+    }
     rebuildDrawTrack();
   });
   elClear.addEventListener('click', ()=>{
@@ -2725,22 +2951,26 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     finally { elImportGpx.value = ''; }
   });
 
-  /* ---- Bridge: Send DRAW route directly to PAINT ---- */
+  /* ---- Bridge: Send DRAW route directly to PAINT (preserving geo-anchored markers) ---- */
   elSendPaint.addEventListener('click', ()=>{
     if(dState.track.length < 2) return;
-    if(state.climbs.length || state.pois.length || state.gravels.length || state.tunnels.length){
-      if(!confirm('Sostituire la traccia in PAINT? Le marcature esistenti (salite/POI/sterrati/tunnel) verranno azzerate.')) return;
-    }
     const routeName = elRouteName.value.trim() || 'percorso';
     const rawPts = dState.track.map(p=>({ lat:p.lat, lon:p.lon, ele:p.ele }));
     switchEnv('paint');
     requestAnimationFrame(()=>{
-      loadPointsIntoPaint(rawPts, [], routeName);
+      const res = loadPointsIntoPaint(rawPts, [], routeName, { preserveMarkers: true });
       if(map){
         map.invalidateSize();
         if(routeLayer){ const b = routeLayer.getBounds(); if(b.isValid()) map.fitBounds(b.pad(0.05)); }
       }
       requestAnimationFrame(()=> draw());
+      if(res && res.totalOld > 0){
+        const dropped = res.totalOld - res.kept;
+        const msg = dropped === 0
+          ? `Traccia aggiornata in PAINT · ${res.kept}/${res.totalOld} marcatori mantenuti sul territorio`
+          : `Traccia aggiornata in PAINT · ${res.kept}/${res.totalOld} marcatori mantenuti (${dropped} fuori percorso)`;
+        window.showAppToast?.(msg, 3800);
+      }
     });
   });
 
@@ -2763,7 +2993,8 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
         return;
       }
       if(dState.pegmanPickMode){ setPegmanPickMode(false); return; }
-      if(dState.pegman.active) clearPegman();
+      if(dState.pegman.active){ clearPegman(); return; }
+      if(dState.prependMode){ setPrependMode(false); }
     },
     getExportData(){
       if(dState.track.length < 2) return null;
@@ -3490,6 +3721,8 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       elArchImportJson.value = '';
     }
   });
+
+  window.showAppToast = showToast;
 
   window.TrackArchive = {
     openSaveModal,
