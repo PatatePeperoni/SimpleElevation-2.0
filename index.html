@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.0 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.1 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -119,10 +119,11 @@
   .draw-stat{display:inline-flex;align-items:baseline;gap:4px}
   .draw-stat strong{font-family:Montserrat,Inter,sans-serif;font-weight:800;font-size:13.5px;color:#0f172a}
   .draw-stat span{color:var(--muted);font-size:11.5px}
-  .draw-hover-readout{font-size:12px;font-weight:600;color:#0369a1;background:#f0f9ff;border:1px solid #bae6fd;border-radius:999px;padding:2px 10px;min-height:22px;display:inline-flex;align-items:center}
-  .draw-elev-canvas-wrap{position:relative;height:112px;width:100%;background:#fff}
+  .draw-hover-readout{font-size:12px;font-weight:600;color:#0369a1;background:#f0f9ff;border:1px solid #bae6fd;border-radius:999px;padding:2px 10px;min-height:22px;display:inline-flex;align-items:center;gap:6px}
+  .draw-hover-readout.selection-active{color:#9d174d;background:#fdf2f8;border-color:#fbcfe8}
+  .draw-elev-canvas-wrap{position:relative;height:118px;width:100%;background:#fff}
   .draw-elev-bar.collapsed .draw-elev-canvas-wrap{display:none}
-  #drawElevCanvas{display:block;width:100%;height:100%;cursor:crosshair}
+  #drawElevCanvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
 
   /* Custom Leaflet Waypoint Icons */
   .wp-dot{width:16px;height:16px;border-radius:50%;border:2.5px solid #fff;background:#0ea5e9;box-shadow:0 2px 6px rgba(15,23,42,.38);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800}
@@ -220,7 +221,7 @@
     <button id="sendToPaintBtn" class="pink" disabled>Invia a PAINT →</button>
   </div>
 
-  <!-- Header controls for PAINT (v1.19 preserved) -->
+  <!-- Header controls for PAINT -->
   <div class="hdr-mode hdr-paint">
     <div class="hdr-fields">
       <div class="hdr-item"><label for="gpx">Upload GPX</label><input id="gpx" type="file" accept=".gpx,.GPX" /></div>
@@ -267,10 +268,13 @@
           <div>
             <label for="drawBasemap">Mappa</label>
             <select id="drawBasemap">
-              <option value="CyclOSM" selected>CyclOSM</option>
+              <option value="GoogleStreets" selected>Google Strade</option>
+              <option value="GoogleTerrain">Google Terreno</option>
+              <option value="GoogleHybrid">Google Satellite</option>
+              <option value="CyclOSM">CyclOSM</option>
               <option value="OSM">OpenStreetMap</option>
               <option value="OpenTopoMap">OpenTopoMap</option>
-              <option value="EsriSat">Satellite</option>
+              <option value="EsriSat">Satellite Esri</option>
             </select>
           </div>
         </div>
@@ -283,7 +287,7 @@
         <button id="drawClearBtn" class="ghost" disabled style="color:#b91c1c;border-color:#fecaca">🗑 Cancella traccia</button>
         <div class="draw-tip">
           <strong>Clic mappa:</strong> aggiungi punto · <strong>Trascina pallino:</strong> sposta · <strong>Clic destro pallino:</strong> elimina · <strong>Clic linea blu:</strong> inserisci punto.<br>
-          <strong>Omino giallo:</strong> trascinalo sulla mappa (o cliccalo) per vedere la foto della strada.
+          <strong>Altimetria:</strong> trascina per misurare lunghezza e pendenza media.
         </div>
       </div>
     </aside>
@@ -369,7 +373,7 @@
   </svg>
 </div>
 
-<!-- ==================== ENVIRONMENT 2: PAINT (v1.19 intact) ==================== -->
+<!-- ==================== ENVIRONMENT 2: PAINT ==================== -->
 <div class="layout env-view" id="layout">
   <div class="col col-left">
     <section class="card" style="height:100%">
@@ -434,10 +438,13 @@
           <div class="basemap-picker" style="margin:8px 0 10px 0; display:flex; align-items:center; gap:8px;">
             <label for="basemap-select" style="font-weight:600;margin:0">Basemap:</label>
             <select id="basemap-select">
+              <option value="GoogleStreets">Google Strade</option>
+              <option value="GoogleTerrain">Google Terreno</option>
+              <option value="GoogleHybrid">Google Satellite</option>
               <option value="OSM" selected>OpenStreetMap</option>
               <option value="CyclOSM">CyclOSM</option>
               <option value="OpenTopoMap">OpenTopoMap</option>
-              <option value="EsriSat">Satellite</option>
+              <option value="EsriSat">Satellite Esri</option>
             </select>
           </div>
           <div id="tileHint" class="muted" style="display:none;margin-top:4px">Se la mappa non si carica apri questo HTML tramite un server locale (http://localhost), perché i fornitori di mappe possono bloccare le richieste da file://.</div>
@@ -560,6 +567,15 @@ const tabDraw = document.getElementById('tabDraw');
 const tabPaint = document.getElementById('tabPaint');
 
 function makeSharedBaseLayer(key){
+  if(key==='GoogleStreets') return L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{
+    maxZoom:20, subdomains:['0','1','2','3'], attribution:'&copy; Google'
+  });
+  if(key==='GoogleTerrain') return L.tileLayer('https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',{
+    maxZoom:20, subdomains:['0','1','2','3'], attribution:'&copy; Google'
+  });
+  if(key==='GoogleHybrid') return L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{
+    maxZoom:20, subdomains:['0','1','2','3'], attribution:'&copy; Google'
+  });
   if(key==='CyclOSM') return L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',{
     maxZoom:20, attribution:'&copy; OpenStreetMap contributors, CyclOSM'
   });
@@ -693,7 +709,6 @@ function nearestIndexOnMap(lat,lng){
   possible.sort((a,b)=>Math.abs(state.points[a.i].d-target)-Math.abs(state.points[b.i].d-target)||a.meters-b.meters);
   return possible[0].i;
 }
-function nearestIndexByDistance(lat,lng){ let bestI=0, bestD=Infinity; for(let i=0;i<state.points.length;i++){ const p=state.points[i]; const d=haversine(lat,lng,p.lat,p.lon); if(d<bestD){bestD=d; bestI=i;} } return bestI; }
 function nearestIndexByD(dist){ let best=0,d=Infinity; for(let i=0;i<state.points.length;i++){ const di=Math.abs(state.points[i].d-dist); if(di<d){d=di; best=i;} } return best; }
 function minMax(arr){ let mn=Infinity,mx=-Infinity; for(let i=0;i<arr.length;i++){ const v=arr[i]; if(v<mn)mn=v; if(v>mx)mx=v; } if(mn===Infinity){mn=0;mx=0;} return [mn,mx]; }
 let __groupSeq=0;
@@ -1429,7 +1444,7 @@ deletePresetBtn.addEventListener('click',()=>{ const name=presetSelect.value; if
 refreshPresetList();
 
 /* JSON I/O */
-function projectState(){ return { meta:{version:'2.0.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ vExag:state.vExag, yStep:parseInt(yStepSel.value,10), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
+function projectState(){ return { meta:{version:'2.1.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ vExag:state.vExag, yStep:parseInt(yStepSel.value,10), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
 function applyProject(p){ if(!p||!p.points) return; state.points=p.points; state.climbs=p.climbs||[]; state.pois=p.pois||[]; state.gravels=p.gravels||[]; state.tunnels=(p.tunnels||[]).filter(t=>Number.isInteger(t.startIdx)&&Number.isInteger(t.endIdx)&&t.startIdx>=0&&t.endIdx<state.points.length&&t.endIdx>t.startIdx); state.hoverIndex=null; state.profileElevations=[]; startLabel.value=p.labels?.start||'START'; finishLabel.value=p.labels?.finish||'FINISH'; state.vExag=p.settings?.vExag||state.vExag; vExagInput.value=state.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.settings?.yStep||200); smoothInput.value=p.settings?.smooth||500; tickInput.value=p.settings?.tick||10; fillColorInput.value=p.settings?.fill||state.fillColor; lineColorInput.value=p.settings?.line||state.lineColor; climbColorInput.value=p.settings?.climbLine||state.climbColor; climbFillColorInput.value=p.settings?.climbFill||state.climbFillColor; climbOverlayModeSel.value=((p.settings?.climbOverlayMode==='avggrade'||p.settings?.climbOverlayMode==='solid')?p.settings?.climbOverlayMode:(state.climbOverlayMode||'solid')); startOffInput.value=p.settings?.startOff||0; finishOffInput.value=p.settings?.finishOff||0; state.fillColor=fillColorInput.value; state.lineColor=lineColorInput.value; state.noProfileFill=!!p.settings?.noProfileFill; state.noProfileLine=!!p.settings?.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=climbColorInput.value; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=parseFloat(startOffInput.value)||0; state.finishOffset=parseFloat(finishOffInput.value)||0; { const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.viewStart=0; state.viewEnd=state.points[state.points.length-1].d; state.projectName = (p.meta && (p.meta.name||p.meta.projectName)) ? (p.meta.name||p.meta.projectName) : 'elevation'; sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois); setButtonsEnabled(true); resetUndo(); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
 exportJsonBtn.addEventListener('click',()=>{ if(!state.points.length) return; const blob=new Blob([JSON.stringify(projectState())],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=exportName('json'); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
 importJsonInput.addEventListener('change', async e=>{ try{ const f=e.target.files[0]; if(!f) return; const text=await f.text(); const data=JSON.parse(text); applyProject(data); }catch(_){ alert('Import failed'); } });
@@ -1448,17 +1463,18 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
 
   const dState = {
     waypoints: [],        // [{lat, lon}]
-    segments: [],         // [ [{lat, lon, ele}, ...], ... ] length = waypoints.length - 1
-    track: [],            // concatenated [{lat, lon, ele, d}]
+    segments: [],         // [ [{lat, lon, ele}, ...], ... ]
+    track: [],            // concatenated [{lat, lon, ele, d, segIdx}]
     undoStack: [],
     profile: 'fastbike',
     busyCount: 0,
     hoverIdx: null,
+    selection: null,      // { a, b } indices into dState.track
     pegmanPickMode: false,
     pegman: { lat:null, lon:null, heading:0, photos:[], photoIdx:0, open:false }
   };
 
-  let dMap = null, dBaseLayer = null, dRouteLine = null, dRouteHit = null;
+  let dMap = null, dBaseLayer = null, dRouteLine = null, dRouteHit = null, dSelLine = null;
   let dWpMarkers = [], dHoverMarker = null, dPegmanMarker = null;
 
   const elMap = document.getElementById('drawMap');
@@ -1537,7 +1553,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   /* ---- Routing Engine (BRouter + Open-Meteo Direct Fallback) ---- */
   async function fetchElevationsOpenMeteo(pts){
     if(!pts.length) return pts;
-    // Open-Meteo accepts up to 100 coords per GET
     const out = pts.map(p=>({...p}));
     const chunkSize = 80;
     for(let i=0; i<out.length; i+=chunkSize){
@@ -1585,7 +1600,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
         }
       }catch(_){}
     }
-    // Fallback to direct line if BRouter is unreachable
     return await routeDirect(a, b);
   }
 
@@ -1620,7 +1634,9 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     }
     dState.track = pts;
     dState.hoverIdx = null;
+    dState.selection = null;
     renderDrawMapLayers();
+    updateSelectionMapOverlay();
     updateDrawStats();
     drawElevCanvas();
     updateDrawButtons();
@@ -1638,6 +1654,15 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     elSendPaint.disabled = !hasPts;
   }
 
+  function updateSelectionMapOverlay(){
+    if(dSelLine){ dSelLine.remove(); dSelLine = null; }
+    if(!dMap || !dState.selection || dState.track.length < 2) return;
+    const { a, b } = dState.selection;
+    if(a < 0 || b >= dState.track.length || b <= a) return;
+    const slice = dState.track.slice(a, b + 1).map(p=>[p.lat, p.lon]);
+    dSelLine = L.polyline(slice, { color:'#ff2d96', weight:6, opacity:0.95, interactive:false }).addTo(dMap);
+  }
+
   function renderDrawMapLayers(){
     if(!dMap) return;
     if(dRouteLine){ dRouteLine.remove(); dRouteLine = null; }
@@ -1648,7 +1673,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     if(dState.track.length >= 2){
       const latlngs = dState.track.map(p=>[p.lat, p.lon]);
       dRouteLine = L.polyline(latlngs, { color:'#0284c7', weight:4.5, opacity:0.92, interactive:false }).addTo(dMap);
-      // Wider invisible hit target for easy click-to-insert waypoint
       dRouteHit = L.polyline(latlngs, { color:'#000', weight:16, opacity:0, interactive:true }).addTo(dMap);
       dRouteHit.on('click', (e)=>{
         L.DomEvent.stopPropagation(e);
@@ -1669,7 +1693,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       const sz = (isStart || isEnd) ? 20 : 16;
       const icon = L.divIcon({ className:'', html:`<div class="${cls}">${txt}</div>`, iconSize:[sz,sz], iconAnchor:[sz/2,sz/2] });
       const m = L.marker([wp.lat, wp.lon], { icon, draggable:true }).addTo(dMap);
-      m.bindTooltip(isStart ? 'Partenza (trascina · clic destro elimina)' : isEnd ? 'Arrivo (trascina · clic destro elimina)' : `Punto ${idx+1} (trascina · clic destro elimina)`, { direction:'top', offset:[0,-8] });
       m.on('dragend', async ()=>{
         const pos = m.getLatLng();
         pushDrawUndo();
@@ -1760,7 +1783,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     }
   }
 
-  /* ---- Elevation Stats & Live Canvas ---- */
+  /* ---- Elevation Stats, Selection Measurement & Live Canvas ---- */
   function computeStats(track){
     if(track.length < 2) return { distKm:0, gain:0, loss:0, maxEle:null };
     const distKm = track[track.length-1].d / 1000;
@@ -1776,14 +1799,53 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     return { distKm, gain:Math.round(gain), loss:Math.round(loss), maxEle:Math.round(maxEle) };
   }
 
+  function computeSelectionMetrics(){
+    if(!dState.selection || dState.track.length < 2) return null;
+    const { a, b } = dState.selection;
+    const pA = dState.track[a], pB = dState.track[b];
+    if(!pA || !pB || b <= a) return null;
+    const lenM = Math.max(0, pB.d - pA.d);
+    const netEle = pB.ele - pA.ele;
+    const avgGrade = lenM > 1 ? (netEle / lenM) * 100 : 0;
+    return {
+      lenKm: lenM / 1000,
+      avgGrade,
+      netEle: Math.round(netEle),
+      startKm: pA.d / 1000,
+      endKm: pB.d / 1000,
+      startEle: Math.round(pA.ele),
+      endEle: Math.round(pB.ele)
+    };
+  }
+
+  function updateReadout(){
+    const sel = computeSelectionMetrics();
+    if(sel){
+      elHoverReadout.classList.add('selection-active');
+      const signEle = sel.netEle >= 0 ? '+' : '';
+      const signGr = sel.avgGrade >= 0 ? '+' : '';
+      elHoverReadout.textContent = `Selezione: ${sel.lenKm.toFixed(2)} km · ${signGr}${sel.avgGrade.toFixed(1)}% media · ${signEle}${sel.netEle} m (${sel.startEle} → ${sel.endEle} m · km ${sel.startKm.toFixed(1)}–${sel.endKm.toFixed(1)})`;
+      return;
+    }
+    elHoverReadout.classList.remove('selection-active');
+    if(!dState.track.length){
+      elHoverReadout.textContent = 'Clicca sulla mappa per iniziare a tracciare';
+    } else if(dState.hoverIdx != null && dState.track[dState.hoverIdx]){
+      const p = dState.track[dState.hoverIdx];
+      const g = localGradeAt(dState.hoverIdx);
+      elHoverReadout.textContent = `km ${(p.d/1000).toFixed(2)} · ${Math.round(p.ele)} m · ${g >= 0 ? '+' : ''}${g.toFixed(1)}%`;
+    } else {
+      elHoverReadout.textContent = 'Trascina sul profilo per misurare un tratto · clicca per centrare';
+    }
+  }
+
   function updateDrawStats(){
     const st = computeStats(dState.track);
     elStatDist.textContent = st.distKm.toFixed(1);
     elStatGain.textContent = st.gain;
     elStatLoss.textContent = st.loss;
     elStatMax.textContent = st.maxEle != null ? st.maxEle : '—';
-    if(!dState.track.length) elHoverReadout.textContent = 'Clicca sulla mappa per iniziare a tracciare';
-    else if(dState.hoverIdx == null) elHoverReadout.textContent = 'Passa sul profilo per ispezionare · clicca per centrare';
+    updateReadout();
   }
 
   function drawElevCanvas(){
@@ -1807,7 +1869,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       return;
     }
 
-    const pad = { l:46, r:16, t:12, b:22 };
+    const pad = { l:46, r:16, t:14, b:22 };
     const pw = w - pad.l - pad.r;
     const ph = h - pad.t - pad.b;
     const dMax = Math.max(1, dState.track[dState.track.length-1].d);
@@ -1860,6 +1922,53 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     ctx.lineWidth = 2.2;
     ctx.stroke();
 
+    // Dragged range selection highlight + inline measurement pill
+    const sel = computeSelectionMetrics();
+    if(sel && dState.selection){
+      const { a, b } = dState.selection;
+      const xA = xOf(dState.track[a].d), xB = xOf(dState.track[b].d);
+
+      // Shaded selection band
+      ctx.fillStyle = 'rgba(255, 45, 150, 0.14)';
+      ctx.fillRect(xA, pad.t, Math.max(1, xB - xA), ph);
+
+      // Highlighted profile curve inside selection
+      ctx.beginPath();
+      for(let i=a; i<=b; i++){
+        const x = xOf(dState.track[i].d), y = yOf(dState.track[i].ele);
+        if(i===a) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = '#ff2d96';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Vertical boundary lines
+      ctx.strokeStyle = '#ff2d96';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xA, pad.t); ctx.lineTo(xA, pad.t + ph);
+      ctx.moveTo(xB, pad.t); ctx.lineTo(xB, pad.t + ph);
+      ctx.stroke();
+
+      // Inline badge centered on the selection
+      const signEle = sel.netEle >= 0 ? '+' : '';
+      const signGr = sel.avgGrade >= 0 ? '+' : '';
+      const label = `${sel.lenKm.toFixed(2)} km · ${signGr}${sel.avgGrade.toFixed(1)}% · ${signEle}${sel.netEle} m`;
+      ctx.font = '700 11.5px Inter, sans-serif';
+      const tw = ctx.measureText(label).width;
+      const bw = tw + 16, bh = 22;
+      const bx = Math.max(pad.l + 4, Math.min(w - pad.r - bw - 4, (xA + xB)/2 - bw/2));
+      const by = pad.t + 4;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 6);
+      else ctx.rect(bx, by, bw, bh);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, bx + bw/2, by + 15);
+    }
+
     // Hover guide
     if(dState.hoverIdx != null && dState.track[dState.hoverIdx]){
       const p = dState.track[dState.hoverIdx];
@@ -1892,12 +2001,10 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     if(idx == null || !dState.track[idx]){
       if(dHoverMarker){ dHoverMarker.remove(); dHoverMarker = null; }
       drawElevCanvas();
-      updateDrawStats();
+      updateReadout();
       return;
     }
     const p = dState.track[idx];
-    const g = localGradeAt(idx);
-    elHoverReadout.textContent = `km ${(p.d/1000).toFixed(2)} · ${Math.round(p.ele)} m · ${g >= 0 ? '+' : ''}${g.toFixed(1)}%`;
     if(dMap){
       if(!dHoverMarker){
         dHoverMarker = L.circleMarker([p.lat, p.lon], { radius:6.5, color:'#fff', weight:2, fillColor:'#ff2d96', fillOpacity:1, interactive:false }).addTo(dMap);
@@ -1906,6 +2013,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       }
     }
     drawElevCanvas();
+    updateReadout();
   }
 
   function idxFromElevEvent(e){
@@ -1922,20 +2030,66 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     return lo;
   }
 
-  elCanvas.addEventListener('mousemove', e=>{ const i = idxFromElevEvent(e); if(i != null) setDrawHover(i); });
-  elCanvas.addEventListener('mouseleave', ()=> setDrawHover(null));
-  elCanvas.addEventListener('click', e=>{
-    const i = idxFromElevEvent(e);
-    if(i == null || !dState.track[i]) return;
-    const p = dState.track[i];
-    const ll = L.latLng(p.lat, p.lon);
-    if(dMap) dMap.panTo(ll);
-    if(dState.pegman.open) dropPegmanAt(ll);
+  // Unified pointer interaction on elevation canvas: drag to measure, click to clear/pan
+  let elevDrag = null;
+  elCanvas.addEventListener('pointerdown', (e)=>{
+    if(e.button !== 0 || dState.track.length < 2) return;
+    const idx = idxFromElevEvent(e);
+    if(idx == null) return;
+    elevDrag = { pointerId: e.pointerId, startX: e.clientX, anchorIdx: idx, dragging: false };
+    elCanvas.setPointerCapture?.(e.pointerId);
+    e.preventDefault();
   });
 
+  elCanvas.addEventListener('pointermove', (e)=>{
+    if(dState.track.length < 2) return;
+    const idx = idxFromElevEvent(e);
+    if(idx == null) return;
+    if(elevDrag && e.pointerId === elevDrag.pointerId){
+      if(!elevDrag.dragging && Math.abs(e.clientX - elevDrag.startX) > 4){
+        elevDrag.dragging = true;
+      }
+      if(elevDrag.dragging){
+        const a = Math.min(elevDrag.anchorIdx, idx);
+        const b = Math.max(elevDrag.anchorIdx, idx);
+        dState.selection = (b > a) ? { a, b } : null;
+        updateSelectionMapOverlay();
+      }
+    }
+    setDrawHover(idx);
+  });
+
+  function finishElevDrag(e){
+    if(!elevDrag || e.pointerId !== elevDrag.pointerId) return;
+    const drag = elevDrag;
+    elevDrag = null;
+    if(elCanvas.hasPointerCapture?.(e.pointerId)) elCanvas.releasePointerCapture(e.pointerId);
+
+    if(!drag.dragging){
+      // Simple click: clear existing selection if present, pan map (and move Pegman if open)
+      if(dState.selection){
+        dState.selection = null;
+        updateSelectionMapOverlay();
+        drawElevCanvas();
+        updateReadout();
+      }
+      const p = dState.track[drag.anchorIdx];
+      if(p){
+        const ll = L.latLng(p.lat, p.lon);
+        if(dMap) dMap.panTo(ll);
+        if(dState.pegman.open) dropPegmanAt(ll);
+      }
+    } else {
+      drawElevCanvas();
+      updateReadout();
+    }
+  }
+  elCanvas.addEventListener('pointerup', finishElevDrag);
+  elCanvas.addEventListener('pointercancel', finishElevDrag);
+  elCanvas.addEventListener('pointerleave', ()=>{ if(!elevDrag) setDrawHover(null); });
+
   function onDrawMapMove(e){
-    if(dState.track.length < 2 || !dMap) return;
-    // Only snap hover if cursor is visually close to route
+    if(dState.track.length < 2 || !dMap || elevDrag) return;
     const cursorPt = dMap.latLngToContainerPoint(e.latlng);
     let bestI = -1, bestPx = 30;
     const step = Math.max(1, Math.floor(dState.track.length / 800));
@@ -2005,7 +2159,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     elMap.classList.toggle('pegman-pick-cursor', dState.pegmanPickMode);
   }
 
-  // Drag-and-drop OR click on Pegman dock
   let pegDrag = null;
   elPegmanDock.addEventListener('pointerdown', (e)=>{
     if(e.button !== 0) return;
@@ -2297,7 +2450,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   function buildGpxXml(track, name){
     const esc = s => String(s||'').replace(/[<>&'"]/g, c=>({ '<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;' }[c]));
     const ptsXml = track.map(p=>`      <trkpt lat="${p.lat.toFixed(6)}" lon="${p.lon.toFixed(6)}"><ele>${(p.ele||0).toFixed(1)}</ele></trkpt>`).join('\n');
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Simple Elevation v2.0" xmlns="http://www.topografix.com/GPX/1/1">\n  <trk>\n    <name>${esc(name||'Percorso')}</name>\n    <trkseg>\n${ptsXml}\n    </trkseg>\n  </trk>\n</gpx>`;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Simple Elevation v2.1" xmlns="http://www.topografix.com/GPX/1/1">\n  <trk>\n    <name>${esc(name||'Percorso')}</name>\n    <trkseg>\n${ptsXml}\n    </trkseg>\n  </trk>\n</gpx>`;
   }
 
   elExportGpx.addEventListener('click', ()=>{
@@ -2361,6 +2514,13 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     },
     undo: undoDraw,
     onEscape(){
+      if(dState.selection){
+        dState.selection = null;
+        updateSelectionMapOverlay();
+        drawElevCanvas();
+        updateReadout();
+        return;
+      }
       if(dState.pegmanPickMode){ setPegmanPickMode(false); return; }
       if(dState.pegman.open){
         elSvCard.classList.remove('open');
@@ -2370,7 +2530,6 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     }
   };
 
-  // Boot directly in DRAW
   initMap();
   updateDrawButtons();
   drawElevCanvas();
