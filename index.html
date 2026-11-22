@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.4.1 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.4 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -215,17 +215,6 @@
   .arch-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#eef2f7;color:#0f172a;font-size:10.5px;font-weight:800}
   .arch-btn.primary .arch-badge{background:rgba(255,255,255,.2);color:#fff}
 
-  /* Street View Card mode tabs & fallback panel */
-  .sv-mode-bar{display:flex;align-items:center;gap:4px;padding:6px 10px;background:#1e293b;border-bottom:1px solid rgba(255,255,255,.08)}
-  .sv-mode-tab{border:none;background:transparent;color:#cbd5e1;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
-  .sv-mode-tab:hover{color:#fff;background:rgba(255,255,255,.08)}
-  .sv-mode-tab.active{background:#f59e0b;color:#0f172a}
-  .sv-dot-avail{width:7px;height:7px;border-radius:50%;background:#22c55e;display:none;flex:0 0 auto}
-  .sv-dot-avail.show{display:inline-block}
-  .sv-placeholder{padding:18px;color:#e2e8f0;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;height:100%;font-size:12.5px;line-height:1.45}
-  .sv-placeholder input{max-width:290px;padding:7px 10px;font-size:12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff}
-  .sv-placeholder .sv-ph-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-
   /* Modals (Save Track & Track Archive) */
   .se-modal-backdrop{position:fixed;inset:0;z-index:5000;background:rgba(15,23,42,.52);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:16px}
   .se-modal-backdrop.open{display:flex}
@@ -399,15 +388,14 @@
       <button id="pegmanCfgBtn" class="pegman-cfg-btn" title="Opzioni Street View (API Key Embed opzionale)">⚙</button>
 
       <div id="pegmanCfgPop" class="pegman-cfg-pop">
-        <div style="font-size:12.5px;font-weight:700;color:#0f172a">Opzioni Preview Street View</div>
+        <div style="font-size:12.5px;font-weight:700;color:#0f172a">Modalità Street View</div>
         <div class="muted" style="font-size:11.5px;line-height:1.45">
-          La preview si apre sempre <strong>nella card interna</strong> (zero finestre duplicate, si aggiorna al clic sx e si chiude al clic dx).<br>
-          <strong>Con Google Maps Embed API Key (gratuita):</strong> attiva Google Street View 360° direttamente nella card.<br>
-          <strong>Senza chiave:</strong> usa Satellite HD + foto stradale 360° (Panoramax) nella card, con apertura su Google SV su richiesta.
+          <strong>Senza chiave (default):</strong> si apre subito Google Street View nella finestra popup dedicata.<br>
+          <strong>Con Google Maps Embed API Key (gratis):</strong> si apre nella card flottante sulla mappa.
         </div>
         <div>
-          <label for="svGmapsKey" style="margin-bottom:3px;font-size:11px;font-weight:600">Google Maps Embed API Key (gratuita, opzionale)</label>
-          <input id="svGmapsKey" type="text" placeholder="AIzaSy… (attiva Google SV 360° nella card)" />
+          <label for="svGmapsKey" style="margin-bottom:3px;font-size:11px;font-weight:600">Google Maps Embed API Key (opzionale)</label>
+          <input id="svGmapsKey" type="text" placeholder="AIzaSy… (lascia vuoto per popup diretto)" />
         </div>
         <div style="display:flex;justify-content:flex-end;gap:6px">
           <button id="svCfgCloseBtn" class="sv-mini">Chiudi</button>
@@ -416,22 +404,17 @@
       </div>
     </div>
 
-    <!-- Inline Street View / Preview Card (always stays in foreground, never spawns extra windows) -->
-    <div id="svCard" class="sv-card" role="dialog" aria-label="Anteprima punto / Street View">
+    <!-- Inline Google Street View Card (when Google Embed API Key is saved) -->
+    <div id="svCard" class="sv-card" role="dialog" aria-label="Google Street View">
       <div id="svHead" class="sv-head">
         <div class="sv-title">
-          <span id="svBadge" class="sv-badge">Preview</span>
+          <span class="sv-badge">Google SV</span>
           <span id="svCoords">Street View</span>
         </div>
         <div class="sv-head-btns">
           <button id="svResizeBtn" class="sv-icon-btn" title="Ingrandisci / riduci">⤢</button>
           <button id="svCloseBtn" class="sv-icon-btn" title="Chiudi (Esc o clic destro)">✕</button>
         </div>
-      </div>
-      <div class="sv-mode-bar" role="tablist" aria-label="Modalità preview">
-        <button id="svTabGsv" class="sv-mode-tab" data-sv-mode="gsv" title="Google Street View 360° integrato (richiede Embed API Key gratuita)">Google SV</button>
-        <button id="svTabSat" class="sv-mode-tab" data-sv-mode="sat" title="Vista Satellitare HD Google Maps (senza chiave)">Satellite HD</button>
-        <button id="svTabPano" class="sv-mode-tab" data-sv-mode="pano" title="Foto stradale 360° open-source Panoramax (senza chiave)">Strada 360° <span id="svPanoDot" class="sv-dot-avail" title="Foto stradale trovata in questo punto"></span></button>
       </div>
       <div id="svBody" class="sv-body"></div>
       <div class="sv-foot">
@@ -441,7 +424,7 @@
           <button id="svFlip" class="sv-mini" title="Gira 180°">180°</button>
         </div>
         <div class="sv-foot-group">
-          <button id="svGooglePopupBtn" class="sv-mini accent" title="Apri questo punto su Google Street View in una nuova scheda">Google SV ↗</button>
+          <button id="svGooglePopupBtn" class="sv-mini accent" title="Apri in finestra separata">Finestra ↗</button>
         </div>
       </div>
     </div>
@@ -2376,30 +2359,15 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   elCanvas.addEventListener('pointercancel', finishElevDrag);
   elCanvas.addEventListener('pointerleave', ()=>{ if(!elevDrag) setDrawHover(null); });
 
-  // Right-click on elevation preview: close Street View preview cleanly (or remove selection if right-clicking inside it)
+  // Right-click on elevation preview: remove climb overlay first, else close Street View preview
   elCanvas.addEventListener('contextmenu', (e)=>{
     e.preventDefault();
-    e.stopPropagation();
-    const clickIdx = idxFromElevEvent(e);
-    const inSel = !!(dState.selection && clickIdx != null && clickIdx >= dState.selection.a && clickIdx <= dState.selection.b);
-    if(dState.selection && (!dState.pegman.active || inSel)){
+    if(dState.selection){
       dState.selection = null;
       updateSelectionMapOverlay();
       drawElevCanvas();
       updateReadout();
     } else if(dState.pegman.active){
-      clearPegman();
-    } else if(dState.selection){
-      dState.selection = null;
-      updateSelectionMapOverlay();
-      drawElevCanvas();
-      updateReadout();
-    }
-  });
-  elElevBar.addEventListener('contextmenu', (e)=>{
-    if(e.target === elCanvas) return;
-    if(dState.pegman.active){
-      e.preventDefault();
       clearPegman();
     }
   });
@@ -2473,43 +2441,12 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     }
   }
 
-  const KEY_SV_MODE = 'se_sv_inline_mode';
-  const elSvBadge = document.getElementById('svBadge');
-  const elSvTabGsv = document.getElementById('svTabGsv');
-  const elSvTabSat = document.getElementById('svTabSat');
-  const elSvTabPano = document.getElementById('svTabPano');
-  const elSvPanoDot = document.getElementById('svPanoDot');
-  let svInlineMode = (()=>{ try{ return localStorage.getItem(KEY_SV_MODE) || ''; }catch(_){ return ''; } })();
-  let svPanoReqSeq = 0;
-  let svLastPano = null; // { key, picId, url }
-
-  function resolveSvMode(){
-    const hasKey = !!getGmapsKey();
-    if(svInlineMode === 'gsv' || svInlineMode === 'sat' || svInlineMode === 'pano'){
-      if(svInlineMode === 'gsv' && !hasKey) return 'sat';
-      return svInlineMode;
-    }
-    return hasKey ? 'gsv' : 'sat';
-  }
-
-  function updateSvTabsUi(mode){
-    [elSvTabGsv, elSvTabSat, elSvTabPano].forEach(btn=>{
-      if(!btn) return;
-      btn.classList.toggle('active', btn.dataset.svMode === mode);
-    });
-    if(elSvBadge){
-      elSvBadge.textContent = mode === 'gsv' ? 'Google SV' : mode === 'pano' ? 'Strada 360°' : 'Satellite HD';
-    }
-  }
-
   function clearPegman(){
-    svPanoReqSeq++;
     elSvCard.classList.remove('open');
     elSvBody.innerHTML = '';
-    if(elSvPanoDot) elSvPanoDot.classList.remove('show');
     dState.pegman.active = false;
     if(dPegmanMarker){ dPegmanMarker.remove(); dPegmanMarker = null; }
-    if(svPopupWin && !svPopupWin.closed){
+    if(svPopupWin){
       try{ svPopupWin.close(); }catch(_){}
     }
     svPopupWin = null;
@@ -2521,130 +2458,37 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     elMap.classList.toggle('pegman-pick-cursor', dState.pegmanPickMode);
   }
 
-  function openGoogleStreetViewExternal(){
+  function openGoogleStreetViewPopup(){
     if(dState.pegman.lat == null) return;
     const { lat, lon, heading } = dState.pegman;
     const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lon.toFixed(6)}&heading=${Math.round(heading)}&pitch=0`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }
-
-  async function lookupPanoramaxNear(lat, lon){
-    const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
-    if(svLastPano && svLastPano.key === key) return svLastPano;
-    try{
-      const url = `https://api.panoramax.xyz/api/search?place_position=${lon.toFixed(6)},${lat.toFixed(6)}&place_distance=0-100&limit=1`;
-      const res = await fetch(url, { headers:{ 'Accept':'application/json' } });
-      if(!res.ok) return { key, picId:null, url:null };
-      const data = await res.json();
-      const feat = data?.features?.[0];
-      const picId = feat?.id || null;
-      const result = { key, picId, url: picId ? `https://api.panoramax.xyz/#focus=pic&pic=${encodeURIComponent(picId)}&map=17/${lat.toFixed(5)}/${lon.toFixed(5)}` : null };
-      svLastPano = result;
-      return result;
-    }catch(_){
-      return { key, picId:null, url:null };
-    }
-  }
-
-  function setSvIframe(src){
-    const existing = elSvBody.querySelector('iframe[data-sv-frame]');
-    if(existing){
-      existing.src = src;
-    } else {
-      elSvBody.innerHTML = `<iframe data-sv-frame="1" src="${src}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
-    }
-  }
-
-  function renderInlinePreview(forcedMode){
-    if(dState.pegman.lat == null) return;
-    const { lat, lon, heading } = dState.pegman;
-    const mode = forcedMode || resolveSvMode();
-    const gKey = getGmapsKey();
-    elSvCoords.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)} · ${Math.round(heading)}°`;
-    updateSvTabsUi(mode);
-    elSvCard.classList.add('open');
-
-    const reqId = ++svPanoReqSeq;
-
-    if(mode === 'gsv'){
-      if(gKey){
-        const src = `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(gKey)}&location=${lat.toFixed(6)},${lon.toFixed(6)}&heading=${Math.round(heading)}&pitch=0&fov=90`;
-        setSvIframe(src);
-      } else {
-        elSvBody.innerHTML = `
-          <div class="sv-placeholder">
-            <div style="font-weight:700;font-size:13.5px;color:#fff">Google Street View 360° integrato</div>
-            <div>Inserisci una <strong>Google Maps Embed API Key</strong> (gratuita) per vedere Google Street View direttamente qui dentro, senza mai aprire finestre esterne.</div>
-            <input id="svQuickKeyInput" type="text" placeholder="Incolla qui la chiave AIzaSy…" />
-            <div class="sv-ph-actions">
-              <button id="svQuickKeySave" class="pink" style="padding:6px 12px;font-size:12px">Attiva qui</button>
-              <button id="svQuickSwitchSat" class="sv-mini">Usa Satellite HD</button>
-              <button id="svQuickOpenExt" class="sv-mini accent">Apri Google SV ↗</button>
-            </div>
-          </div>`;
-        elSvBody.querySelector('#svQuickKeySave')?.addEventListener('click', ()=>{
-          const v = (elSvBody.querySelector('#svQuickKeyInput')?.value || '').trim();
-          if(!v) return;
-          saveGmapsKey(v);
-          elSvGmapsKey.value = v;
-          svInlineMode = 'gsv';
-          try{ localStorage.setItem(KEY_SV_MODE, 'gsv'); }catch(_){}
-          renderInlinePreview('gsv');
-          flashStatus('Google Street View 360° attivato nella card!');
-        });
-        elSvBody.querySelector('#svQuickSwitchSat')?.addEventListener('click', ()=> switchSvInlineMode('sat'));
-        elSvBody.querySelector('#svQuickOpenExt')?.addEventListener('click', openGoogleStreetViewExternal);
+    const w = 680, h = 520;
+    const left = Math.max(0, window.screenX + window.outerWidth - w - 24);
+    const top = Math.max(0, window.screenY + 80);
+    if(svPopupWin && !svPopupWin.closed){
+      try{
+        svPopupWin.location.href = url;
+        svPopupWin.focus();
+        return;
+      }catch(_){
+        try{ svPopupWin.close(); }catch(__){}
       }
-      return;
     }
-
-    if(mode === 'sat'){
-      const src = `https://maps.google.com/maps?q=${lat.toFixed(6)},${lon.toFixed(6)}&t=k&z=19&ie=UTF8&iwloc=&output=embed`;
-      setSvIframe(src);
-      // Background check for street-level Panoramax photo availability
-      if(elSvPanoDot) elSvPanoDot.classList.remove('show');
-      lookupPanoramaxNear(lat, lon).then(info=>{
-        if(reqId !== svPanoReqSeq || !dState.pegman.active) return;
-        if(elSvPanoDot) elSvPanoDot.classList.toggle('show', !!info.picId);
-      });
-      return;
-    }
-
-    if(mode === 'pano'){
-      elSvBody.innerHTML = `<div class="sv-placeholder"><div>Ricerca foto stradale 360° (Panoramax)…</div></div>`;
-      lookupPanoramaxNear(lat, lon).then(info=>{
-        if(reqId !== svPanoReqSeq || !dState.pegman.active) return;
-        if(elSvPanoDot) elSvPanoDot.classList.toggle('show', !!info.picId);
-        if(info.url){
-          elSvBody.innerHTML = '';
-          setSvIframe(info.url);
-        } else {
-          elSvBody.innerHTML = `
-            <div class="sv-placeholder">
-              <div style="font-weight:700;color:#fff">Nessuna foto Panoramax entro 100 m</div>
-              <div>Puoi passare alla vista Satellite HD oppure aprire questo punto su Google Street View.</div>
-              <div class="sv-ph-actions">
-                <button id="svPanoToSat" class="sv-mini">Vista Satellite HD</button>
-                <button id="svPanoToGsv" class="sv-mini accent">Apri Google SV ↗</button>
-              </div>
-            </div>`;
-          elSvBody.querySelector('#svPanoToSat')?.addEventListener('click', ()=> switchSvInlineMode('sat'));
-          elSvBody.querySelector('#svPanoToGsv')?.addEventListener('click', openGoogleStreetViewExternal);
-        }
-      });
+    svPopupWin = window.open(url, 'se_gsv_popup', `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
+    if(!svPopupWin){
+      flashStatus('Popup bloccato dal browser: consenti i popup per localhost e riprova', 4500);
+    } else {
+      try{ svPopupWin.focus(); }catch(_){}
     }
   }
 
-  function switchSvInlineMode(mode){
-    svInlineMode = mode;
-    try{ localStorage.setItem(KEY_SV_MODE, mode); }catch(_){}
-    renderInlinePreview(mode);
+  function renderInlineGoogleStreetView(gKey){
+    const { lat, lon, heading } = dState.pegman;
+    elSvCoords.textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)} · ${Math.round(heading)}°`;
+    const src = `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(gKey)}&location=${lat.toFixed(6)},${lon.toFixed(6)}&heading=${Math.round(heading)}&pitch=0&fov=90`;
+    elSvBody.innerHTML = `<iframe src="${src}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+    elSvCard.classList.add('open');
   }
-
-  [elSvTabGsv, elSvTabSat, elSvTabPano].forEach(btn=>{
-    if(!btn) return;
-    btn.addEventListener('click', ()=> switchSvInlineMode(btn.dataset.svMode));
-  });
 
   function dropPegmanAt(latlng, keepHeading=false){
     dState.pegman.lat = latlng.lat;
@@ -2652,19 +2496,23 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     if(!keepHeading) dState.pegman.heading = autoHeadingNearRoute(latlng.lat, latlng.lng);
     dState.pegman.active = true;
     updatePegmanMarker();
-    // Always open/refocus the inline preview card (never spawns extra popup windows)
-    renderInlinePreview();
+
+    const gKey = getGmapsKey();
+    if(gKey){
+      renderInlineGoogleStreetView(gKey);
+    } else {
+      elSvCard.classList.remove('open');
+      openGoogleStreetViewPopup();
+    }
   }
 
   function rotatePegman(delta){
     if(dState.pegman.lat == null) return;
     dState.pegman.heading = (dState.pegman.heading + delta + 360) % 360;
     updatePegmanMarker();
-    if(resolveSvMode() === 'gsv' && getGmapsKey()){
-      renderInlinePreview('gsv');
-    } else {
-      elSvCoords.textContent = `${dState.pegman.lat.toFixed(5)}, ${dState.pegman.lon.toFixed(5)} · ${Math.round(dState.pegman.heading)}°`;
-    }
+    const gKey = getGmapsKey();
+    if(gKey) renderInlineGoogleStreetView(gKey);
+    else openGoogleStreetViewPopup();
   }
 
   // Drag-and-drop OR click on Pegman dock
@@ -2731,17 +2579,14 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   });
   document.getElementById('svCfgCloseBtn').addEventListener('click', ()=> elPegmanCfgPop.classList.remove('open'));
   document.getElementById('svSaveKeysBtn').addEventListener('click', ()=>{
-    const k = elSvGmapsKey.value.trim();
-    saveGmapsKey(k);
+    saveGmapsKey(elSvGmapsKey.value.trim());
     elPegmanCfgPop.classList.remove('open');
-    if(k){
-      svInlineMode = 'gsv';
-      try{ localStorage.setItem(KEY_SV_MODE, 'gsv'); }catch(_){}
-    }
     if(dState.pegman.active && dState.pegman.lat != null){
-      renderInlinePreview(k ? 'gsv' : 'sat');
+      const k = getGmapsKey();
+      if(k) renderInlineGoogleStreetView(k);
+      else elSvCard.classList.remove('open');
     }
-    flashStatus(k ? 'Chiave salvata: Google Street View 360° attivo nella card' : 'Chiave rimossa: preview inline su Satellite HD / Panoramax');
+    flashStatus(getGmapsKey() ? 'Chiave salvata: Street View si aprirà nella card' : 'Street View impostato su popup diretto');
   });
   document.addEventListener('click', (e)=>{
     if(!e.target.closest('.pegman-wrap')) elPegmanCfgPop.classList.remove('open');
@@ -2750,7 +2595,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   document.getElementById('svRotLeft').addEventListener('click', ()=> rotatePegman(-45));
   document.getElementById('svRotRight').addEventListener('click', ()=> rotatePegman(45));
   document.getElementById('svFlip').addEventListener('click', ()=> rotatePegman(180));
-  document.getElementById('svGooglePopupBtn').addEventListener('click', openGoogleStreetViewExternal);
+  document.getElementById('svGooglePopupBtn').addEventListener('click', openGoogleStreetViewPopup);
   document.getElementById('svResizeBtn').addEventListener('click', ()=> elSvCard.classList.toggle('large'));
   document.getElementById('svCloseBtn').addEventListener('click', clearPegman);
 
@@ -3187,7 +3032,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     const needStart = force || !elSaveStart.value.trim();
     const needEnd = force || !elSaveEnd.value.trim();
     if(!needStart && !needEnd) return;
-    elSaveGeoHint.textContent = 'Rilevamento comuni di partenza e arrivo in corso…';
+    elSaveGeoHint.textContent = "Rilevamento comuni di partenza e arrivo in corso…";
     try{
       if(needStart){
         const sCity = await nearestComune(firstPt.lat, firstPt.lon);
@@ -3206,9 +3051,9 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
         const s = elSaveStart.value.trim(), e = elSaveEnd.value.trim();
         elSaveTitle.value = (s && e && s !== e) ? `${s} – ${e}` : (s || e);
       }
-      elSaveGeoHint.textContent = 'Città rilevate automaticamente (puoi modificarle liberamente).';
+      elSaveGeoHint.textContent = "Città rilevate automaticamente (puoi modificarle liberamente).";
     }catch(_){
-      elSaveGeoHint.textContent = 'Inserisci manualmente città di partenza e arrivo se necessario.';
+      elSaveGeoHint.textContent = "Inserisci manualmente città di partenza e arrivo se necessario.";
     }
   }
 
@@ -3224,7 +3069,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   async function openSaveModal(){
     const ctx = collectCurrentTrackContext();
     if(!ctx){
-      showToast('Nessuna traccia attiva da salvare (traccia un percorso in DRAW o carica un GPX in PAINT).', 3400);
+      showToast("Nessuna traccia attiva da salvare (traccia un percorso in DRAW o carica un GPX in PAINT).", 3400);
       return;
     }
     pendingSaveContext = ctx;
@@ -3244,7 +3089,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
 
     elSaveUpdateBtn.style.display = existing ? 'inline-flex' : 'none';
     elSaveToArchBtn.textContent = existing ? 'Salva come nuova' : 'Salva in Archivio';
-    elSaveGeoHint.textContent = 'Le città vengono rilevate automaticamente dai punti di partenza e arrivo.';
+    elSaveGeoHint.textContent = "Le città vengono rilevate automaticamente dai punti di partenza e arrivo.";
 
     elArchModal.classList.remove('open');
     elSaveModal.classList.add('open');
@@ -3323,7 +3168,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       closeModals();
       showToast(alsoDownloadJson ? `Salvata in archivio e scaricata in JSON: ${rec.title}` : `Traccia salvata in archivio: ${rec.title}`);
     }catch(err){
-      alert('Impossibile salvare in archivio locale (spazio esaurito o storage bloccato). Puoi comunque usare "Solo JSON".');
+      alert("Impossibile salvare in archivio locale (spazio esaurito o storage bloccato). Puoi comunque usare Solo JSON.");
     }
   }
 
@@ -3371,7 +3216,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
         draw();
       } else {
         const rawPts = extractRawPointsFromRecord(rec);
-        if(rawPts.length < 2){ showToast('Nessun punto valido nella traccia.'); return; }
+        if(rawPts.length < 2){ showToast("Nessun punto valido nella traccia."); return; }
         loadPointsIntoPaint(rawPts, [], rec.title || 'percorso');
         if(rec.startCity && rec.startCity !== '—') startLabel.value = rec.startCity;
         if(rec.endCity && rec.endCity !== '—') finishLabel.value = rec.endCity;
@@ -3459,7 +3304,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     if(imported > 0){
       showToast(imported === 1 ? "1 traccia importata nell'archivio!" : `${imported} tracce importate nell'archivio!`);
     } else {
-      alert('Il file JSON non contiene tracce valide.');
+      alert("Il file JSON non contiene tracce valide.");
     }
     return imported;
   }
@@ -3495,7 +3340,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     const totalKm = list.reduce((acc, t)=> acc + (Number(t.distanceKm)||0), 0);
     elArchSummary.textContent = list.length
       ? `${list.length} ${list.length === 1 ? 'traccia' : 'tracce'} visualizzate · Totale ${totalKm.toFixed(1)} km`
-      : 'Nessuna traccia corrispondente.';
+      : "Nessuna traccia corrispondente.";
 
     elArchExportAll.disabled = cachedTracks.length === 0;
 
@@ -3584,7 +3429,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
           editingRowId = null;
           await refreshCache();
           renderArchiveList();
-          showToast('Metadati aggiornati');
+          showToast("Metadati aggiornati");
         });
         row.appendChild(editBox);
       }
@@ -3640,7 +3485,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       const data = JSON.parse(text);
       await importJsonObject(data);
     }catch(_){
-      alert('Impossibile leggere il file JSON.');
+      alert("Impossibile leggere il file JSON.");
     }finally{
       elArchImportJson.value = '';
     }
