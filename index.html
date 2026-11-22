@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.4 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.4.1 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -3457,7 +3457,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     await refreshCache();
     renderArchiveList();
     if(imported > 0){
-      showToast(imported === 1 ? '1 traccia importata nell'archivio!' : `${imported} tracce importate nell'archivio!`);
+      showToast(imported === 1 ? "1 traccia importata nell'archivio!" : `${imported} tracce importate nell'archivio!`);
     } else {
       alert('Il file JSON non contiene tracce valide.');
     }
@@ -3500,7 +3500,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     elArchExportAll.disabled = cachedTracks.length === 0;
 
     if(!list.length){
-      elArchList.innerHTML = `<div class="arch-empty">${cachedTracks.length ? 'Nessuna traccia corrisponde alla ricerca.' : 'L'archivio è vuoto.<br>Disegna una traccia in <strong>DRAW</strong> o carica un GPX in <strong>PAINT</strong> e clicca <strong>💾 Salva</strong>, oppure importa un file <strong>JSON</strong>.'}</div>`;
+      elArchList.innerHTML = `<div class="arch-empty">${cachedTracks.length ? "Nessuna traccia corrisponde alla ricerca." : "L'archivio è vuoto.<br>Disegna una traccia in <strong>DRAW</strong> o carica un GPX in <strong>PAINT</strong> e clicca <strong>💾 Salva</strong>, oppure importa un file <strong>JSON</strong>."}</div>`;
       return;
     }
 
@@ -3554,7 +3554,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
         if(activeArchiveId === rec.id) activeArchiveId = null;
         await refreshCache();
         renderArchiveList();
-        showToast('Traccia eliminata dall'archivio');
+        showToast("Traccia eliminata dall'archivio");
       });
 
       if(editingRowId === rec.id){
