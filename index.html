@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.5 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.6 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -87,6 +87,22 @@
   .draw-status{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:1000;background:#0f172a;color:#fff;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:600;box-shadow:0 6px 18px rgba(15,23,42,.22);display:none;pointer-events:none}
   .draw-status.show{display:block}
   .draw-tip{font-size:11px;color:var(--muted);line-height:1.45;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:7px 9px}
+  /* Slope Map tool inside DRAW panel */
+  .slope-box{border-top:1px solid var(--border);padding-top:9px;display:flex;flex-direction:column;gap:7px}
+  .slope-row{display:flex;gap:6px;align-items:center}
+  .slope-btn{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 10px;border-radius:10px;border:1px solid var(--border);background:#fff;color:#0f172a;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+  .slope-btn:hover:not(:disabled){background:#f8fafc;border-color:#94a3b8}
+  .slope-btn.active{background:#0f172a;color:#fff;border-color:#0f172a}
+  .slope-btn:disabled{opacity:.5;cursor:not-allowed}
+  .slope-clear{flex:0 0 auto;padding:7px 9px;border-radius:10px;border:1px solid #fecaca;background:#fff;color:#b91c1c;font-size:12px;font-weight:700;cursor:pointer;display:none}
+  .slope-clear.show{display:inline-flex;align-items:center;justify-content:center}
+  .slope-clear:hover{background:#fff5f5}
+  .slope-legend{display:none;flex-direction:column;gap:4px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:6px 8px}
+  .slope-legend.show{display:flex}
+  .slope-legend-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;height:7px;border-radius:4px;overflow:hidden}
+  .slope-legend-labels{display:grid;grid-template-columns:repeat(5,1fr);font-size:9.5px;font-weight:700;color:#475569;text-align:center}
+  .slope-meta{font-size:10.5px;color:var(--muted);line-height:1.35}
+
 
   /* Pegman Dock, Config Popover & Floating Ghost */
   .pegman-wrap{position:absolute;right:14px;bottom:26px;z-index:1000;display:flex;align-items:center;gap:6px}
@@ -351,13 +367,21 @@
         </div>
         <div class="row" style="gap:8px">
           <div>
-            <label for="drawProfile">Profilo bici</label>
+            <label for="drawProfile">Profilo percorso</label>
             <select id="drawProfile">
-              <option value="fastbike" selected>Bici da corsa</option>
-              <option value="fastbike-verylowtraffic">Corsa (poco traffico)</option>
-              <option value="trekking">Gravel / Trekking</option>
-              <option value="mtb">MTB</option>
-              <option value="direct">Linea retta</option>
+              <optgroup label="Bicicletta">
+                <option value="fastbike" selected>Bici da corsa</option>
+                <option value="fastbike-verylowtraffic">Corsa (poco traffico)</option>
+                <option value="trekking">Gravel / Trekking</option>
+                <option value="mtb">MTB</option>
+              </optgroup>
+              <optgroup label="Auto">
+                <option value="car-fast">Auto (veloce)</option>
+                <option value="car-eco">Auto (strade normali)</option>
+              </optgroup>
+              <optgroup label="Altro">
+                <option value="direct">Linea retta</option>
+              </optgroup>
             </select>
           </div>
           <div>
@@ -371,6 +395,25 @@
               <option value="OpenTopoMap">OpenTopoMap</option>
               <option value="EsriSat">Satellite Esri</option>
             </select>
+          </div>
+        </div>
+        <div class="slope-box">
+          <div class="slope-row">
+            <button id="slopeCalcBtn" type="button" class="slope-btn" title="Colora le strade visibili nella schermata in base alla pendenza (richiede zoom locale ≥ 12)">⛰ Pendenze schermata</button>
+            <button id="slopeClearBtn" type="button" class="slope-clear" title="Rimuovi overlay pendenze">✕</button>
+          </div>
+          <div id="slopeLegend" class="slope-legend">
+            <div class="slope-legend-bar">
+              <span style="background:#fde68a"></span>
+              <span style="background:#facc15"></span>
+              <span style="background:#f97316"></span>
+              <span style="background:#dc2626"></span>
+              <span style="background:#7f1d1d"></span>
+            </div>
+            <div class="slope-legend-labels">
+              <span>&lt;3.5%</span><span>4–6%</span><span>6–9%</span><span>9–12%</span><span>12%+</span>
+            </div>
+            <div id="slopeMeta" class="slope-meta"></div>
           </div>
         </div>
         <div class="draw-tip">
@@ -1743,7 +1786,11 @@ function buildMap(){
   }
   const latlngs=state.points.map(p=>[p.lat,p.lon]);
   if(routeLayer) routeLayer.remove();
-  routeLayer=L.polyline(latlngs,{color:'#0ea5e9',weight:3,opacity:0.9}).addTo(map);
+  routeLayer=L.featureGroup([
+    L.polyline(latlngs,{color:'#0f172a',weight:8.5,opacity:0.28,lineCap:'round',lineJoin:'round',interactive:false}),
+    L.polyline(latlngs,{color:'#ffffff',weight:7,opacity:0.95,lineCap:'round',lineJoin:'round',interactive:false}),
+    L.polyline(latlngs,{color:'#0055ff',weight:4,opacity:1,lineCap:'round',lineJoin:'round',interactive:false})
+  ]).addTo(map);
   const bounds=routeLayer.getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(0.05));
   if(mapCursor) mapCursor.remove();
   mapCursor=L.circleMarker(latlngs[0],{radius:7,color:'#111827',weight:2,fillColor:'#16a34a',fillOpacity:1,interactive:false}).addTo(map);
@@ -1842,8 +1889,9 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     pegman: { lat:null, lon:null, heading:0, active:false }
   };
 
-  let dMap = null, dBaseLayer = null, dRouteLine = null, dRouteHit = null, dSelLine = null;
+  let dMap = null, dBaseLayer = null, dRouteShadow = null, dRouteCasing = null, dRouteLine = null, dRouteHit = null, dSelLine = null;
   let dWpMarkers = [], dHoverMarker = null, dPegmanMarker = null;
+  let slopeLayerGroup = null, slopeRenderer = null, slopeBusy = false;
   let statusToastTimer = null;
   let svPopupWin = null;
   let routeDrag = null;
@@ -1868,6 +1916,10 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   const elSearchRes = document.getElementById('drawSearchResults');
   const elPanel = document.getElementById('drawPanel');
   const elPanelToggle = document.getElementById('drawPanelToggle');
+  const elSlopeBtn = document.getElementById('slopeCalcBtn');
+  const elSlopeClear = document.getElementById('slopeClearBtn');
+  const elSlopeLegend = document.getElementById('slopeLegend');
+  const elSlopeMeta = document.getElementById('slopeMeta');
 
   const elElevBar = document.getElementById('drawElevBar');
   const elElevToggle = document.getElementById('drawElevToggle');
@@ -1909,6 +1961,11 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     if(dMap) return;
     dMap = L.map('drawMap', { zoomControl:false, attributionControl:true }).setView([42.5, 12.5], 6);
     L.control.zoom({ position:'bottomleft' }).addTo(dMap);
+    const sPane = dMap.createPane('slopePane');
+    sPane.style.zIndex = 380;
+    sPane.style.pointerEvents = 'none';
+    slopeRenderer = L.canvas({ pane:'slopePane', padding:0.25 });
+    slopeLayerGroup = L.layerGroup().addTo(dMap);
     setDrawBasemap(elBasemap.value);
     dMap.on('click', onDrawMapClick);
     dMap.on('mousemove', onDrawMapMove);
@@ -1960,6 +2017,115 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     return await fetchElevationsOpenMeteo(pts);
   }
 
+  /* ---- AWS Terrarium DEM Tile Elevation Sampler (fast client-side, zero API key) ---- */
+  const terrariumCache = new Map();
+  const TERRARIUM_MAX_CACHE = 96;
+
+  function latLonToTileFloat(lat, lon, z){
+    const clampedLat = Math.max(-85.0511, Math.min(85.0511, lat));
+    const latRad = clampedLat * Math.PI / 180;
+    const n = Math.pow(2, z);
+    const fx = ((lon + 180) / 360) * n;
+    const fy = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+    return { fx, fy };
+  }
+
+  function loadTerrariumTile(z, x, y){
+    const key = `${z}/${x}/${y}`;
+    if(terrariumCache.has(key)) return terrariumCache.get(key);
+    const prom = new Promise((resolve)=>{
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = ()=>{
+        try{
+          const cv = document.createElement('canvas');
+          cv.width = 256; cv.height = 256;
+          const c2 = cv.getContext('2d', { willReadFrequently:true });
+          c2.drawImage(img, 0, 0, 256, 256);
+          const data = c2.getImageData(0, 0, 256, 256).data;
+          resolve(data);
+        }catch(_){ resolve(null); }
+      };
+      img.onerror = ()=> resolve(null);
+      img.src = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
+    });
+    if(terrariumCache.size >= TERRARIUM_MAX_CACHE){
+      const oldest = terrariumCache.keys().next().value;
+      terrariumCache.delete(oldest);
+    }
+    terrariumCache.set(key, prom);
+    return prom;
+  }
+
+  function decodeTerrariumPixel(data, px, py){
+    const cx = Math.max(0, Math.min(255, px));
+    const cy = Math.max(0, Math.min(255, py));
+    const idx = (cy * 256 + cx) * 4;
+    return (data[idx] * 256 + data[idx + 1] + data[idx + 2] / 256) - 32768;
+  }
+
+  function sampleTerrariumAt(lat, lon, z, tileMap){
+    const { fx, fy } = latLonToTileFloat(lat, lon, z);
+    const tx = Math.floor(fx), ty = Math.floor(fy);
+    const data = tileMap.get(`${z}/${tx}/${ty}`);
+    if(!data) return null;
+    const ux = (fx - tx) * 256 - 0.5;
+    const uy = (fy - ty) * 256 - 0.5;
+    const x0 = Math.floor(ux), y0 = Math.floor(uy);
+    const dx = Math.max(0, Math.min(1, ux - x0));
+    const dy = Math.max(0, Math.min(1, uy - y0));
+    const e00 = decodeTerrariumPixel(data, x0, y0);
+    const e10 = decodeTerrariumPixel(data, x0 + 1, y0);
+    const e01 = decodeTerrariumPixel(data, x0, y0 + 1);
+    const e11 = decodeTerrariumPixel(data, x0 + 1, y0 + 1);
+    const top = e00 + (e10 - e00) * dx;
+    const bot = e01 + (e11 - e01) * dx;
+    return top + (bot - top) * dy;
+  }
+
+  async function enrichElevationsFast(pts){
+    if(!pts.length) return pts;
+    const z = 13;
+    const needed = new Set();
+    for(const p of pts){
+      const { fx, fy } = latLonToTileFloat(p.lat, p.lon, z);
+      needed.add(`${z}/${Math.floor(fx)}/${Math.floor(fy)}`);
+    }
+    if(needed.size <= 24){
+      const tileMap = new Map();
+      await Promise.all([...needed].map(async k=>{
+        const [tz, tx, ty] = k.split('/').map(Number);
+        const d = await loadTerrariumTile(tz, tx, ty);
+        if(d) tileMap.set(k, d);
+      }));
+      if(tileMap.size > 0){
+        let okCount = 0;
+        const out = pts.map(p=>{
+          const e = sampleTerrariumAt(p.lat, p.lon, z, tileMap);
+          if(Number.isFinite(e)){ okCount++; return { ...p, ele: e }; }
+          return { ...p };
+        });
+        if(okCount >= pts.length * 0.8) return out;
+      }
+    }
+    return await fetchElevationsOpenMeteo(pts);
+  }
+
+  async function routeCarOsrm(a, b){
+    try{
+      const url = `https://router.project-osrm.org/route/v1/driving/${a.lon.toFixed(6)},${a.lat.toFixed(6)};${b.lon.toFixed(6)},${b.lat.toFixed(6)}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      if(!res.ok) return null;
+      const data = await res.json();
+      const coords = data?.routes?.[0]?.geometry?.coordinates;
+      if(Array.isArray(coords) && coords.length >= 2){
+        const raw = coords.map(c=>({ lat: c[1], lon: c[0], ele: 0 }));
+        return await enrichElevationsFast(raw);
+      }
+    }catch(_){}
+    return null;
+  }
+
   async function routeSegment(a, b, profile){
     if(profile === 'direct') return await routeDirect(a, b);
     const lonlats = `${a.lon.toFixed(6)},${a.lat.toFixed(6)}|${b.lon.toFixed(6)},${b.lat.toFixed(6)}`;
@@ -1973,11 +2139,230 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
         if(Array.isArray(coords) && coords.length >= 2){
           const pts = coords.map(c=>({ lat: c[1], lon: c[0], ele: Number.isFinite(c[2]) ? c[2] : 0 }));
           const hasEle = pts.some(p=>p.ele !== 0);
-          return hasEle ? pts : await fetchElevationsOpenMeteo(pts);
+          return hasEle ? pts : await enrichElevationsFast(pts);
         }
       }catch(_){}
     }
+    if(profile.startsWith('car-')){
+      const osrmPts = await routeCarOsrm(a, b);
+      if(osrmPts) return osrmPts;
+    }
     return await routeDirect(a, b);
+  }
+
+  /* ---- Road Slope Heatmap for Active Viewport (Overpass + Terrarium DEM) ---- */
+  const OVERPASS_ENDPOINTS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+  ];
+
+  function slopeColorBucket(absPct){
+    if(absPct < 3.5) return { idx:0, color:'#fde68a' };
+    if(absPct < 6.0) return { idx:1, color:'#facc15' };
+    if(absPct < 9.0) return { idx:2, color:'#f97316' };
+    if(absPct < 12.0) return { idx:3, color:'#dc2626' };
+    return { idx:4, color:'#7f1d1d' };
+  }
+
+  function densifyWayGeom(geom, maxStepM=30){
+    const out = [];
+    for(let i=0; i<geom.length; i++){
+      const cur = geom[i];
+      if(i === 0){ out.push({ lat:cur.lat, lon:cur.lon }); continue; }
+      const prev = geom[i-1];
+      const segD = haversine(prev.lat, prev.lon, cur.lat, cur.lon);
+      if(segD > maxStepM){
+        const steps = Math.min(40, Math.ceil(segD / maxStepM));
+        for(let k=1; k<=steps; k++){
+          const t = k / steps;
+          out.push({ lat: prev.lat + (cur.lat - prev.lat)*t, lon: prev.lon + (cur.lon - prev.lon)*t });
+        }
+      } else if(segD >= 2){
+        out.push({ lat:cur.lat, lon:cur.lon });
+      }
+    }
+    return out;
+  }
+
+  async function fetchViewportRoads(bounds){
+    const s = bounds.getSouth().toFixed(5);
+    const w = bounds.getWest().toFixed(5);
+    const n = bounds.getNorth().toFixed(5);
+    const e = bounds.getEast().toFixed(5);
+    const query = `[out:json][timeout:20];(way["highway"~"^(trunk|primary|secondary|tertiary|unclassified|residential|living_street|track|cycleway)$"]["tunnel"!="yes"](${s},${w},${n},${e});way["highway"="service"]["service"!~"^(parking_aisle|driveway|alley)$"]["tunnel"!="yes"](${s},${w},${n},${e}););out geom;`;
+    for(const ep of OVERPASS_ENDPOINTS){
+      try{
+        const res = await fetch(ep, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: 'data=' + encodeURIComponent(query)
+        });
+        if(!res.ok) continue;
+        const json = await res.json();
+        if(Array.isArray(json.elements)) return json.elements;
+      }catch(_){}
+    }
+    return null;
+  }
+
+  function clearSlopeOverlay(){
+    if(slopeLayerGroup) slopeLayerGroup.clearLayers();
+    elSlopeBtn.classList.remove('active');
+    elSlopeBtn.textContent = '⛰ Pendenze schermata';
+    elSlopeClear.classList.remove('show');
+    elSlopeLegend.classList.remove('show');
+    elSlopeMeta.textContent = '';
+  }
+
+  async function buildSlopeMapForViewport(){
+    if(!dMap || slopeBusy) return;
+    const zoom = dMap.getZoom();
+    if(zoom < 12){
+      flashStatus('Avvicina lo zoom (almeno livello 12, area locale) per calcolare le pendenze delle strade', 4000);
+      return;
+    }
+    slopeBusy = true;
+    elSlopeBtn.disabled = true;
+    pushBusy('Scarico strade della schermata (OSM)…');
+    try{
+      const bounds = dMap.getBounds();
+      const tz = Math.min(13, Math.max(12, Math.round(zoom)));
+
+      // Determine Terrarium DEM tiles covering viewport
+      const nw = latLonToTileFloat(bounds.getNorth(), bounds.getWest(), tz);
+      const se = latLonToTileFloat(bounds.getSouth(), bounds.getEast(), tz);
+      const xMin = Math.floor(nw.fx), xMax = Math.floor(se.fx);
+      const yMin = Math.floor(nw.fy), yMax = Math.floor(se.fy);
+      const tileKeys = [];
+      for(let tx=xMin; tx<=xMax; tx++){
+        for(let ty=yMin; ty<=yMax; ty++){
+          tileKeys.push([tz, tx, ty]);
+        }
+      }
+      if(tileKeys.length > 36){
+        flashStatus('Area troppo ampia: avvicina leggermente lo zoom e riprova', 3500);
+        return;
+      }
+
+      // Fetch OSM roads and Terrarium DEM tiles in parallel
+      const tileMap = new Map();
+      const [elements] = await Promise.all([
+        fetchViewportRoads(bounds),
+        Promise.all(tileKeys.map(async ([z, tx, ty])=>{
+          const data = await loadTerrariumTile(z, tx, ty);
+          if(data) tileMap.set(`${z}/${tx}/${ty}`, data);
+        }))
+      ]);
+
+      if(!elements){
+        flashStatus('Server Overpass occupato: riprova tra qualche secondo', 4000);
+        return;
+      }
+      if(tileMap.size === 0){
+        flashStatus('Impossibile leggere i dati altimetrici DEM (controlla connessione)', 4000);
+        return;
+      }
+
+      setStatus('Calcolo pendenze…');
+      slopeLayerGroup.clearLayers();
+
+      let renderedWays = 0;
+      let maxFoundPct = 0;
+      const casingPolys = [];
+      const bucketPolys = [[], [], [], [], []];
+
+      for(const el of elements){
+        if(el.type !== 'way' || !Array.isArray(el.geometry) || el.geometry.length < 2) continue;
+        const pts = densifyWayGeom(el.geometry, 28);
+        if(pts.length < 2) continue;
+
+        let dCum = 0;
+        const dists = new Array(pts.length);
+        const rawEles = new Array(pts.length);
+        let valid = true;
+        for(let i=0; i<pts.length; i++){
+          if(i > 0) dCum += haversine(pts[i-1].lat, pts[i-1].lon, pts[i].lat, pts[i].lon);
+          dists[i] = dCum;
+          const e = sampleTerrariumAt(pts[i].lat, pts[i].lon, tz, tileMap);
+          if(!Number.isFinite(e)){ valid = false; break; }
+          rawEles[i] = e;
+        }
+        if(!valid || dCum < 12) continue;
+
+        const eles = movingAverage(rawEles, 65, dists);
+        renderedWays++;
+        casingPolys.push(pts.map(p=>[p.lat, p.lon]));
+
+        // Compute smoothed local slope per sub-segment and merge contiguous runs with same color
+        let runBucket = -1;
+        let runCoords = [];
+        const flushRun = ()=>{
+          if(runBucket >= 0 && runCoords.length >= 2){
+            bucketPolys[runBucket].push(runCoords);
+          }
+        };
+
+        for(let i=0; i<pts.length - 1; i++){
+          const midD = (dists[i] + dists[i+1]) / 2;
+          let a = i, b = i + 1;
+          while(a > 0 && midD - dists[a] < 28) a--;
+          while(b < pts.length - 1 && dists[b] - midD < 28) b++;
+          const runD = dists[b] - dists[a];
+          const pct = runD >= 6 ? Math.abs((eles[b] - eles[a]) / runD) * 100 : 0;
+          if(pct > maxFoundPct && pct < 35) maxFoundPct = pct;
+          const bkt = slopeColorBucket(pct).idx;
+          if(bkt !== runBucket){
+            flushRun();
+            runBucket = bkt;
+            runCoords = [[pts[i].lat, pts[i].lon], [pts[i+1].lat, pts[i+1].lon]];
+          } else {
+            runCoords.push([pts[i+1].lat, pts[i+1].lon]);
+          }
+        }
+        flushRun();
+      }
+
+      if(casingPolys.length){
+        // Single multi-polyline for crisp dark casing + 5 multi-polylines (one per color bucket) -> ultra fast Canvas draw!
+        L.polyline(casingPolys, {
+          renderer: slopeRenderer,
+          pane: 'slopePane',
+          color: '#1e293b',
+          weight: 5.4,
+          opacity: 0.72,
+          lineCap: 'round',
+          lineJoin: 'round',
+          interactive: false
+        }).addTo(slopeLayerGroup);
+
+        const bucketColors = ['#fde68a', '#facc15', '#f97316', '#dc2626', '#7f1d1d'];
+        for(let b=0; b<bucketPolys.length; b++){
+          if(!bucketPolys[b].length) continue;
+          L.polyline(bucketPolys[b], {
+            renderer: slopeRenderer,
+            pane: 'slopePane',
+            color: bucketColors[b],
+            weight: 3.2,
+            opacity: 0.94,
+            lineCap: 'round',
+            lineJoin: 'round',
+            interactive: false
+          }).addTo(slopeLayerGroup);
+        }
+      }
+
+      elSlopeBtn.classList.add('active');
+      elSlopeBtn.textContent = '↻ Aggiorna pendenze';
+      elSlopeClear.classList.add('show');
+      elSlopeLegend.classList.add('show');
+      elSlopeMeta.textContent = `${renderedWays} strade analizzate · max ~${maxFoundPct.toFixed(0)}% (DEM ~30 m)`;
+      flashStatus(`Mappa pendenze calcolata (${renderedWays} strade)`, 2600);
+    } finally {
+      slopeBusy = false;
+      elSlopeBtn.disabled = false;
+      popBusy();
+    }
   }
 
   /* ---- Undo / Redo & Track Rebuild ---- */
@@ -2051,7 +2436,10 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     const { a, b } = dState.selection;
     if(a < 0 || b >= dState.track.length || b <= a) return;
     const slice = dState.track.slice(a, b + 1).map(p=>[p.lat, p.lon]);
-    dSelLine = L.polyline(slice, { color:'#ff2d96', weight:6, opacity:0.95, interactive:false }).addTo(dMap);
+    dSelLine = L.layerGroup([
+      L.polyline(slice, { color:'#ffffff', weight:9.5, opacity:0.96, lineCap:'round', lineJoin:'round', interactive:false }),
+      L.polyline(slice, { color:'#ff2d96', weight:5.5, opacity:1, lineCap:'round', lineJoin:'round', interactive:false })
+    ]).addTo(dMap);
   }
 
   /* ---- Click & Drag directly on the route line to insert a new control point ---- */
@@ -2121,6 +2509,8 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
 
   function renderDrawMapLayers(){
     if(!dMap) return;
+    if(dRouteShadow){ dRouteShadow.remove(); dRouteShadow = null; }
+    if(dRouteCasing){ dRouteCasing.remove(); dRouteCasing = null; }
     if(dRouteLine){ dRouteLine.remove(); dRouteLine = null; }
     if(dRouteHit){ dRouteHit.remove(); dRouteHit = null; }
     dWpMarkers.forEach(m=>m.remove());
@@ -2128,7 +2518,9 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
 
     if(dState.track.length >= 2){
       const latlngs = dState.track.map(p=>[p.lat, p.lon]);
-      dRouteLine = L.polyline(latlngs, { color:'#0284c7', weight:4.5, opacity:0.92, interactive:false }).addTo(dMap);
+      dRouteShadow = L.polyline(latlngs, { color:'#0f172a', weight:10, opacity:0.32, lineCap:'round', lineJoin:'round', interactive:false }).addTo(dMap);
+      dRouteCasing = L.polyline(latlngs, { color:'#ffffff', weight:8, opacity:0.96, lineCap:'round', lineJoin:'round', interactive:false }).addTo(dMap);
+      dRouteLine = L.polyline(latlngs, { color:'#0055ff', weight:4.6, opacity:1, lineCap:'round', lineJoin:'round', interactive:false }).addTo(dMap);
       dRouteHit = L.polyline(latlngs, { color:'#000', weight:18, opacity:0, interactive:true, className:'route-drag-hit' }).addTo(dMap);
       dRouteHit.on('mousedown', startRouteDrag);
       dRouteHit.on('click', (e)=>{
@@ -2821,6 +3213,8 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
 
   /* ---- DRAW Toolbar Controls ---- */
   elProfile.addEventListener('change', ()=>{ dState.profile = elProfile.value; });
+  elSlopeBtn.addEventListener('click', buildSlopeMapForViewport);
+  elSlopeClear.addEventListener('click', clearSlopeOverlay);
   elBasemap.addEventListener('change', ()=> setDrawBasemap(elBasemap.value));
   elPanelToggle.addEventListener('click', ()=>{
     elPanel.classList.toggle('collapsed');
