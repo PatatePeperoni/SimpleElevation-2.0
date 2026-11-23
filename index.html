@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.10 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.11 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -187,7 +187,7 @@
   .meta{font-size:12px;color:var(--muted)}
   .viz{padding:12px;overflow-y:auto;min-height:0}
   #svgWrap{background:#fff;border:1px dashed var(--border);border-radius:18px;overflow:visible;position:relative}
-  svg#chart{display:block;max-width:100%;height:auto;cursor:crosshair}
+  svg#chart{display:block;max-width:100%;height:auto;cursor:crosshair;user-select:none;-webkit-user-select:none}
   #chart text[data-auto-label]{cursor:grab;user-select:none;-webkit-user-select:none;pointer-events:visiblePainted}
   #chart.dragging-annotation text[data-auto-label]{cursor:grabbing}
   #chart [data-endpoint-label]{cursor:ns-resize;touch-action:none;user-select:none}
@@ -993,7 +993,7 @@ function buildPoiOccurrences(idx){
 function sortSegArr(arr){ arr.sort((a,b)=>{ const da=state.points[a.startIdx]?state.points[a.startIdx].d:0; const db=state.points[b.startIdx]?state.points[b.startIdx].d:0; return da-db; }); }
 function sortPoiArr(arr){ arr.sort((a,b)=>{ const da=state.points[a.idx]?state.points[a.idx].d:0; const db=state.points[b.idx]?state.points[b.idx].d:0; return da-db; }); }
 
-function autoPoiName(idx){ const pt=state.points[idx]; if(pt&&state.namedWaypoints.length){ let best=null,bestD=1e12; for(const w of state.namedWaypoints){ const d=haversine(pt.lat,pt.lon,w.lat,w.lon); if(d<bestD){bestD=d;best=w;} } if(best&&bestD<5000) return best.name; } return ''; }
+function autoPoiName(idx){ const pt=state.points[idx]; if(pt&&state.namedWaypoints.length){ let best=null,bestD=1e12; for(const w of state.namedWaypoints){ const d=haversine(pt.lat,pt.lon,w.lat,w.lon); if(d<bestD){bestD=d;best=w;} } if(best&&bestD<5000) return transliterateToLatin(best.name); } return ''; }
 function makeSegGeo(startIdx, endIdx, pts=state.points){
   const a=pts[startIdx], b=pts[endIdx];
   if(!a||!b) return null;
@@ -1127,13 +1127,20 @@ function remapSegmentsByGeo(oldSegs, oldPts, newPts, rejectOverlap=false){
   return out;
 }
 
+function blurActiveFormField(){
+  const ae=document.activeElement;
+  if(ae && /^(input|textarea|select)$/i.test(ae.tagName)) ae.blur();
+}
+
 function addClimbSel(startIdx,endIdx,autofillComune=false){
   pushUndo();
   const wpName=autofillComune?autoPoiName(endIdx):'';
   const occ=buildSegmentOccurrences(startIdx,endIdx);
   const gid=occ.length>1?newGroupId():null; let focusObj=null; const created=[];
   occ.forEach(o=>{ const it={startIdx:o.startIdx,endIdx:o.endIdx,name:wpName||'',offsetY:8,group:gid,geo:makeSegGeo(o.startIdx,o.endIdx)}; state.climbs.push(it); created.push(it); if(o.startIdx===startIdx) focusObj=it; });
-  if(focusObj) focusObj.__focus=true;
+  // In Cmd+C autofill mode, keep keyboard focus on the chart/body so consecutive Cmd+C / C / P shortcuts work immediately
+  if(focusObj && !autofillComune) focusObj.__focus=true;
+  if(autofillComune) blurActiveFormField();
   sortSegArr(state.climbs);
   if(autofillComune && !wpName){
     const endPt=state.points[endIdx];
@@ -1143,7 +1150,6 @@ function addClimbSel(startIdx,endIdx,autofillComune=false){
         let changed=false;
         created.forEach(it=>{ if(!it.name){ it.name=nm; changed=true; } });
         if(changed){
-          if(focusObj && document.activeElement?.closest?.('#climbList')) focusObj.__focus=true;
           renderClimbList(); refreshMapOverlays(); draw();
         }
       });
@@ -1173,23 +1179,194 @@ function addPoiSel(idx){
   const wpName=autoPoiName(idx); const occ=buildPoiOccurrences(idx);
   const gid=occ.length>1?newGroupId():null; let focusObj=null; const created=[];
   occ.forEach(i=>{ const it={idx:i,name:wpName||'',offsetY:8,group:gid,geo:makePoiGeo(i)}; state.pois.push(it); created.push(it); if(i===idx) focusObj=it; });
-  if(focusObj) focusObj.__focus=true;
+  const willAutofill=!!(wpName || state.poiAutofillComune);
+  if(focusObj && !willAutofill) focusObj.__focus=true;
+  if(willAutofill) blurActiveFormField();
   sortPoiArr(state.pois);
   if(state.poiAutofillComune && !wpName){ const pt=state.points[idx]; if(pt){ queueComune(pt.lat,pt.lon,(nm)=>{ if(!nm) return; let changed=false; created.forEach(it=>{ if(!it.name){ it.name=nm; changed=true; } }); if(changed){ renderPoiList(); refreshMapOverlays(); draw(); } }); } }
 }
 function propagateGroupName(arr, item, listEl){ if(!item.group || !state.syncEdits) return; for(const o of arr){ if(o!==item && o.group===item.group) o.name=item.name; } if(listEl){ listEl.querySelectorAll('input[data-group="'+item.group+'"]').forEach(inp=>{ if(inp.value!==item.name) inp.value=item.name; }); } }
 function propagateGroupOffset(arr, item){ if(!item.group || !state.syncEdits) return; for(const o of arr){ if(o!==item && o.group===item.group) o.offsetY=item.offsetY; } }
 
+/* ---- Non-Latin Script Transliteration (Greek, Cyrillic, Georgian, Armenian, Arabic, Hebrew, Kana, Hangul) ---- */
+const NON_LATIN_RE=/[Ͱ-Ͽἀ-῿Ѐ-ԯ԰-֏֐-׿؀-ۿႠ-ჿ぀-ヿ가-힣]/;
+const GREEK_CHAR_RE=/[Ͱ-Ͽἀ-῿]/;
+const GREEK_VOICELESS=new Set(['π','τ','κ','φ','θ','χ','σ','ς','ξ','ψ']);
+const GREEK_SINGLE={ 'α':'a','β':'v','γ':'g','δ':'d','ε':'e','ζ':'z','η':'i','θ':'th','ι':'i','κ':'k','λ':'l','μ':'m','ν':'n','ξ':'x','ο':'o','π':'p','ρ':'r','σ':'s','ς':'s','τ':'t','υ':'y','φ':'f','χ':'ch','ψ':'ps','ω':'o' };
+const CYRILLIC_MAP={
+  'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z',
+  'и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r',
+  'с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch',
+  'ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+  'є':'ye','і':'i','ї':'yi','ґ':'g','ў':'u',
+  'ђ':'dj','ј':'j','љ':'lj','њ':'nj','ћ':'c','џ':'dz',
+  'ѓ':'gj','ќ':'kj','ѕ':'dz'
+};
+const GEORGIAN_MAP={
+  'ა':'a','ბ':'b','გ':'g','დ':'d','ე':'e','ვ':'v','ზ':'z','თ':'t','ი':'i','კ':'k','ლ':'l',
+  'მ':'m','ნ':'n','ო':'o','პ':'p','ჟ':'zh','რ':'r','ს':'s','ტ':'t','უ':'u','ფ':'p','ქ':'k',
+  'ღ':'gh','ყ':'q','შ':'sh','ჩ':'ch','ც':'ts','ძ':'dz','წ':'ts','ჭ':'ch','ხ':'kh','ჯ':'j','ჰ':'h'
+};
+const ARMENIAN_MAP={
+  'ա':'a','բ':'b','գ':'g','դ':'d','ե':'e','զ':'z','է':'e','ը':'y','թ':'t','ժ':'zh','ի':'i',
+  'լ':'l','խ':'kh','ծ':'ts','կ':'k','հ':'h','ձ':'dz','ղ':'gh','ճ':'ch','մ':'m','յ':'y','ն':'n',
+  'շ':'sh','ո':'o','չ':'ch','պ':'p','ջ':'j','ռ':'r','ս':'s','վ':'v','տ':'t','ր':'r','ց':'ts',
+  'ւ':'v','փ':'p','ք':'k','և':'ev','օ':'o','ֆ':'f'
+};
+const ARABIC_MAP={
+  'ا':'a','أ':'a','إ':'i','آ':'a','ب':'b','ت':'t','ث':'th','ج':'j','ح':'h','خ':'kh',
+  'د':'d','ذ':'dh','ر':'r','ز':'z','س':'s','ش':'sh','ص':'s','ض':'d','ط':'t','ظ':'z',
+  'ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','و':'w',
+  'ي':'y','ى':'a','ة':'a','ء':'','ئ':'i','ؤ':'u','پ':'p','چ':'ch','ژ':'zh','گ':'g'
+};
+const HEBREW_MAP={
+  'א':'a','ב':'b','ג':'g','ד':'d','ה':'h','ו':'v','ז':'z','ח':'ch','ט':'t','י':'y',
+  'כ':'k','ך':'kh','ל':'l','מ':'m','ם':'m','נ':'n','ן':'n','ס':'s','ע':'a',
+  'פ':'p','ף':'f','צ':'ts','ץ':'ts','ק':'k','ר':'r','ש':'sh','ת':'t'
+};
+const KANA_MAP={
+  'あ':'a','い':'i','う':'u','え':'e','お':'o','か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
+  'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so','た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to',
+  'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no','は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho',
+  'ま':'ma','み':'mi','む':'mu','め':'me','も':'mo','や':'ya','ゆ':'yu','よ':'yo',
+  'ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro','わ':'wa','を':'o','ん':'n',
+  'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go','ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
+  'だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do','ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
+  'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po',
+  'ア':'a','イ':'i','ウ':'u','エ':'e','オ':'o','カ':'ka','キ':'ki','ク':'ku','ケ':'ke','コ':'ko',
+  'サ':'sa','シ':'shi','ス':'su','セ':'se','ソ':'so','タ':'ta','チ':'chi','ツ':'tsu','テ':'te','ト':'to',
+  'ナ':'na','ニ':'ni','ヌ':'nu','ネ':'ne','ノ':'no','ハ':'ha','ヒ':'hi','フ':'fu','ヘ':'he','ホ':'ho',
+  'マ':'ma','ミ':'mi','ム':'mu','メ':'me','モ':'mo','ヤ':'ya','ユ':'yu','ヨ':'yo',
+  'ラ':'ra','リ':'ri','ル':'ru','レ':'re','ロ':'ro','ワ':'wa','ヲ':'o','ン':'n',
+  'ガ':'ga','ギ':'gi','グ':'gu','ゲ':'ge','ゴ':'go','ザ':'za','ジ':'ji','ズ':'zu','ゼ':'ze','ゾ':'zo',
+  'ダ':'da','ヂ':'ji','ヅ':'zu','デ':'de','ド':'do','バ':'ba','ビ':'bi','ブ':'bu','ベ':'be','ボ':'bo',
+  'パ':'pa','ピ':'pi','プ':'pu','ペ':'pe','ポ':'po','ー':''
+};
+const HANGUL_L=['g','kk','n','d','tt','r','m','b','pp','s','ss','','j','jj','ch','k','t','p','h'];
+const HANGUL_V=['a','ae','ya','yae','eo','e','yeo','ye','o','wa','wae','oe','yo','u','wo','we','wi','yu','eu','ui','i'];
+const HANGUL_T=['','k','k','k','n','n','n','t','l','l','l','l','l','l','l','l','m','p','p','t','t','ng','t','t','k','t','p','t'];
+
+function applyCase(rep, isUpper, allCapsCtx){
+  if(!rep || !isUpper) return rep;
+  return allCapsCtx ? rep.toUpperCase() : (rep[0].toUpperCase() + rep.slice(1));
+}
+
+function transliterateGreekSegment(s){
+  const chars=[];
+  for(let i=0;i<s.length;i++){
+    const ch=s[i];
+    if(GREEK_CHAR_RE.test(ch)){
+      const dec=ch.normalize('NFD');
+      const base=dec[0];
+      const hasDia=dec.includes('̈');
+      const isUp=base!==base.toLowerCase() && base===base.toUpperCase();
+      chars.push({ b:base.toLowerCase(), up:isUp, dia:hasDia, orig:ch, gr:true });
+    } else {
+      chars.push({ b:ch, up:false, dia:false, orig:ch, gr:false });
+    }
+  }
+  const n=chars.length;
+  let out='';
+  for(let i=0;i<n;){
+    const c=chars[i];
+    if(!c.gr){ out+=c.orig; i++; continue; }
+    const nxt=i+1<n?chars[i+1]:null;
+    const prevGr=i>0 && chars[i-1].gr;
+    const after=i+2<n?chars[i+2]:null;
+    let rep=null, step=1;
+    if(nxt && nxt.gr && !nxt.dia){
+      const pair=c.b+nxt.b;
+      if(pair==='ου'){ rep='ou'; step=2; }
+      else if(pair==='αι'){ rep='ai'; step=2; }
+      else if(pair==='ει'){ rep='ei'; step=2; }
+      else if(pair==='οι'){ rep='oi'; step=2; }
+      else if(pair==='υι'){ rep='yi'; step=2; }
+      else if(pair==='αυ'){ rep=(after && after.gr && GREEK_VOICELESS.has(after.b))?'af':'av'; step=2; }
+      else if(pair==='ευ'){ rep=(after && after.gr && GREEK_VOICELESS.has(after.b))?'ef':'ev'; step=2; }
+      else if(pair==='ηυ'){ rep=(after && after.gr && GREEK_VOICELESS.has(after.b))?'if':'iv'; step=2; }
+      else if(pair==='γγ'){ rep='ng'; step=2; }
+      else if(pair==='γξ'){ rep='nx'; step=2; }
+      else if(pair==='γχ'){ rep='nch'; step=2; }
+      else if(pair==='γκ'){ rep=prevGr?'gk':'g'; step=2; }
+      else if(pair==='μπ'){ rep=(!prevGr || !(after && after.gr))?'b':'mp'; step=2; }
+      else if(pair==='ντ'){ rep=prevGr?'nt':'d'; step=2; }
+    }
+    if(rep===null){ rep=(c.b in GREEK_SINGLE)?GREEK_SINGLE[c.b]:c.orig; step=1; }
+    const allCaps=c.up && ((step===2 && nxt && nxt.up) || (step===1 && nxt && nxt.gr && nxt.up));
+    out+=applyCase(rep, c.up, allCaps);
+    i+=step;
+  }
+  return out;
+}
+
+function transliterateToLatin(input){
+  const str=String(input||'');
+  if(!str || !NON_LATIN_RE.test(str)) return str;
+  let s=GREEK_CHAR_RE.test(str)?transliterateGreekSegment(str):str;
+  let out='';
+  let usedUnicameral=false;
+  const n=s.length;
+  for(let i=0;i<n;i++){
+    const ch=s[i];
+    const code=ch.charCodeAt(0);
+    const low=ch.toLowerCase();
+    const isUp=ch!==low && ch===ch.toUpperCase();
+    const nxt=i+1<n?s[i+1]:'';
+    const prev=i>0?s[i-1]:'';
+    const nxtUp=nxt && nxt!==nxt.toLowerCase() && nxt===nxt.toUpperCase();
+    const prevUp=prev && prev!==prev.toLowerCase() && prev===prev.toUpperCase();
+    const nxtLow=nxt && nxt===nxt.toLowerCase() && nxt!==nxt.toUpperCase();
+    const allCaps=isUp && (nxtUp || (prevUp && !nxtLow));
+
+    if(low in CYRILLIC_MAP){
+      out+=applyCase(CYRILLIC_MAP[low], isUp, allCaps);
+    } else if(low in ARMENIAN_MAP){
+      out+=applyCase(ARMENIAN_MAP[low], isUp, allCaps);
+    } else if(ch in GEORGIAN_MAP){
+      usedUnicameral=true; out+=GEORGIAN_MAP[ch];
+    } else if(ch in ARABIC_MAP){
+      usedUnicameral=true; out+=ARABIC_MAP[ch];
+    } else if(ch in HEBREW_MAP){
+      usedUnicameral=true; out+=HEBREW_MAP[ch];
+    } else if(ch in KANA_MAP){
+      usedUnicameral=true; out+=KANA_MAP[ch];
+    } else if(code>=0xAC00 && code<=0xD7A3){
+      usedUnicameral=true;
+      const idx=code-0xAC00;
+      const l=Math.floor(idx/588), v=Math.floor((idx%588)/28), t=idx%28;
+      out+=HANGUL_L[l]+HANGUL_V[v]+HANGUL_T[t];
+    } else if(code>=0x064B && code<=0x065F){
+      // Arabic diacritics (harakat): strip cleanly
+    } else if(code>=0x0591 && code<=0x05C7){
+      // Hebrew niqqud: strip cleanly
+    } else {
+      out+=ch;
+    }
+  }
+  out=out.replace(/\s{2,}/g,' ').trim();
+  if(usedUnicameral && out && out===out.toLowerCase()){
+    out=out.replace(/(^|[\s\-'/])([a-z])/g, (_,sep,c)=>sep+c.toUpperCase());
+  }
+  return out;
+}
+
 const __geoCache=new Map();
 function geoKey(lat,lon){ return lat.toFixed(3)+','+lon.toFixed(3); }
 async function nearestComune(lat, lon){
   const key=geoKey(lat,lon);
   if(__geoCache.has(key)) return __geoCache.get(key);
-  const url=`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=13&addressdetails=1&accept-language=it,en`;
+  const url=`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=13&addressdetails=1&namedetails=1&accept-language=it,en`;
   const res=await fetch(url,{headers:{'Accept':'application/json'}});
   if(!res.ok) throw new Error('geocode '+res.status);
   const data=await res.json(); const a=data.address||{};
-  const name = a.village||a.hamlet||a.town||a.city||a.municipality||a.suburb||a.city_district||a.neighbourhood||a.locality||a.isolated_dwelling||a.county||a.state_district||a.region||a.province||a.state||a.country||'';
+  let name = a.village||a.hamlet||a.town||a.city||a.municipality||a.suburb||a.city_district||a.neighbourhood||a.locality||a.isolated_dwelling||a.county||a.state_district||a.region||a.province||a.state||a.country||'';
+  // Prefer official Italian/English/international Latin exonym if available for this exact place
+  if(name && NON_LATIN_RE.test(name) && data.namedetails && (!data.name || data.name===name)){
+    const nd=data.namedetails;
+    const latinCand=[nd['name:it'],nd['name:en'],nd['int_name'],nd['name:latin'],nd['name:fr'],nd['name:de']].find(v=>v && !NON_LATIN_RE.test(v));
+    if(latinCand) name=latinCand;
+  }
+  name=transliterateToLatin(name);
   __geoCache.set(key,name);
   return name;
 }
@@ -1211,7 +1388,7 @@ function handleSelectionClick(idx){
     state.selecting=null; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.tempStart=null; setHint('');
     renderClimbList(); renderGravelList(); renderTunnelList(); refreshMapOverlays(); draw(); }
 }
-function beginLoopMode(){ if(!state.points.length) return; draw(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=true; state.tempStart=null; setHint('Porzione da ripetere: punto di partenza (Esc per annullare)'); }
+function beginLoopMode(){ if(!state.points.length) return; blurActiveFormField(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=true; state.tempStart=null; setHint('Porzione da ripetere: punto di partenza (Esc per annullare)'); draw(); }
 
 const undoStack=[], redoStack=[]; const UNDO_MAX=60;
 function snapshotState(){ return { points:state.points, namedWaypoints:state.namedWaypoints, climbs:JSON.parse(JSON.stringify(state.climbs)), pois:JSON.parse(JSON.stringify(state.pois)), gravels:JSON.parse(JSON.stringify(state.gravels)), tunnels:JSON.parse(JSON.stringify(state.tunnels)), hoverIndex:state.hoverIndex, start:startLabel.value, finish:finishLabel.value, viewStart:state.viewStart, viewEnd:state.viewEnd, minEle:state.minEle, maxEle:state.maxEle, projectName:state.projectName, startOffset:state.startOffset, finishOffset:state.finishOffset, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine }; }
@@ -1568,10 +1745,10 @@ climbOverlayModeSel.addEventListener('change', ()=>{ state.climbOverlayMode=clim
 startOffInput.addEventListener('input', ()=>{ const next=parseFloat(startOffInput.value)||0; state.finishOffset+=next-state.startOffset;state.startOffset=next; finishOffInput.value=state.finishOffset;state.points.length&&draw(); });
 finishOffInput.addEventListener('input', ()=>{ const next=parseFloat(finishOffInput.value)||0; state.startOffset+=next-state.finishOffset;state.finishOffset=next; startOffInput.value=state.startOffset;state.points.length&&draw(); });
 
-function beginClimbMode(autofillComune=false){ if(!state.points.length) return; draw(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.loopMode=false; state.climbAutofill=!!autofillComune; state.tempStart=null; setHint(state.climbAutofill?'Salita (località cima): punto di partenza (Esc per annullare)':'Salita: punto di partenza (Esc per annullare)'); }
-function beginPoiMode(){ if(!state.points.length) return; draw(); state.selecting=null; state.selectingPoi=true; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.tempStart=null; setHint('POI: clicca dove inserirlo (Esc per annullare)'); }
-function beginGravelMode(){ if(!state.points.length) return; draw(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=true; state.selectingTunnel=false; state.climbAutofill=false; state.tempStart=null; setHint('Sterrato: punto di partenza (Esc per annullare)'); }
-function beginTunnelMode(){ if(!state.points.length) return; state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=true; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint('Tunnel: scegli inizio e poi fine, sul grafico o sulla mappa (Esc per annullare).'); draw(); }
+function beginClimbMode(autofillComune=false){ if(!state.points.length) return; blurActiveFormField(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.loopMode=false; state.climbAutofill=!!autofillComune; state.tempStart=null; setHint(state.climbAutofill?'Salita (località cima): punto di partenza (Esc per annullare)':'Salita: punto di partenza (Esc per annullare)'); draw(); }
+function beginPoiMode(){ if(!state.points.length) return; blurActiveFormField(); state.selecting=null; state.selectingPoi=true; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint('POI: clicca dove inserirlo (Esc per annullare)'); draw(); }
+function beginGravelMode(){ if(!state.points.length) return; blurActiveFormField(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=true; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint('Sterrato: punto di partenza (Esc per annullare)'); draw(); }
+function beginTunnelMode(){ if(!state.points.length) return; blurActiveFormField(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=true; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint('Tunnel: scegli inizio e poi fine, sul grafico o sulla mappa (Esc per annullare).'); draw(); }
 addClimbBtn.addEventListener('click', ()=> beginClimbMode(false));
 addPoiBtn.addEventListener('click', beginPoiMode);
 addGravelBtn.addEventListener('click', beginGravelMode);
@@ -1715,15 +1892,16 @@ svg.addEventListener('mousemove',e=>{
   const idx=indexFromChartEvent(e);if(idx!=null)showCrosshairAtIndex(idx,false,true);
 });
 svg.addEventListener('click',e=>{
+  blurActiveFormField();
   if(ignoreEndpointClick){ignoreEndpointClick=false;return;}
   if(e.target.closest?.('[data-endpoint-label]')||e.target.closest?.('text[data-auto-label]'))return;
   if((!state.selecting&&!state.selectingPoi)||!state.points.length) return;
   const idx=indexFromChartEvent(e); if(idx!=null) handleSelectionClick(idx);
 });
 
-function renderClimbList(focusLast){ const list=document.getElementById('climbList'); if(!state.climbs.length){ list.textContent='No climbs yet'; return; } list.innerHTML=''; state.climbs.forEach((c,i)=>{ const item=document.createElement('div'); item.className='item'; const left=document.createElement('div'); const name=document.createElement('input'); name.type='text'; name.placeholder='Climb name'; name.value=c.name||''; if(c.group) name.dataset.group=c.group; name.oninput=()=>{ c.name=name.value; propagateGroupName(state.climbs,c,list); refreshMapOverlays(); draw(); }; const meta=document.createElement('div'); meta.className='meta'; if(state.points[c.startIdx]&&state.points[c.endIdx]){ const a=state.points[c.startIdx], b=state.points[c.endIdx]; const lenKm=(b.d-a.d)/1000; const slope=((b.ele - a.ele)/Math.max(1,(b.d - a.d)))*100; meta.textContent=`${lenKm.toFixed(1)} km · ${slope.toFixed(1)}% · km ${(a.d/1000).toFixed(1)} · offset ${(c.offsetY||0)}px`; } else meta.textContent='(pending)'; const gc=groupCount(state.climbs,c.group); if(gc>1){ const tag=document.createElement('span'); tag.className='gtag'; tag.textContent='⟳ '+gc+' giri'; tag.title='Settore ripetuto su più giri'; meta.appendChild(tag); } left.appendChild(name); left.appendChild(meta); const right=document.createElement('div'); right.style.display='flex'; right.style.alignItems='center'; const nudge=document.createElement('div'); nudge.className='nudge'; const up=document.createElement('button'); up.textContent='▲'; up.onclick=()=>{ c.offsetY=(c.offsetY||0)+8; propagateGroupOffset(state.climbs,c); renderClimbList(); draw(); }; const down=document.createElement('button'); down.textContent='▼'; down.onclick=()=>{ c.offsetY=(c.offsetY||0)-8; propagateGroupOffset(state.climbs,c); renderClimbList(); draw(); }; nudge.appendChild(up); nudge.appendChild(down); const del=document.createElement('button'); del.className='del'; del.textContent='✕'; del.title='Delete climb'; del.onclick=()=>{ pushUndo(); state.climbs.splice(i,1); renderClimbList(); refreshMapOverlays(); draw(); }; right.appendChild(nudge); right.appendChild(del); item.appendChild(left); item.appendChild(right); list.appendChild(item); if(c.__focus || (focusLast && i===state.climbs.length-1) || state.focusClimbIndex===i){ delete c.__focus; setTimeout(()=>{ name.focus(); name.select(); state.focusClimbIndex=null; },0); } }); }
-function renderPoiList(focusLast){ const list=document.getElementById('poiList'); if(!state.pois.length){ list.textContent='No POIs yet'; return; } list.innerHTML=''; state.pois.forEach((p,i)=>{ const item=document.createElement('div'); item.className='item'; const left=document.createElement('div'); const name=document.createElement('input'); name.type='text'; name.placeholder='POI name'; name.value=p.name||''; if(p.group) name.dataset.group=p.group; name.oninput=()=>{ p.name=name.value; propagateGroupName(state.pois,p,list); refreshMapOverlays(); draw(); }; const meta=document.createElement('div'); meta.className='meta'; meta.textContent=state.points[p.idx]?`${Math.round(state.points[p.idx].eleS)} m · km ${(state.points[p.idx].d/1000).toFixed(1)} · offset ${(p.offsetY||0)}px`:'(pending)'; const gc=groupCount(state.pois,p.group); if(gc>1){ const tag=document.createElement('span'); tag.className='gtag'; tag.textContent='⟳ '+gc+' giri'; tag.title='Punto ripetuto su più giri'; meta.appendChild(tag); } left.appendChild(name); left.appendChild(meta); const right=document.createElement('div'); right.style.display='flex'; right.style.alignItems='center'; const nudge=document.createElement('div'); nudge.className='nudge'; const up=document.createElement('button'); up.textContent='▲'; up.onclick=()=>{ p.offsetY=(p.offsetY||0)+8; propagateGroupOffset(state.pois,p); renderPoiList(); draw(); }; const down=document.createElement('button'); down.textContent='▼'; down.onclick=()=>{ p.offsetY=(p.offsetY||0)-8; propagateGroupOffset(state.pois,p); renderPoiList(); draw(); }; nudge.appendChild(up); nudge.appendChild(down); const del=document.createElement('button'); del.className='del'; del.textContent='✕'; del.title='Delete POI'; del.onclick=()=>{ pushUndo(); state.pois.splice(i,1); renderPoiList(); refreshMapOverlays(); draw(); }; right.appendChild(nudge); right.appendChild(del); item.appendChild(left); item.appendChild(right); list.appendChild(item); if(p.__focus || (focusLast && i===state.pois.length-1)){ delete p.__focus; setTimeout(()=>{ name.focus(); name.select(); },0); } }); }
-function renderGravelList(focusLast){ const list=document.getElementById('gravelList'); if(!state.gravels.length){ list.textContent='No gravel segments yet'; return; } list.innerHTML=''; state.gravels.forEach((g,i)=>{ const item=document.createElement('div'); item.className='item'; const left=document.createElement('div'); const name=document.createElement('input'); name.type='text'; name.placeholder='Gravel name'; name.value=g.name||''; if(g.group) name.dataset.group=g.group; name.oninput=()=>{ g.name=name.value; propagateGroupName(state.gravels,g,list); draw(); }; const meta=document.createElement('div'); meta.className='meta'; if(state.points[g.startIdx]&&state.points[g.endIdx]){ const a=state.points[g.startIdx], b=state.points[g.endIdx]; const lenKm=(b.d-a.d)/1000; meta.textContent=`${lenKm.toFixed(1)} km · km ${(a.d/1000).toFixed(1)} · offset ${(g.offsetY||0)}px`; } else meta.textContent='(pending)'; const gc=groupCount(state.gravels,g.group); if(gc>1){ const tag=document.createElement('span'); tag.className='gtag'; tag.textContent='⟳ '+gc+' giri'; tag.title='Settore ripetuto su più giri'; meta.appendChild(tag); } left.appendChild(name); left.appendChild(meta); const right=document.createElement('div'); right.style.display='flex'; right.style.alignItems='center'; const nudge=document.createElement('div'); nudge.className='nudge'; const up=document.createElement('button'); up.textContent='▲'; up.onclick=()=>{ g.offsetY=(g.offsetY||0)+8; propagateGroupOffset(state.gravels,g); renderGravelList(); draw(); }; const down=document.createElement('button'); down.textContent='▼'; down.onclick=()=>{ g.offsetY=(g.offsetY||0)-8; propagateGroupOffset(state.gravels,g); renderGravelList(); draw(); }; nudge.appendChild(up); nudge.appendChild(down); const del=document.createElement('button'); del.className='del'; del.textContent='✕'; del.title='Delete gravel'; del.onclick=()=>{ pushUndo(); state.gravels.splice(i,1); renderGravelList(); draw(); }; right.appendChild(nudge); right.appendChild(del); item.appendChild(left); item.appendChild(right); list.appendChild(item); if(g.__focus || (focusLast && i===state.gravels.length-1) || state.focusGravelIndex===i){ delete g.__focus; setTimeout(()=>{ name.focus(); name.select(); state.focusGravelIndex=null; },0); } }); }
+function renderClimbList(focusLast){ const list=document.getElementById('climbList'); if(!state.climbs.length){ list.textContent='No climbs yet'; return; } list.innerHTML=''; state.climbs.forEach((c,i)=>{ const item=document.createElement('div'); item.className='item'; const left=document.createElement('div'); const name=document.createElement('input'); name.type='text'; name.placeholder='Climb name'; name.value=c.name||''; if(c.group) name.dataset.group=c.group; name.oninput=()=>{ c.name=name.value; propagateGroupName(state.climbs,c,list); refreshMapOverlays(); draw(); }; name.onkeydown=(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); name.blur(); } }; const meta=document.createElement('div'); meta.className='meta'; if(state.points[c.startIdx]&&state.points[c.endIdx]){ const a=state.points[c.startIdx], b=state.points[c.endIdx]; const lenKm=(b.d-a.d)/1000; const slope=((b.ele - a.ele)/Math.max(1,(b.d - a.d)))*100; meta.textContent=`${lenKm.toFixed(1)} km · ${slope.toFixed(1)}% · km ${(a.d/1000).toFixed(1)} · offset ${(c.offsetY||0)}px`; } else meta.textContent='(pending)'; const gc=groupCount(state.climbs,c.group); if(gc>1){ const tag=document.createElement('span'); tag.className='gtag'; tag.textContent='⟳ '+gc+' giri'; tag.title='Settore ripetuto su più giri'; meta.appendChild(tag); } left.appendChild(name); left.appendChild(meta); const right=document.createElement('div'); right.style.display='flex'; right.style.alignItems='center'; const nudge=document.createElement('div'); nudge.className='nudge'; const up=document.createElement('button'); up.textContent='▲'; up.onclick=()=>{ c.offsetY=(c.offsetY||0)+8; propagateGroupOffset(state.climbs,c); renderClimbList(); draw(); }; const down=document.createElement('button'); down.textContent='▼'; down.onclick=()=>{ c.offsetY=(c.offsetY||0)-8; propagateGroupOffset(state.climbs,c); renderClimbList(); draw(); }; nudge.appendChild(up); nudge.appendChild(down); const del=document.createElement('button'); del.className='del'; del.textContent='✕'; del.title='Delete climb'; del.onclick=()=>{ pushUndo(); state.climbs.splice(i,1); renderClimbList(); refreshMapOverlays(); draw(); }; right.appendChild(nudge); right.appendChild(del); item.appendChild(left); item.appendChild(right); list.appendChild(item); if(c.__focus || (focusLast && i===state.climbs.length-1) || state.focusClimbIndex===i){ delete c.__focus; setTimeout(()=>{ name.focus(); name.select(); state.focusClimbIndex=null; },0); } }); }
+function renderPoiList(focusLast){ const list=document.getElementById('poiList'); if(!state.pois.length){ list.textContent='No POIs yet'; return; } list.innerHTML=''; state.pois.forEach((p,i)=>{ const item=document.createElement('div'); item.className='item'; const left=document.createElement('div'); const name=document.createElement('input'); name.type='text'; name.placeholder='POI name'; name.value=p.name||''; if(p.group) name.dataset.group=p.group; name.oninput=()=>{ p.name=name.value; propagateGroupName(state.pois,p,list); refreshMapOverlays(); draw(); }; name.onkeydown=(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); name.blur(); } }; const meta=document.createElement('div'); meta.className='meta'; meta.textContent=state.points[p.idx]?`${Math.round(state.points[p.idx].eleS)} m · km ${(state.points[p.idx].d/1000).toFixed(1)} · offset ${(p.offsetY||0)}px`:'(pending)'; const gc=groupCount(state.pois,p.group); if(gc>1){ const tag=document.createElement('span'); tag.className='gtag'; tag.textContent='⟳ '+gc+' giri'; tag.title='Punto ripetuto su più giri'; meta.appendChild(tag); } left.appendChild(name); left.appendChild(meta); const right=document.createElement('div'); right.style.display='flex'; right.style.alignItems='center'; const nudge=document.createElement('div'); nudge.className='nudge'; const up=document.createElement('button'); up.textContent='▲'; up.onclick=()=>{ p.offsetY=(p.offsetY||0)+8; propagateGroupOffset(state.pois,p); renderPoiList(); draw(); }; const down=document.createElement('button'); down.textContent='▼'; down.onclick=()=>{ p.offsetY=(p.offsetY||0)-8; propagateGroupOffset(state.pois,p); renderPoiList(); draw(); }; nudge.appendChild(up); nudge.appendChild(down); const del=document.createElement('button'); del.className='del'; del.textContent='✕'; del.title='Delete POI'; del.onclick=()=>{ pushUndo(); state.pois.splice(i,1); renderPoiList(); refreshMapOverlays(); draw(); }; right.appendChild(nudge); right.appendChild(del); item.appendChild(left); item.appendChild(right); list.appendChild(item); if(p.__focus || (focusLast && i===state.pois.length-1)){ delete p.__focus; setTimeout(()=>{ name.focus(); name.select(); },0); } }); }
+function renderGravelList(focusLast){ const list=document.getElementById('gravelList'); if(!state.gravels.length){ list.textContent='No gravel segments yet'; return; } list.innerHTML=''; state.gravels.forEach((g,i)=>{ const item=document.createElement('div'); item.className='item'; const left=document.createElement('div'); const name=document.createElement('input'); name.type='text'; name.placeholder='Gravel name'; name.value=g.name||''; if(g.group) name.dataset.group=g.group; name.oninput=()=>{ g.name=name.value; propagateGroupName(state.gravels,g,list); draw(); }; name.onkeydown=(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); name.blur(); } }; const meta=document.createElement('div'); meta.className='meta'; if(state.points[g.startIdx]&&state.points[g.endIdx]){ const a=state.points[g.startIdx], b=state.points[g.endIdx]; const lenKm=(b.d-a.d)/1000; meta.textContent=`${lenKm.toFixed(1)} km · km ${(a.d/1000).toFixed(1)} · offset ${(g.offsetY||0)}px`; } else meta.textContent='(pending)'; const gc=groupCount(state.gravels,g.group); if(gc>1){ const tag=document.createElement('span'); tag.className='gtag'; tag.textContent='⟳ '+gc+' giri'; tag.title='Settore ripetuto su più giri'; meta.appendChild(tag); } left.appendChild(name); left.appendChild(meta); const right=document.createElement('div'); right.style.display='flex'; right.style.alignItems='center'; const nudge=document.createElement('div'); nudge.className='nudge'; const up=document.createElement('button'); up.textContent='▲'; up.onclick=()=>{ g.offsetY=(g.offsetY||0)+8; propagateGroupOffset(state.gravels,g); renderGravelList(); draw(); }; const down=document.createElement('button'); down.textContent='▼'; down.onclick=()=>{ g.offsetY=(g.offsetY||0)-8; propagateGroupOffset(state.gravels,g); renderGravelList(); draw(); }; nudge.appendChild(up); nudge.appendChild(down); const del=document.createElement('button'); del.className='del'; del.textContent='✕'; del.title='Delete gravel'; del.onclick=()=>{ pushUndo(); state.gravels.splice(i,1); renderGravelList(); draw(); }; right.appendChild(nudge); right.appendChild(del); item.appendChild(left); item.appendChild(right); list.appendChild(item); if(g.__focus || (focusLast && i===state.gravels.length-1) || state.focusGravelIndex===i){ delete g.__focus; setTimeout(()=>{ name.focus(); name.select(); state.focusGravelIndex=null; },0); } }); }
 function renderTunnelList(){
   const list=document.getElementById('tunnelList');
   if(!state.tunnels.length){list.textContent='No tunnels yet';return;}
@@ -1733,7 +1911,7 @@ function renderTunnelList(){
     const left=document.createElement('div');
     const name=document.createElement('input');name.type='text';name.placeholder='Tunnel name';name.value=t.name||'';
     if(t.group) name.dataset.group=t.group;
-    name.oninput=()=>{t.name=name.value;propagateGroupName(state.tunnels,t,list);draw();};
+    name.oninput=()=>{t.name=name.value;propagateGroupName(state.tunnels,t,list);draw();}; name.onkeydown=(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); name.blur(); } };
     const meta=document.createElement('div');meta.className='meta';
     const a=state.points[t.startIdx],b=state.points[t.endIdx];
     meta.textContent=a&&b?`${((b.d-a.d)/1000).toFixed(2)} km · km ${(a.d/1000).toFixed(2)}–${(b.d/1000).toFixed(2)} · ${Math.round(a.eleS)} → ${Math.round(b.eleS)} m`:'(pending)';
@@ -1783,7 +1961,9 @@ document.addEventListener('keydown', (e)=>{
   if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){ if(e.shiftKey) doRedo(); else doUndo(); e.preventDefault(); return; }
   if((e.ctrlKey||e.metaKey) && (e.key==='y'||e.key==='Y')){ doRedo(); e.preventDefault(); return; }
   if(e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && (e.key==='c'||e.key==='C')){
-    if(!window.getSelection?.().toString()){
+    const sel=window.getSelection?.();
+    const selTxt=sel?sel.toString().trim():'';
+    if(!selTxt){
       beginClimbMode(true);
       e.preventDefault();
       return;
@@ -1872,7 +2052,7 @@ function updateMapCursorAtIndex(idx,followMap=false){
   }
 }
 function onMapMove(e){ if(!state.points.length)return; const idx=nearestIndexOnMap(e.latlng.lat,e.latlng.lng); showCrosshairAtIndex(idx,true); }
-function onMapClick(e){ if(!state.points.length)return; const idx=nearestIndexOnMap(e.latlng.lat,e.latlng.lng); showCrosshairAtIndex(idx,true);handleSelectionClick(idx); }
+function onMapClick(e){ blurActiveFormField(); if(!state.points.length)return; const idx=nearestIndexOnMap(e.latlng.lat,e.latlng.lng); showCrosshairAtIndex(idx,true);handleSelectionClick(idx); }
 
 /* Resizers */
 (function(){ const layout=document.getElementById('layout'); const cols=layout.querySelectorAll('.col'); const resizers=layout.querySelectorAll('.resizer'); let active=null; resizers.forEach((r,idx)=>{ r.addEventListener('mousedown',e=>{ active={idx,startX:e.clientX, widths:[...cols].map(c=>c.getBoundingClientRect().width)}; document.body.style.cursor='col-resize'; e.preventDefault(); }); }); window.addEventListener('mousemove',e=>{ if(!active) return; const dx=e.clientX-active.startX; const i=active.idx; const left=cols[i]; const right=cols[i+1]; const total=active.widths[i]+active.widths[i+1]; let wl=Math.max(260, active.widths[i]+dx); let wr=Math.max(320, total-wl); wl=total-wr; left.style.flex=`0 0 ${wl}px`; right.style.flex=`0 0 ${wr}px`; }); window.addEventListener('mouseup',()=>{ if(active){ active=null; document.body.style.cursor=''; if(map) map.invalidateSize(); } }); })();
