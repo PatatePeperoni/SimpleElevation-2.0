@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.9 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.10 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -579,7 +579,7 @@
           <button id="loopPart" class="ghost" disabled title="Seleziona inizio e fine del tratto da ripetere">Ripeti porzione…</button>
         </div>
         <div class="muted" style="margin-top:2px">"Ripeti porzione": poi clicca inizio e fine del tratto sul grafico o sulla mappa. Le marcature esistenti verranno azzerate.</div>
-        <div class="muted" style="margin-top:6px">Shortcuts: <strong>C</strong> climb · <strong>P</strong> POI · <strong>G</strong> gravel · <strong>T</strong> tunnel · <strong>Esc</strong> cancel<br>Trascina il testo delle etichette: verticale · <strong>Shift</strong> orizzontale · <strong>⌘ Cmd</strong> libero</div>
+        <div class="muted" style="margin-top:6px">Shortcuts: <strong>C</strong> climb · <strong>⌘C</strong> climb (località cima) · <strong>P</strong> POI · <strong>G</strong> gravel · <strong>T</strong> tunnel · <strong>Esc</strong> cancel<br>Trascina il testo delle etichette: verticale · <strong>Shift</strong> orizzontale · <strong>⌘ Cmd</strong> libero</div>
       </div>
     </section>
   </div>
@@ -851,7 +851,7 @@ tabPaint.addEventListener('click', ()=> switchEnv('paint'));
 const NS='http://www.w3.org/2000/svg';
 const XLINK='http://www.w3.org/1999/xlink';
 const COLORS={ pink:'#ff2d96', fill:'#fbf6ea', grid:'#e8edf2', green:'#15a34a', axis:'#475569', text:'#0f172a', guide:'#94a3b8', gravel:'#6b7280', kom:'#2c7be5', komMid:'#3aa0ff', sprint:'#f97316', sprintMid:'#fb923c'};
-const state={ points:[], tunnels:[], profileElevations:[], hoverIndex:null, selectingTunnel:false, minEle:0, maxEle:0, climbs:[], pois:[], gravels:[], vExag:0.5, viewStart:0, viewEnd:1, yStep:200, namedWaypoints:[], selecting:null, selectingPoi:false, selectingGravel:false, tempStart:null, autoReplicate:true, syncEdits:true, poiAutofillComune:true, loopMode:false, focusClimbIndex:null, focusPoiIndex:null, focusGravelIndex:null, fillColor:COLORS.fill, lineColor:COLORS.pink, noProfileFill:false, noProfileLine:false, climbColor:COLORS.green, climbFillColor:COLORS.green, climbOverlayMode:'solid', startOffset:0, finishOffset:0, showKom:true, showSprint:true, projectName:'elevation' };
+const state={ points:[], tunnels:[], profileElevations:[], hoverIndex:null, selectingTunnel:false, minEle:0, maxEle:0, climbs:[], pois:[], gravels:[], vExag:0.5, viewStart:0, viewEnd:1, yStep:200, namedWaypoints:[], selecting:null, selectingPoi:false, selectingGravel:false, climbAutofill:false, tempStart:null, autoReplicate:true, syncEdits:true, poiAutofillComune:true, loopMode:false, focusClimbIndex:null, focusPoiIndex:null, focusGravelIndex:null, fillColor:COLORS.fill, lineColor:COLORS.pink, noProfileFill:false, noProfileLine:false, climbColor:COLORS.green, climbFillColor:COLORS.green, climbOverlayMode:'solid', startOffset:0, finishOffset:0, showKom:true, showSprint:true, projectName:'elevation' };
 let hitBoxEl=null; let guideGroup=null;
 const svg=document.getElementById('chart');
 const gpxInput=document.getElementById('gpx');
@@ -1127,13 +1127,28 @@ function remapSegmentsByGeo(oldSegs, oldPts, newPts, rejectOverlap=false){
   return out;
 }
 
-function addClimbSel(startIdx,endIdx){
+function addClimbSel(startIdx,endIdx,autofillComune=false){
   pushUndo();
+  const wpName=autofillComune?autoPoiName(endIdx):'';
   const occ=buildSegmentOccurrences(startIdx,endIdx);
-  const gid=occ.length>1?newGroupId():null; let focusObj=null;
-  occ.forEach(o=>{ const it={startIdx:o.startIdx,endIdx:o.endIdx,name:'',offsetY:8,group:gid,geo:makeSegGeo(o.startIdx,o.endIdx)}; state.climbs.push(it); if(o.startIdx===startIdx) focusObj=it; });
+  const gid=occ.length>1?newGroupId():null; let focusObj=null; const created=[];
+  occ.forEach(o=>{ const it={startIdx:o.startIdx,endIdx:o.endIdx,name:wpName||'',offsetY:8,group:gid,geo:makeSegGeo(o.startIdx,o.endIdx)}; state.climbs.push(it); created.push(it); if(o.startIdx===startIdx) focusObj=it; });
   if(focusObj) focusObj.__focus=true;
   sortSegArr(state.climbs);
+  if(autofillComune && !wpName){
+    const endPt=state.points[endIdx];
+    if(endPt){
+      queueComune(endPt.lat,endPt.lon,(nm)=>{
+        if(!nm) return;
+        let changed=false;
+        created.forEach(it=>{ if(!it.name){ it.name=nm; changed=true; } });
+        if(changed){
+          if(focusObj && document.activeElement?.closest?.('#climbList')) focusObj.__focus=true;
+          renderClimbList(); refreshMapOverlays(); draw();
+        }
+      });
+    }
+  }
 }
 function addGravelSel(startIdx,endIdx){
   pushUndo();
@@ -1183,24 +1198,24 @@ function queueComune(lat,lon,cb){ const key=geoKey(lat,lon); if(__geoCache.has(k
 function pumpGeo(){ if(__geoBusy||!__geoQueue.length) return; __geoBusy=true; const job=__geoQueue.shift(); nearestComune(job.lat,job.lon).then(nm=>{ try{ job.cb(nm); }catch(_){} }).catch(()=>{ try{ job.cb(''); }catch(_){} }).finally(()=>{ setTimeout(()=>{ __geoBusy=false; pumpGeo(); }, GEO_GAP); }); }
 
 function setHint(msg){ const el=document.getElementById('selHint'); if(!el) return; el.textContent=msg||''; el.classList.toggle('active', !!msg); }
-function cancelSelection(){ state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.loopMode=false; state.tempStart=null; setHint(''); if(state.points.length) draw(); }
+function cancelSelection(){ state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint(''); if(state.points.length) draw(); }
 function handleSelectionClick(idx){
   if(idx==null || !state.points[idx]) return;
   if(state.selectingPoi){ addPoiSel(idx); state.selectingPoi=false; setHint(''); renderPoiList(); refreshMapOverlays(); draw(); return; }
-  if(state.selecting==='start'){ state.tempStart=idx; state.selecting='end'; showCrosshairAtIndex(idx,false); setHint(state.loopMode?'Porzione: punto finale (Esc per annullare)':'Punto finale (Esc per annullare)'); return; }
+  if(state.selecting==='start'){ state.tempStart=idx; state.selecting='end'; showCrosshairAtIndex(idx,false); setHint(state.loopMode?'Porzione: punto finale (Esc per annullare)':(state.climbAutofill?'Salita (località cima): punto finale / cima (Esc per annullare)':'Punto finale (Esc per annullare)')); return; }
   if(state.selecting==='end'){ if(idx<=state.tempStart) return; const s=state.tempStart, e=idx;
-    if(state.loopMode){ state.selecting=null; state.loopMode=false; state.tempStart=null; setHint(''); buildLoops(s,e); return; }
+    if(state.loopMode){ state.selecting=null; state.loopMode=false; state.climbAutofill=false; state.tempStart=null; setHint(''); buildLoops(s,e); return; }
     if(state.selectingTunnel){
       if(!addTunnelSel(s,e)){setHint('Il tunnel si sovrappone a uno già presente: scegli un altro intervallo (Esc per annullare).'); return;}
-    } else if(state.selectingGravel) addGravelSel(s,e); else addClimbSel(s,e);
-    state.selecting=null; state.selectingGravel=false; state.selectingTunnel=false; state.tempStart=null; setHint('');
+    } else if(state.selectingGravel) addGravelSel(s,e); else addClimbSel(s,e,state.climbAutofill);
+    state.selecting=null; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.tempStart=null; setHint('');
     renderClimbList(); renderGravelList(); renderTunnelList(); refreshMapOverlays(); draw(); }
 }
-function beginLoopMode(){ if(!state.points.length) return; draw(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.loopMode=true; state.tempStart=null; setHint('Porzione da ripetere: punto di partenza (Esc per annullare)'); }
+function beginLoopMode(){ if(!state.points.length) return; draw(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=true; state.tempStart=null; setHint('Porzione da ripetere: punto di partenza (Esc per annullare)'); }
 
 const undoStack=[], redoStack=[]; const UNDO_MAX=60;
 function snapshotState(){ return { points:state.points, namedWaypoints:state.namedWaypoints, climbs:JSON.parse(JSON.stringify(state.climbs)), pois:JSON.parse(JSON.stringify(state.pois)), gravels:JSON.parse(JSON.stringify(state.gravels)), tunnels:JSON.parse(JSON.stringify(state.tunnels)), hoverIndex:state.hoverIndex, start:startLabel.value, finish:finishLabel.value, viewStart:state.viewStart, viewEnd:state.viewEnd, minEle:state.minEle, maxEle:state.maxEle, projectName:state.projectName, startOffset:state.startOffset, finishOffset:state.finishOffset, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine }; }
-function restoreSnapshot(s){ state.points=s.points; state.namedWaypoints=s.namedWaypoints||[]; state.climbs=s.climbs; state.pois=s.pois; state.gravels=s.gravels; state.tunnels=s.tunnels||[]; state.hoverIndex=s.hoverIndex??null; state.profileElevations=[]; state.viewStart=s.viewStart; state.viewEnd=s.viewEnd; state.minEle=s.minEle; state.maxEle=s.maxEle; state.projectName=s.projectName; state.startOffset=s.startOffset??state.startOffset; state.finishOffset=s.finishOffset??state.finishOffset; state.noProfileFill=s.noProfileFill??state.noProfileFill; state.noProfileLine=s.noProfileLine??state.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; startOffInput.value=state.startOffset; finishOffInput.value=state.finishOffset; startLabel.value=s.start; finishLabel.value=s.finish; state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.loopMode=false; state.tempStart=null; setHint(''); setButtonsEnabled(state.points.length>0); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
+function restoreSnapshot(s){ state.points=s.points; state.namedWaypoints=s.namedWaypoints||[]; state.climbs=s.climbs; state.pois=s.pois; state.gravels=s.gravels; state.tunnels=s.tunnels||[]; state.hoverIndex=s.hoverIndex??null; state.profileElevations=[]; state.viewStart=s.viewStart; state.viewEnd=s.viewEnd; state.minEle=s.minEle; state.maxEle=s.maxEle; state.projectName=s.projectName; state.startOffset=s.startOffset??state.startOffset; state.finishOffset=s.finishOffset??state.finishOffset; state.noProfileFill=s.noProfileFill??state.noProfileFill; state.noProfileLine=s.noProfileLine??state.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; startOffInput.value=state.startOffset; finishOffInput.value=state.finishOffset; startLabel.value=s.start; finishLabel.value=s.finish; state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint(''); setButtonsEnabled(state.points.length>0); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
 function pushUndo(){ undoStack.push(snapshotState()); if(undoStack.length>UNDO_MAX) undoStack.shift(); redoStack.length=0; updateUndoButtons(); }
 function doUndo(){ if(!undoStack.length) return; redoStack.push(snapshotState()); restoreSnapshot(undoStack.pop()); updateUndoButtons(); }
 function doRedo(){ if(!redoStack.length) return; undoStack.push(snapshotState()); restoreSnapshot(redoStack.pop()); updateUndoButtons(); }
@@ -1213,7 +1228,7 @@ function clearAll(){
   }
   state.points=[]; state.climbs=[]; state.pois=[]; state.gravels=[]; state.tunnels=[]; state.profileElevations=[]; state.hoverIndex=null; state.namedWaypoints=[];
   state.minEle=0; state.maxEle=0; state.viewStart=0; state.viewEnd=1;
-  state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.loopMode=false; state.tempStart=null; setHint('');
+  state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint('');
   state.projectName='elevation';
   startLabel.value=''; finishLabel.value='';
   if(gpxInput) gpxInput.value='';
@@ -1553,11 +1568,11 @@ climbOverlayModeSel.addEventListener('change', ()=>{ state.climbOverlayMode=clim
 startOffInput.addEventListener('input', ()=>{ const next=parseFloat(startOffInput.value)||0; state.finishOffset+=next-state.startOffset;state.startOffset=next; finishOffInput.value=state.finishOffset;state.points.length&&draw(); });
 finishOffInput.addEventListener('input', ()=>{ const next=parseFloat(finishOffInput.value)||0; state.startOffset+=next-state.finishOffset;state.finishOffset=next; startOffInput.value=state.startOffset;state.points.length&&draw(); });
 
-function beginClimbMode(){ if(!state.points.length) return; draw(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.tempStart=null; setHint('Salita: punto di partenza (Esc per annullare)'); }
-function beginPoiMode(){ if(!state.points.length) return; draw(); state.selecting=null; state.selectingPoi=true; state.selectingGravel=false; state.selectingTunnel=false; state.tempStart=null; setHint('POI: clicca dove inserirlo (Esc per annullare)'); }
-function beginGravelMode(){ if(!state.points.length) return; draw(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=true; state.selectingTunnel=false; state.tempStart=null; setHint('Sterrato: punto di partenza (Esc per annullare)'); }
-function beginTunnelMode(){ if(!state.points.length) return; state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=true; state.loopMode=false; state.tempStart=null; setHint('Tunnel: scegli inizio e poi fine, sul grafico o sulla mappa (Esc per annullare).'); draw(); }
-addClimbBtn.addEventListener('click', beginClimbMode);
+function beginClimbMode(autofillComune=false){ if(!state.points.length) return; draw(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.loopMode=false; state.climbAutofill=!!autofillComune; state.tempStart=null; setHint(state.climbAutofill?'Salita (località cima): punto di partenza (Esc per annullare)':'Salita: punto di partenza (Esc per annullare)'); }
+function beginPoiMode(){ if(!state.points.length) return; draw(); state.selecting=null; state.selectingPoi=true; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.tempStart=null; setHint('POI: clicca dove inserirlo (Esc per annullare)'); }
+function beginGravelMode(){ if(!state.points.length) return; draw(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=true; state.selectingTunnel=false; state.climbAutofill=false; state.tempStart=null; setHint('Sterrato: punto di partenza (Esc per annullare)'); }
+function beginTunnelMode(){ if(!state.points.length) return; state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=true; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint('Tunnel: scegli inizio e poi fine, sul grafico o sulla mappa (Esc per annullare).'); draw(); }
+addClimbBtn.addEventListener('click', ()=> beginClimbMode(false));
 addPoiBtn.addEventListener('click', beginPoiMode);
 addGravelBtn.addEventListener('click', beginGravelMode);
 addTunnelBtn.addEventListener('click', beginTunnelMode);
@@ -1767,8 +1782,15 @@ document.addEventListener('keydown', (e)=>{
   if(tag==='input'||tag==='textarea'||tag==='select') return;
   if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){ if(e.shiftKey) doRedo(); else doUndo(); e.preventDefault(); return; }
   if((e.ctrlKey||e.metaKey) && (e.key==='y'||e.key==='Y')){ doRedo(); e.preventDefault(); return; }
+  if(e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && (e.key==='c'||e.key==='C')){
+    if(!window.getSelection?.().toString()){
+      beginClimbMode(true);
+      e.preventDefault();
+      return;
+    }
+  }
   if(e.ctrlKey||e.metaKey||e.altKey) return;
-  if(e.key==='c'||e.key==='C'){ beginClimbMode(); e.preventDefault(); }
+  if(e.key==='c'||e.key==='C'){ beginClimbMode(false); e.preventDefault(); }
   if(e.key==='p'||e.key==='P'){ beginPoiMode(); e.preventDefault(); }
   if(e.key==='g'||e.key==='G'){ beginGravelMode(); e.preventDefault(); }
   if(e.key==='t'||e.key==='T'){ beginTunnelMode(); e.preventDefault(); }
