@@ -5,8 +5,8 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.11 — DRAW &amp; PAINT</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<title>Simple Elevation v2.14 — DRAW &amp; PAINT</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;500;600;700&family=Bebas+Neue&family=Inter:wght@400;600;700&family=Montserrat:wght@300;700;800&family=Oswald:wght@400;500;600;700&family=Roboto+Condensed:wght@400;600;700&family=Source+Sans+3:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
 <style>
@@ -19,7 +19,9 @@
   /* Header & Environment Switcher */
   header.top{padding:10px 16px;background:linear-gradient(180deg,#ffffff 0%, #f9fbff 100%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:30;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
   .brand-wrap{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+  .brand-title{display:inline-flex;align-items:baseline;gap:6px}
   h1{margin:0;font-size:19px;font-weight:800;white-space:nowrap}
+  .ver-badge{font-family:Montserrat,Inter,sans-serif;font-size:10.5px;font-weight:800;color:#64748b;background:#f1f5f9;border:1px solid var(--border);border-radius:999px;padding:2px 7px;letter-spacing:.3px;line-height:1.25;white-space:nowrap}
   .env-tabs{display:inline-flex;background:#eef2f7;border:1px solid var(--border);border-radius:12px;padding:3px;gap:3px}
   .env-tab{border:none;background:transparent;color:#475569;font-family:Montserrat,Inter,sans-serif;font-weight:700;font-size:12px;padding:6px 13px;border-radius:9px;cursor:pointer;transition:all .15s;letter-spacing:.4px}
   .env-tab:hover{color:#0f172a}
@@ -188,8 +190,8 @@
   .viz{padding:12px;overflow-y:auto;min-height:0}
   #svgWrap{background:#fff;border:1px dashed var(--border);border-radius:18px;overflow:visible;position:relative}
   svg#chart{display:block;max-width:100%;height:auto;cursor:crosshair;user-select:none;-webkit-user-select:none}
-  #chart text[data-auto-label]{cursor:grab;user-select:none;-webkit-user-select:none;pointer-events:visiblePainted}
-  #chart.dragging-annotation text[data-auto-label]{cursor:grabbing}
+  #chart [data-auto-label]{cursor:grab;user-select:none;-webkit-user-select:none;pointer-events:visiblePainted}
+  #chart.dragging-annotation [data-auto-label]{cursor:grabbing}
   #chart [data-endpoint-label]{cursor:ns-resize;touch-action:none;user-select:none}
   .grid-layout{display:flex;flex-direction:column;gap:16px}
   .grid-layout>#svgWrap{flex:0 0 auto}
@@ -210,6 +212,11 @@
   .hdr-item input[type=file]{padding:6px 8px;font-size:13px}
   .settings-block{border-top:1px solid var(--border);margin-top:6px}
   .settings-title{padding:10px 2px 2px;font-family:Montserrat,Inter,sans-serif;font-weight:700;font-size:13px;color:#0f172a}
+  .tpl-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .tpl-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:#334155;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+  .tpl-btn:hover{border-color:#94a3b8;background:#f8fafc}
+  .tpl-btn.active{background:#0f172a;color:#fff;border-color:#0f172a;box-shadow:0 2px 8px rgba(15,23,42,.18)}
+  .tpl-swatch{width:10px;height:10px;border-radius:50%;border:1px solid rgba(15,23,42,.22);flex:0 0 auto}
 
   @media (max-width: 1024px){
     body.mode-paint{overflow:auto;height:auto}
@@ -312,7 +319,7 @@
 
 <header class="top">
   <div class="brand-wrap">
-    <h1>Simple Elevation</h1>
+    <div class="brand-title"><h1>Simple Elevation</h1><span class="ver-badge" title="Versione corrente">v2.14</span></div>
     <div class="env-tabs" role="tablist" aria-label="Ambiente">
       <button id="tabDraw" class="env-tab active" role="tab" aria-selected="true">1. DRAW</button>
       <button id="tabPaint" class="env-tab" role="tab" aria-selected="false">2. PAINT</button>
@@ -384,14 +391,14 @@
             <label for="drawProfile">Profilo percorso</label>
             <select id="drawProfile">
               <optgroup label="Bicicletta">
-                <option value="fastbike" selected>Bici da corsa</option>
+                <option value="fastbike">Bici da corsa</option>
                 <option value="fastbike-verylowtraffic">Corsa (poco traffico)</option>
                 <option value="trekking">Gravel / Trekking</option>
                 <option value="mtb">MTB</option>
               </optgroup>
               <optgroup label="Auto">
                 <option value="car-fast">Auto (veloce)</option>
-                <option value="car-eco">Auto (strade normali)</option>
+                <option value="car-eco" selected>Auto (strade normali)</option>
               </optgroup>
               <optgroup label="Altro">
                 <option value="direct">Linea retta</option>
@@ -615,8 +622,14 @@
       </div>
       <div class="content settings-content" style="padding-top:0">
         <div class="settings-block">
-          <div class="settings-title">Impostazioni grafico, stile &amp; export</div>
-          <div class="row" style="margin-top:8px">
+          <div class="settings-title">Template &amp; stile grafico</div>
+          <div id="templateBar" class="tpl-bar" role="group" aria-label="Template altimetria">
+            <button type="button" class="tpl-btn active" data-tpl="classic"><span class="tpl-swatch" style="background:linear-gradient(135deg,#ff2d96 50%,#fbf6ea 50%)"></span>Classico</button>
+            <button type="button" class="tpl-btn" data-tpl="giro"><span class="tpl-swatch" style="background:linear-gradient(135deg,#e6007e 50%,#99c24d 50%)"></span>Giro d'Italia</button>
+            <button type="button" class="tpl-btn" data-tpl="tour_modern"><span class="tpl-swatch" style="background:linear-gradient(135deg,#fde017 55%,#111827 55%)"></span>Tour de France</button>
+            <button type="button" class="tpl-btn" data-tpl="vuelta"><span class="tpl-swatch" style="background:linear-gradient(135deg,#e52d1a 55%,#c65a96 55%)"></span>La Vuelta</button>
+          </div>
+          <div class="row" style="margin-top:10px">
             <div>
               <label for="vex">Vertical exaggeration (×)</label>
               <input id="vex" type="range" min="0.1" max="1" step="0.05" value="0.5" />
@@ -851,7 +864,7 @@ tabPaint.addEventListener('click', ()=> switchEnv('paint'));
 const NS='http://www.w3.org/2000/svg';
 const XLINK='http://www.w3.org/1999/xlink';
 const COLORS={ pink:'#ff2d96', fill:'#fbf6ea', grid:'#e8edf2', green:'#15a34a', axis:'#475569', text:'#0f172a', guide:'#94a3b8', gravel:'#6b7280', kom:'#2c7be5', komMid:'#3aa0ff', sprint:'#f97316', sprintMid:'#fb923c'};
-const state={ points:[], tunnels:[], profileElevations:[], hoverIndex:null, selectingTunnel:false, minEle:0, maxEle:0, climbs:[], pois:[], gravels:[], vExag:0.5, viewStart:0, viewEnd:1, yStep:200, namedWaypoints:[], selecting:null, selectingPoi:false, selectingGravel:false, climbAutofill:false, tempStart:null, autoReplicate:true, syncEdits:true, poiAutofillComune:true, loopMode:false, focusClimbIndex:null, focusPoiIndex:null, focusGravelIndex:null, fillColor:COLORS.fill, lineColor:COLORS.pink, noProfileFill:false, noProfileLine:false, climbColor:COLORS.green, climbFillColor:COLORS.green, climbOverlayMode:'solid', startOffset:0, finishOffset:0, showKom:true, showSprint:true, projectName:'elevation' };
+const state={ points:[], tunnels:[], profileElevations:[], hoverIndex:null, selectingTunnel:false, minEle:0, maxEle:0, climbs:[], pois:[], gravels:[], vExag:0.5, viewStart:0, viewEnd:1, yStep:200, namedWaypoints:[], selecting:null, selectingPoi:false, selectingGravel:false, climbAutofill:false, tempStart:null, autoReplicate:true, syncEdits:true, poiAutofillComune:true, loopMode:false, focusClimbIndex:null, focusPoiIndex:null, focusGravelIndex:null, fillColor:COLORS.fill, lineColor:COLORS.pink, noProfileFill:false, noProfileLine:false, climbColor:COLORS.green, climbFillColor:COLORS.green, climbOverlayMode:'solid', startOffset:0, finishOffset:0, showKom:true, showSprint:true, template:'classic', projectName:'elevation' };
 let hitBoxEl=null; let guideGroup=null;
 const svg=document.getElementById('chart');
 const gpxInput=document.getElementById('gpx');
@@ -901,7 +914,51 @@ function haversine(lat1, lon1, lat2, lon2){ const R=6371000; const toRad=x=>x*Ma
 function movingAverage(arr, windowMeters, distances){ if(!windowMeters||windowMeters<=0) return arr.slice(); const out=new Array(arr.length).fill(0), half=windowMeters/2; let i0=0; for(let i=0;i<arr.length;i++){ const c=distances[i]; while(distances[i0]<c-half && i0<i) i0++; let i1=i0; while(i1<arr.length && distances[i1]<=c+half) i1++; const s=arr.slice(i0,i1); out[i]=s.reduce((a,b)=>a+b,0)/Math.max(1,s.length);} return out; }
 function createEl(tag, attrs){ const el=document.createElementNS(NS,tag); for(const k in attrs) el.setAttribute(k, attrs[k]); return el; }
 function pathFrom(points, close, margin, h){ if(!points.length) return ''; const d=['M',points[0].x,points[0].y].join(' '); const seg=points.slice(1).map(p=>'L '+p.x+' '+p.y).join(' '); let res=d+' '+seg; if(close&&margin){ res += ` L ${margin.l + (1280 - margin.l - margin.r)} ${margin.t + h} L ${margin.l} ${margin.t + h} Z`; } return res; }
-function getScales(){ const baseT=84, baseB=76; let margin={l:70,r:28,t:baseT,b:baseB}; let w=1280-margin.l-margin.r; let h=520-margin.t-margin.b; const dMax=state.points.length?state.points[state.points.length-1].d:1; const padBottom=100; const min=Math.floor((state.minEle - padBottom)/50)*50; const max=Math.ceil((state.maxEle + 20)/50)*50; const yTop=margin.t + h*(1 - Math.min(1,Math.max(0.1,state.vExag))); const minClear=36; const need=margin.t + minClear; if(yTop<need){ const deficit=need - yTop; const newT=Math.max(baseT, margin.t - deficit); margin.t=newT; h=520-margin.t-margin.b; }
+const TEMPLATE_DEFAULTS={
+  classic:     { fillColor:'#fbf6ea', lineColor:'#ff2d96', noProfileFill:false, noProfileLine:false, climbColor:'#15a34a', climbFillColor:'#15a34a' },
+  giro:        { fillColor:'#fcfbe6', lineColor:'#e6007e', noProfileFill:false, noProfileLine:false, climbColor:'#78a82e', climbFillColor:'#99c24d' },
+  tour_modern: { fillColor:'#fde017', lineColor:'#e5b800', noProfileFill:false, noProfileLine:true,  climbColor:'#d91e18', climbFillColor:'#eab308' },
+  vuelta:      { fillColor:'#e52d1a', lineColor:'#c81e12', noProfileFill:false, noProfileLine:true,  climbColor:'#7f1d1d', climbFillColor:'#7f1d1d' }
+};
+function normalizeTemplateKey(tpl){
+  if(tpl==='tour_classic' || tpl==='tour') return 'tour_modern';
+  return TEMPLATE_DEFAULTS[tpl] ? tpl : 'classic';
+}
+function syncTemplateButtons(){
+  state.template=normalizeTemplateKey(state.template);
+  document.querySelectorAll('#templateBar .tpl-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.tpl===state.template);
+  });
+}
+function applyTemplate(tpl, applyColors=true){
+  tpl=normalizeTemplateKey(tpl);
+  state.template=tpl;
+  if(applyColors){
+    const d=TEMPLATE_DEFAULTS[tpl];
+    state.fillColor=d.fillColor; fillColorInput.value=d.fillColor;
+    state.lineColor=d.lineColor; lineColorInput.value=d.lineColor;
+    state.noProfileFill=d.noProfileFill; noProfileFillInput.checked=d.noProfileFill;
+    state.noProfileLine=d.noProfileLine; noProfileLineInput.checked=d.noProfileLine;
+    state.climbColor=d.climbColor; climbColorInput.value=d.climbColor;
+    state.climbFillColor=d.climbFillColor; climbFillColorInput.value=d.climbFillColor;
+  }
+  syncTemplateButtons();
+  if(state.points.length) draw();
+}
+function getScales(){
+  const tpl=normalizeTemplateKey(state.template);
+  let baseT=84, baseB=76, baseL=70, baseR=28;
+  if(tpl==='giro'){ baseL=56; baseR=60; baseT=46; baseB=76; }
+  else if(tpl==='tour_modern'){ baseL=68; baseR=80; baseT=86; baseB=48; }
+  else if(tpl==='vuelta'){ baseL=74; baseR=68; baseT=156; baseB=42; }
+  let margin={l:baseL,r:baseR,t:baseT,b:baseB}; let w=1280-margin.l-margin.r; let h=520-margin.t-margin.b;
+  const dMax=state.points.length?state.points[state.points.length-1].d:1;
+  const padBottom=100;
+  const min=Math.floor((state.minEle - padBottom)/50)*50;
+  const max=Math.ceil((state.maxEle + 20)/50)*50;
+  const yTop=margin.t + h*(1 - Math.min(1,Math.max(0.1,state.vExag)));
+  const minClear=36; const need=margin.t + minClear;
+  if(yTop<need){ const deficit=need - yTop; const newT=Math.max(baseT, margin.t - deficit); margin.t=newT; h=520-margin.t-margin.b; }
   w=1280-margin.l-margin.r;
   const viewStart=Math.max(0, Math.min(state.viewStart, Math.max(0,dMax-1)));
   const viewEnd=Math.max(viewStart+1, Math.min(state.viewEnd, dMax));
@@ -1152,7 +1209,7 @@ function addClimbSel(startIdx,endIdx,autofillComune=false){
         if(changed){
           renderClimbList(); refreshMapOverlays(); draw();
         }
-      });
+      },'climb');
     }
   }
 }
@@ -1183,7 +1240,7 @@ function addPoiSel(idx){
   if(focusObj && !willAutofill) focusObj.__focus=true;
   if(willAutofill) blurActiveFormField();
   sortPoiArr(state.pois);
-  if(state.poiAutofillComune && !wpName){ const pt=state.points[idx]; if(pt){ queueComune(pt.lat,pt.lon,(nm)=>{ if(!nm) return; let changed=false; created.forEach(it=>{ if(!it.name){ it.name=nm; changed=true; } }); if(changed){ renderPoiList(); refreshMapOverlays(); draw(); } }); } }
+  if(state.poiAutofillComune && !wpName){ const pt=state.points[idx]; if(pt){ queueComune(pt.lat,pt.lon,(nm)=>{ if(!nm) return; let changed=false; created.forEach(it=>{ if(!it.name){ it.name=nm; changed=true; } }); if(changed){ renderPoiList(); refreshMapOverlays(); draw(); } },'poi'); } }
 }
 function propagateGroupName(arr, item, listEl){ if(!item.group || !state.syncEdits) return; for(const o of arr){ if(o!==item && o.group===item.group) o.name=item.name; } if(listEl){ listEl.querySelectorAll('input[data-group="'+item.group+'"]').forEach(inp=>{ if(inp.value!==item.name) inp.value=item.name; }); } }
 function propagateGroupOffset(arr, item){ if(!item.group || !state.syncEdits) return; for(const o of arr){ if(o!==item && o.group===item.group) o.offsetY=item.offsetY; } }
@@ -1351,28 +1408,113 @@ function transliterateToLatin(input){
 }
 
 const __geoCache=new Map();
-function geoKey(lat,lon){ return lat.toFixed(3)+','+lon.toFixed(3); }
-async function nearestComune(lat, lon){
-  const key=geoKey(lat,lon);
-  if(__geoCache.has(key)) return __geoCache.get(key);
-  const url=`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=13&addressdetails=1&namedetails=1&accept-language=it,en`;
-  const res=await fetch(url,{headers:{'Accept':'application/json'}});
-  if(!res.ok) throw new Error('geocode '+res.status);
-  const data=await res.json(); const a=data.address||{};
-  let name = a.village||a.hamlet||a.town||a.city||a.municipality||a.suburb||a.city_district||a.neighbourhood||a.locality||a.isolated_dwelling||a.county||a.state_district||a.region||a.province||a.state||a.country||'';
-  // Prefer official Italian/English/international Latin exonym if available for this exact place
-  if(name && NON_LATIN_RE.test(name) && data.namedetails && (!data.name || data.name===name)){
-    const nd=data.namedetails;
-    const latinCand=[nd['name:it'],nd['name:en'],nd['int_name'],nd['name:latin'],nd['name:fr'],nd['name:de']].find(v=>v && !NON_LATIN_RE.test(v));
-    if(latinCand) name=latinCand;
+function geoKey(lat,lon,mode='poi'){ return lat.toFixed(4)+','+lon.toFixed(4)+':'+mode; }
+const PASS_NAME_RE=/\b(passo|col|colle|forcella|valico|sella|bocchetta|giogo|puerto|alto|port|c[oô]te|collet|monte|cima|pizzo|rifugio|bivacco|sanctuario|santuario|eremo|madonna)\b/i;
+const PLACE_VALS=new Set(['hamlet','isolated_dwelling','locality','village','suburb','quarter','neighbourhood','town','city','borough','allotments']);
+const PASS_VALS=new Set(['mountain_pass','saddle','peak','volcano','ridge','alpine_hut']);
+
+async function lookupPhotonPlace(lat, lon, mode){
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(), 2800);
+  try{
+    const url=`https://photon.komoot.io/reverse?lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}&radius=2&limit=12`;
+    const res=await fetch(url,{signal:ctrl.signal, headers:{'Accept':'application/json'}});
+    clearTimeout(timer);
+    if(!res.ok) return '';
+    const data=await res.json();
+    const feats=Array.isArray(data?.features)?data.features:[];
+    if(!feats.length) return '';
+
+    let bestPass=null, bestPassScore=Infinity;
+    let bestPlace=null, bestPlaceScore=Infinity;
+
+    for(const f of feats){
+      const props=f?.properties||{};
+      const coords=f?.geometry?.coordinates;
+      const rawName=String(props.name||'').trim();
+      if(!rawName || !Array.isArray(coords) || coords.length<2) continue;
+      const fLon=Number(coords[0]), fLat=Number(coords[1]);
+      if(!Number.isFinite(fLat)||!Number.isFinite(fLon)) continue;
+      const dist=haversine(lat,lon,fLat,fLon);
+      const oKey=String(props.osm_key||'').toLowerCase();
+      const oVal=String(props.osm_value||'').toLowerCase();
+      const fType=String(props.type||'').toLowerCase();
+
+      // Skip plain streets/buildings/house numbers
+      if(oKey==='building' || fType==='house' || fType==='street') continue;
+      if(oKey==='highway' && oVal!=='mountain_pass') continue;
+
+      const isPass = oKey==='mountain_pass' || PASS_VALS.has(oVal) || (oKey==='natural' && PASS_NAME_RE.test(rawName)) || (oKey==='tourism' && oVal==='alpine_hut');
+      if(isPass){
+        const maxD = mode==='climb' ? 950 : 280;
+        if(dist <= maxD){
+          const mult = (oVal==='mountain_pass' || oKey==='mountain_pass' || oVal==='saddle') ? 0.55 : (oVal==='peak' ? 0.85 : 1.0);
+          const sc = dist * mult;
+          if(sc < bestPassScore){ bestPassScore=sc; bestPass=rawName; }
+        }
+        continue;
+      }
+
+      const isPlace = oKey==='place' || PLACE_VALS.has(oVal) || fType==='locality' || fType==='district' || fType==='city';
+      if(isPlace && dist <= 2400){
+        // Prefer actual settlement nodes (hamlet/village/town) over tiny isolated farms unless very close
+        let mult = 1.0;
+        if(oVal==='village' || oVal==='town' || oVal==='city') mult = 0.82;
+        else if(oVal==='hamlet' || oVal==='suburb' || oVal==='quarter') mult = 0.90;
+        else if(oVal==='isolated_dwelling' || oVal==='locality' || oVal==='neighbourhood') mult = 1.15;
+        // For climb summits, a named locality/hamlet with pass-like name gets a boost
+        if(mode==='climb' && PASS_NAME_RE.test(rawName)) mult *= 0.6;
+        const sc = dist * mult;
+        if(sc < bestPlaceScore){ bestPlaceScore=sc; bestPlace=rawName; }
+      }
+    }
+
+    if(bestPass) return bestPass;
+    if(bestPlace) return bestPlace;
+    return '';
+  }catch(_){
+    clearTimeout(timer);
+    return '';
   }
+}
+
+async function nearestComune(lat, lon, mode='poi'){
+  const key=geoKey(lat,lon,mode);
+  if(__geoCache.has(key)) return __geoCache.get(key);
+
+  let name='';
+  if(mode==='climb' || mode==='poi'){
+    name = await lookupPhotonPlace(lat, lon, mode);
+  }
+
+  if(!name){
+    const zoom = (mode==='endpoint') ? 13 : 16;
+    const url=`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=${zoom}&addressdetails=1&namedetails=1&accept-language=it,en`;
+    const res=await fetch(url,{headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error('geocode '+res.status);
+    const data=await res.json(); const a=data.address||{};
+    if(mode==='endpoint'){
+      name = a.city||a.town||a.village||a.municipality||a.hamlet||a.suburb||a.locality||a.county||a.state_district||a.region||a.province||a.state||a.country||'';
+    } else {
+      // Prioritize frazione/hamlet/locality/pass over the overarching administrative comune!
+      const rawTop = String(data.name||'').trim();
+      const topIsPass = rawTop && (data.category==='mountain_pass' || PASS_VALS.has(data.type) || (mode==='climb' && PASS_NAME_RE.test(rawTop) && data.category!=='highway'));
+      name = (topIsPass ? rawTop : '') || a.mountain_pass||a.saddle||a.peak||a.hamlet||a.isolated_dwelling||a.locality||a.suburb||a.quarter||a.neighbourhood||a.village||a.town||a.city||a.municipality||a.city_district||a.county||a.state_district||a.region||a.province||a.state||a.country||'';
+    }
+    if(name && NON_LATIN_RE.test(name) && data.namedetails && (!data.name || data.name===name)){
+      const nd=data.namedetails;
+      const latinCand=[nd['name:it'],nd['name:en'],nd['int_name'],nd['name:latin'],nd['name:fr'],nd['name:de']].find(v=>v && !NON_LATIN_RE.test(v));
+      if(latinCand) name=latinCand;
+    }
+  }
+
   name=transliterateToLatin(name);
   __geoCache.set(key,name);
   return name;
 }
-let __geoBusy=false; const __geoQueue=[]; const GEO_GAP=1200;
-function queueComune(lat,lon,cb){ const key=geoKey(lat,lon); if(__geoCache.has(key)){ try{ cb(__geoCache.get(key)); }catch(_){} return; } __geoQueue.push({lat,lon,cb}); pumpGeo(); }
-function pumpGeo(){ if(__geoBusy||!__geoQueue.length) return; __geoBusy=true; const job=__geoQueue.shift(); nearestComune(job.lat,job.lon).then(nm=>{ try{ job.cb(nm); }catch(_){} }).catch(()=>{ try{ job.cb(''); }catch(_){} }).finally(()=>{ setTimeout(()=>{ __geoBusy=false; pumpGeo(); }, GEO_GAP); }); }
+let __geoBusy=false; const __geoQueue=[]; const GEO_GAP=950;
+function queueComune(lat,lon,cb,mode='poi'){ const key=geoKey(lat,lon,mode); if(__geoCache.has(key)){ try{ cb(__geoCache.get(key)); }catch(_){} return; } __geoQueue.push({lat,lon,cb,mode}); pumpGeo(); }
+function pumpGeo(){ if(__geoBusy||!__geoQueue.length) return; __geoBusy=true; const job=__geoQueue.shift(); nearestComune(job.lat,job.lon,job.mode||'poi').then(nm=>{ try{ job.cb(nm); }catch(_){} }).catch(()=>{ try{ job.cb(''); }catch(_){} }).finally(()=>{ setTimeout(()=>{ __geoBusy=false; pumpGeo(); }, GEO_GAP); }); }
 
 function setHint(msg){ const el=document.getElementById('selHint'); if(!el) return; el.textContent=msg||''; el.classList.toggle('active', !!msg); }
 function cancelSelection(){ state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint(''); if(state.points.length) draw(); }
@@ -1391,8 +1533,8 @@ function handleSelectionClick(idx){
 function beginLoopMode(){ if(!state.points.length) return; blurActiveFormField(); state.selecting='start'; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=true; state.tempStart=null; setHint('Porzione da ripetere: punto di partenza (Esc per annullare)'); draw(); }
 
 const undoStack=[], redoStack=[]; const UNDO_MAX=60;
-function snapshotState(){ return { points:state.points, namedWaypoints:state.namedWaypoints, climbs:JSON.parse(JSON.stringify(state.climbs)), pois:JSON.parse(JSON.stringify(state.pois)), gravels:JSON.parse(JSON.stringify(state.gravels)), tunnels:JSON.parse(JSON.stringify(state.tunnels)), hoverIndex:state.hoverIndex, start:startLabel.value, finish:finishLabel.value, viewStart:state.viewStart, viewEnd:state.viewEnd, minEle:state.minEle, maxEle:state.maxEle, projectName:state.projectName, startOffset:state.startOffset, finishOffset:state.finishOffset, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine }; }
-function restoreSnapshot(s){ state.points=s.points; state.namedWaypoints=s.namedWaypoints||[]; state.climbs=s.climbs; state.pois=s.pois; state.gravels=s.gravels; state.tunnels=s.tunnels||[]; state.hoverIndex=s.hoverIndex??null; state.profileElevations=[]; state.viewStart=s.viewStart; state.viewEnd=s.viewEnd; state.minEle=s.minEle; state.maxEle=s.maxEle; state.projectName=s.projectName; state.startOffset=s.startOffset??state.startOffset; state.finishOffset=s.finishOffset??state.finishOffset; state.noProfileFill=s.noProfileFill??state.noProfileFill; state.noProfileLine=s.noProfileLine??state.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; startOffInput.value=state.startOffset; finishOffInput.value=state.finishOffset; startLabel.value=s.start; finishLabel.value=s.finish; state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint(''); setButtonsEnabled(state.points.length>0); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
+function snapshotState(){ return { points:state.points, namedWaypoints:state.namedWaypoints, climbs:JSON.parse(JSON.stringify(state.climbs)), pois:JSON.parse(JSON.stringify(state.pois)), gravels:JSON.parse(JSON.stringify(state.gravels)), tunnels:JSON.parse(JSON.stringify(state.tunnels)), hoverIndex:state.hoverIndex, start:startLabel.value, finish:finishLabel.value, viewStart:state.viewStart, viewEnd:state.viewEnd, minEle:state.minEle, maxEle:state.maxEle, projectName:state.projectName, startOffset:state.startOffset, finishOffset:state.finishOffset, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, template:state.template }; }
+function restoreSnapshot(s){ state.points=s.points; state.namedWaypoints=s.namedWaypoints||[]; state.climbs=s.climbs; state.pois=s.pois; state.gravels=s.gravels; state.tunnels=s.tunnels||[]; state.hoverIndex=s.hoverIndex??null; state.profileElevations=[]; state.viewStart=s.viewStart; state.viewEnd=s.viewEnd; state.minEle=s.minEle; state.maxEle=s.maxEle; state.projectName=s.projectName; state.startOffset=s.startOffset??state.startOffset; state.finishOffset=s.finishOffset??state.finishOffset; state.template=s.template||state.template||'classic'; syncTemplateButtons(); state.noProfileFill=s.noProfileFill??state.noProfileFill; state.noProfileLine=s.noProfileLine??state.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; startOffInput.value=state.startOffset; finishOffInput.value=state.finishOffset; startLabel.value=s.start; finishLabel.value=s.finish; state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.selectingTunnel=false; state.climbAutofill=false; state.loopMode=false; state.tempStart=null; setHint(''); setButtonsEnabled(state.points.length>0); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
 function pushUndo(){ undoStack.push(snapshotState()); if(undoStack.length>UNDO_MAX) undoStack.shift(); redoStack.length=0; updateUndoButtons(); }
 function doUndo(){ if(!undoStack.length) return; redoStack.push(snapshotState()); restoreSnapshot(undoStack.pop()); updateUndoButtons(); }
 function doRedo(){ if(!redoStack.length) return; undoStack.push(snapshotState()); restoreSnapshot(redoStack.pop()); updateUndoButtons(); }
@@ -1479,83 +1621,489 @@ function parseTranslatePrefix(transform){
   const m=String(transform||'').match(/translate\(([-\d.]+)[ ,]([-\d.]+)\)/);
   return m?{x:parseFloat(m[1])||0,y:parseFloat(m[2])||0}:{x:0,y:0};
 }
-function setAnnotationGuideAt(key,labelPivotX,labelY,manualOverride=false){
+function setAnnotationGuideAt(key,labelPivotX,labelY,useElbow=false){
   const guide=svg.querySelector(`[data-annotation-guide="${key}"]`);
   if(!guide) return;
   const anchorX=Number(guide.dataset.guideAnchorX);
   const baseY=Number(guide.dataset.guideBaseY);
+  const sourceY=Number(guide.dataset.guideSourceY);
   const pivotX=Number(labelPivotX), topY=Number(labelY);
   if(![anchorX,baseY,pivotX,topY].every(Number.isFinite)) return;
-  let d=`M ${anchorX} ${baseY} V ${topY}`;
-  if(manualOverride && Math.abs(pivotX-anchorX)>0.5) d+=` H ${pivotX}`;
-  guide.setAttribute('d',d);
+  if(useElbow && Math.abs(pivotX-anchorX)>1.5){
+    const elbowBase=Number.isFinite(sourceY)?Math.min(sourceY-8, Math.max(topY+12, sourceY-16)):topY+10;
+    if(elbowBase > topY + 6 && elbowBase < baseY - 4){
+      guide.setAttribute('d',`M ${anchorX} ${baseY} V ${elbowBase.toFixed(1)} H ${pivotX.toFixed(1)} V ${topY.toFixed(1)}`);
+    } else {
+      guide.setAttribute('d',`M ${anchorX} ${baseY} V ${topY.toFixed(1)} H ${pivotX.toFixed(1)}`);
+    }
+    return;
+  }
+  guide.setAttribute('d',`M ${anchorX} ${baseY} V ${topY.toFixed(1)}`);
 }
-function resolveVerticalLabelCollisions(margin,h){
-  const all=[...svg.querySelectorAll('text[data-auto-label]')].map(el=>{
-    const r=svgBoxForElement(el), item=labelItemByKey(el.dataset.autoLabel);
-    return r ? {el, item, box:r, originalX:+el.dataset.labelAnchorX,
-      labelY:+el.dataset.labelAnchorY, sourceY:+el.dataset.labelSourceY,
-      baseTransform:el.getAttribute('transform')||''} : null;
-  }).filter(Boolean).filter(it=>it.originalX>=margin.l && it.originalX<=1280-margin.r);
-  const locked=all.filter(it=>it.item && it.item.manualPos);
-  const entries=all.filter(it=>!(it.item && it.item.manualPos)).sort((a,b)=>a.originalX-b.originalX);
-  if(!entries.length) return;
-  const leftLimit=margin.l+5, rightLimit=1280-margin.r-5, gap=6;
-  const maxWidth=rightLimit-leftLimit;
-  let items=entries;
-  const totalWidth=entries.reduce((v,item)=>v+item.box.w,0)+(entries.length-1)*gap;
-  if(totalWidth>maxWidth){
-    const kept=[];let used=0;
-    for(let i=0;i<entries.length;i++){
-      const item=entries[i];
-      const acceptable=kept.length===0 || (item.originalX-kept[kept.length-1].originalX >= 22);
-      if(acceptable && used+item.box.w+(kept.length?gap:0)<=maxWidth){
-        kept.push(item);used+=item.box.w+(kept.length>1?gap:0);
-      } else item.el.style.display='none';
-    }
-    items=kept;
-  }
-  if(!items.length)return;
-  let offset=0; const blocks=[]; const cum=[];
-  for(let i=0;i<items.length;i++){
-    cum.push(offset);
-    const target=items[i].box.x-offset;
-    blocks.push({from:i,to:i,count:1,mean:target});
-    while(blocks.length>1){
-      const b=blocks[blocks.length-1],a=blocks[blocks.length-2];
-      if(a.mean<=b.mean)break;
-      blocks.splice(blocks.length-2,2,{ from:a.from,to:b.to,count:a.count+b.count, mean:(a.mean*a.count+b.mean*b.count)/(a.count+b.count) });
-    }
-    offset+=items[i].box.w+gap;
-  }
-  const packed=[];
-  for(const block of blocks){ for(let i=block.from;i<=block.to;i++)packed[i]=block.mean+cum[i]; }
-  const minimum=packed[0],maximum=packed[packed.length-1]+items[items.length-1].box.w;
-  let move=0;
-  if(minimum<leftLimit)move=leftLimit-minimum;
-  if(maximum+move>rightLimit)move+=rightLimit-(maximum+move);
+function formatSpaceNum(n){
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+}
+function formatTdfKm(km){
+  const r=Math.round(km*10)/10;
+  return Math.abs(r-Math.round(r))<0.01 ? String(Math.round(r)) : r.toFixed(1);
+}
+function formatVueltaKm(km){
+  return formatTdfKm(km).replace('.',',');
+}
 
-  const obstacles=[...svg.querySelectorAll('[data-endpoint-label]')].map(svgBoxForElement).filter(Boolean).concat(locked.map(it=>it.box));
-  const overlap=(r,other,pad=5)=>r.x<other.x+other.w+pad && r.x+r.w+pad>other.x && r.y<other.y+other.h+pad && r.y+r.h+pad>other.y;
-  for(let i=0;i<items.length;i++){
-    const item=items[i];
-    const dx=packed[i]+move-item.box.x;
-    const minDy=Math.ceil(9-item.box.y);
-    const maxDy=Math.floor(item.sourceY-4-(item.box.y+item.box.h));
-    const tried=[0,12,24,36,48,60,80,-12,-24,-36,-48,-60,-80];
-    let dy=0, best=Infinity;
-    for(const requested of tried){
-      const candidate=Math.max(minDy,Math.min(maxDy,requested));
-      if(!Number.isFinite(candidate))continue;
-      const box={x:item.box.x+dx,y:item.box.y+candidate,w:item.box.w,h:item.box.h};
-      const collides=obstacles.some(other=>overlap(box,other));
-      const cost=(collides?10000:0)+Math.abs(candidate)+(candidate<0?1:0);
-      if(cost<best){best=cost;dy=candidate;}
-      if(!collides&&candidate===0)break;
+/* ---- Template Typography Stacks ---- */
+const GIRO_ENDPOINT_FONT="'Univers Condensed', 'Univers LT Std', 'Roboto Condensed', 'Archivo Narrow', sans-serif";
+const GIRO_KOM_FONT="'Bebas Neue Pro', 'Bebas Neue', 'Roboto Condensed', sans-serif";
+const GIRO_SMALL_FONT="'Franklin Gothic Book', 'Franklin Gothic', 'Archivo Narrow', 'Roboto Condensed', sans-serif";
+const TOUR_BOLD_FONT="'Petala Pro', 'Parisine Std', 'Segoe UI', 'Source Sans 3', 'Inter', sans-serif";
+const TOUR_REG_FONT="'Parisine Std', 'Segoe UI', 'Source Sans 3', 'Inter', sans-serif";
+const VUELTA_DISPLAY_FONT="'Denominary', 'Oswald', 'Roboto Condensed', sans-serif";
+const VUELTA_TEXT_FONT="'Bloyd', 'Source Sans 3', 'Inter', sans-serif";
+
+/* ---- Tunnel Portal Symbol (clean portal icon on baseline, no dark line on elevation curve) ---- */
+function drawTunnelPortalBadge(x,yBase,tpl){
+  const cy = tpl==='tour_modern' ? (yBase - 8) : tpl==='vuelta' ? (yBase - 7) : (yBase - 6.5);
+  const g=createEl('g',{transform:`translate(${x},${cy})`, class:'badge tunnel-portal'});
+  g.appendChild(createEl('path',{
+    d:'M -7.5 6.2 V -0.4 A 7.5 7.5 0 0 1 7.5 -0.4 V 6.2 Z',
+    fill:'#111827', stroke:'#ffffff', 'stroke-width':'1.2', 'stroke-linejoin':'round'
+  }));
+  g.appendChild(createEl('path',{
+    d:'M -4.8 5.6 V -0.2 A 4.8 4.8 0 0 1 4.8 -0.2 V 5.6 Z',
+    fill:'#ffffff'
+  }));
+  g.appendChild(createEl('path',{
+    d:'M -3.1 5.6 V 0.2 A 3.1 3.1 0 0 1 3.1 0.2 V 5.6 Z',
+    fill:'#111827'
+  }));
+  g.appendChild(createEl('line',{x1:0,y1:2.2,x2:0,y2:5.2,stroke:'#ffffff','stroke-width':'0.9','stroke-dasharray':'1.3 1.2'}));
+  return g;
+}
+
+/* ---- Giro d'Italia Badge & Pill Helpers ---- */
+function drawGiroKomBadge(x,yBase,tier){
+  const r=13;
+  const g=createEl('g',{transform:`translate(${x},${yBase})`, class:'badge giro-kom'});
+  g.appendChild(createEl('circle',{cx:0,cy:0,r:r,fill:'#1d4ed8',stroke:'#0f172a','stroke-width':1.1}));
+  g.appendChild(createEl('circle',{cx:0,cy:0,r:r-2.4,fill:tier==='HC'?'#0ea5e9':'#2563eb'}));
+  g.appendChild(createEl('path',{d:`M ${-r+3.5} 5.5 L 0 -10.5 L ${r-3.5} 5.5 Q 0 11 ${-r+3.5} 5.5 Z`,fill:'#ffffff',opacity:'0.96'}));
+  const txt=createEl('text',{x:0,y:4.8,'text-anchor':'middle','font-size':tier==='HC'?'11':'14.5','font-family':GIRO_KOM_FONT,'font-weight':'700',style:'fill:#1d4ed8 !important'});
+  txt.textContent=(tier==='HC')?'HC':(tier==='0'?'▼':tier);
+  g.appendChild(txt);
+  return g;
+}
+function drawGiroSprintBadge(x,yBase){
+  const r=13;
+  const g=createEl('g',{transform:`translate(${x},${yBase})`, class:'badge giro-sprint'});
+  g.appendChild(createEl('circle',{cx:0,cy:0,r:r,fill:'#d9027d',stroke:'#111827','stroke-width':1.1}));
+  g.appendChild(createEl('circle',{cx:0,cy:0,r:r-2.5,fill:'#e6007e'}));
+  const txt=createEl('text',{x:0,y:5.4,'text-anchor':'middle','font-size':'16','font-family':GIRO_KOM_FONT,'font-weight':'700',style:'fill:#fff !important'});
+  txt.textContent='S';
+  g.appendChild(txt);
+  return g;
+}
+function drawGiroFeedBadge(x,yBase){
+  const r=13;
+  const g=createEl('g',{transform:`translate(${x},${yBase})`, class:'badge giro-feed'});
+  g.appendChild(createEl('circle',{cx:0,cy:0,r:r,fill:'#0f766e',stroke:'#111827','stroke-width':1.1}));
+  g.appendChild(createEl('circle',{cx:0,cy:0,r:r-2.5,fill:'#14b8a6'}));
+  const txt=createEl('text',{x:0,y:5.4,'text-anchor':'middle','font-size':'15.5','font-family':GIRO_KOM_FONT,'font-weight':'700',style:'fill:#fff !important'});
+  txt.textContent='F';
+  g.appendChild(txt);
+  return g;
+}
+
+function drawGiroEndpointPill(xCenter,yAnchorBottom,yMinTop,yMaxBottom,ele,name,isStart,which){
+  const w=30, rx=15;
+  const strokeCol=isStart?'#16a34a':'#e11d48';
+  const yBottom=Math.min(yMaxBottom, Math.max(yMinTop+105, yAnchorBottom));
+  const initTop=Math.max(yMinTop, yBottom-180);
+  const group=createEl('g',{'data-endpoint-label':which,'data-name-y':initTop,'pointer-events':'visiblePainted'});
+  const pillRect=createEl('rect',{x:xCenter-w/2,y:initTop,width:w,height:yBottom-initTop,rx:rx,ry:rx,fill:'#ffffff',stroke:strokeCol,'stroke-width':2.6});
+  group.appendChild(pillRect);
+
+  const iconY=yBottom-15;
+  group.appendChild(createEl('circle',{cx:xCenter,cy:iconY,r:11.8,fill:strokeCol}));
+  if(isStart){
+    const bike=createEl('g',{transform:`translate(${xCenter},${iconY+1})`,fill:'none',stroke:'#ffffff','stroke-width':'1.45','stroke-linecap':'round','stroke-linejoin':'round'});
+    bike.appendChild(createEl('circle',{cx:-4.6,cy:2.6,r:2.9}));
+    bike.appendChild(createEl('circle',{cx:4.6,cy:2.6,r:2.9}));
+    bike.appendChild(createEl('path',{d:'M -4.6 2.6 L -0.4 -2.2 L 3.4 -2.2 L 4.6 2.6 M -0.4 -2.2 L 0.4 2.6 L -4.6 2.6 M -1.8 -2.4 H 0.6 M 2.7 -3.4 H 4.5'}));
+    group.appendChild(bike);
+  } else {
+    const s=3.8;
+    for(let r=0;r<3;r++){
+      for(let c=0;c<3;c++){
+        if((r+c)%2===0) group.appendChild(createEl('rect',{x:xCenter-5.7+c*s,y:iconY-5.7+r*s,width:s,height:s,fill:'#ffffff'}));
+      }
     }
-    if(dx||dy){
-      item.el.setAttribute('transform',`translate(${dx.toFixed(2)} ${dy.toFixed(2)}) ${item.baseTransform}`);
-      setAnnotationGuideAt(item.el.dataset.autoLabel, Number(item.el.dataset.labelPivotX)+dx,item.labelY+dy,false);
+  }
+
+  const textY=iconY-17;
+  const fullLabel=`${Math.round(ele)} - ${name}`;
+  const fontSize=fullLabel.length>26?13:fullLabel.length>18?14.5:15.5;
+  const txt=createEl('text',{
+    x:xCenter+5.2,y:textY,
+    'font-family':GIRO_ENDPOINT_FONT,'font-weight':'700','font-size':String(fontSize),'letter-spacing':'0.25',
+    'text-anchor':'start',transform:`rotate(-90 ${xCenter+5.2} ${textY})`,
+    style:'fill:#0f172a !important'
+  });
+  txt.textContent=fullLabel;
+  group.appendChild(txt);
+
+  group.__fitPill=()=>{
+    try{
+      const len=txt.getComputedTextLength();
+      const maxAvailH=Math.max(110, yMaxBottom-yMinTop);
+      let neededH=Math.min(Math.max(108, len+48), maxAvailH);
+      let finalBottom=yBottom;
+      let finalTop=finalBottom-neededH;
+      if(finalTop < yMinTop){
+        const shift=yMinTop - finalTop;
+        finalTop=yMinTop;
+        finalBottom=Math.min(yMaxBottom, finalBottom+shift);
+        const actualShift=finalBottom-yBottom;
+        if(Math.abs(actualShift)>0.5){
+          group.setAttribute('transform',`translate(0 ${actualShift.toFixed(1)})`);
+          group.dataset.nameY=String(finalTop);
+        }
+      }
+      pillRect.setAttribute('y', String(yBottom - neededH));
+      pillRect.setAttribute('height', String(neededH));
+      if(!group.getAttribute('transform')) group.dataset.nameY=String(yBottom - neededH);
+      if(len > neededH - 46 && len > 0){
+        const scale=Math.max(0.72, (neededH - 48) / len);
+        txt.setAttribute('font-size', (fontSize*scale).toFixed(1));
+      }
+    }catch(_){}
+  };
+  return group;
+}
+
+/* ---- Tour de France Flag & Black Ribbon Helpers ---- */
+function drawTourSlantedFlag(cx,cy,kind,label){
+  const w=28, h=19, skew=3.6;
+  const g=createEl('g',{transform:`translate(${cx},${cy})`, class:'badge tour-flag', 'data-flag-cx':cx, 'data-flag-cy':cy});
+  const polyPts=`${-w/2+skew},${-h/2+1.6} ${w/2+skew},${-h/2-1.6} ${w/2-skew},${h/2-1.6} ${-w/2-skew},${h/2+1.6}`;
+  if(kind==='finish'){
+    const clipId='tdfChk_'+Math.round(cx*10)+'_'+Math.round(cy*10);
+    const defs=createEl('defs');
+    const cp=createEl('clipPath',{id:clipId});
+    cp.appendChild(createEl('polygon',{points:polyPts}));
+    defs.appendChild(cp);
+    g.appendChild(defs);
+    g.appendChild(createEl('polygon',{points:polyPts,fill:'#ffffff',stroke:'#dc2626','stroke-width':1.6}));
+    const chkG=createEl('g',{'clip-path':`url(#${clipId})`,transform:'skewX(-11) rotate(-5)'});
+    const sz=5.4;
+    for(let r=-2;r<=3;r++){
+      for(let c=-4;c<=4;c++){
+        if((r+c)&1) chkG.appendChild(createEl('rect',{x:c*sz,y:r*sz,width:sz,height:sz,fill:'#dc2626'}));
+      }
+    }
+    g.appendChild(chkG);
+    g.appendChild(createEl('polygon',{points:polyPts,fill:'none',stroke:'#b91c1c','stroke-width':1.3}));
+    return g;
+  }
+  const fillCol = kind==='start' ? '#1d70b8' : kind==='sprint' ? '#15803d' : kind==='feed' ? '#0f766e' : '#d91e18';
+  g.appendChild(createEl('polygon',{points:polyPts,fill:fillCol,stroke:'rgba(15,23,42,0.18)','stroke-width':0.75}));
+  if(kind==='start'){
+    g.appendChild(createEl('polygon',{points:'-4,-4.8 6,0 -4,4.8',fill:'#ffffff'}));
+  } else if(kind==='climb' && !label){
+    g.appendChild(createEl('path',{d:'M -8.5 4.8 L -2 -4.8 L 1.8 0.8 L 4.8 -2.6 L 9 4.8 Z',fill:'#ffffff'}));
+  } else {
+    const txt=createEl('text',{x:0,y:4.6,'text-anchor':'middle','font-size':label==='HC'?'11':'13','font-family':TOUR_BOLD_FONT,'font-weight':'800',transform:'rotate(-5)',style:'fill:#fff !important'});
+    txt.textContent=label||'';
+    g.appendChild(txt);
+  }
+  return g;
+}
+
+function drawTourBlackRibbon(gLayer,margin,w,yBase,markers,dMaxKm){
+  const barH=30;
+  gLayer.appendChild(createEl('rect',{x:margin.l,y:yBase,width:w,height:barH,fill:'#111827'}));
+  const sorted=markers.slice().sort((a,b)=>a.x-b.x);
+  const placedRow0=[], placedRow1=[];
+  const minGap=36;
+  const fits=(row,x)=>row.every(px=>Math.abs(px-x)>=minGap);
+  const ordered=[...sorted.filter(m=>m.prio>=2), ...sorted.filter(m=>m.prio<2)];
+  const placed=[];
+  for(const m of ordered){
+    if(m.x<margin.l+14 || m.x>margin.l+w-14) continue;
+    let row=-1;
+    if(fits(placedRow0,m.x)){ row=0; placedRow0.push(m.x); }
+    else if(fits(placedRow1,m.x)){ row=1; placedRow1.push(m.x); }
+    if(row>=0) placed.push({...m, row});
+  }
+  for(const m of placed){
+    const ty=m.row===0 ? yBase+13 : yBase+26;
+    const t=createEl('text',{x:m.x,y:ty,'text-anchor':'middle','font-family':TOUR_BOLD_FONT,'font-weight':'800','font-size':'12',class:'tdf-km',style:'fill:#fde017 !important'});
+    t.textContent=m.label;
+    gLayer.appendChild(t);
+    if(m.row===1){
+      gLayer.appendChild(createEl('line',{x1:m.x,y1:yBase,x2:m.x,y2:yBase+14,stroke:'rgba(253,224,23,0.45)','stroke-width':0.9,'stroke-dasharray':'2 2'}));
+    }
+  }
+  const t0=createEl('text',{x:margin.l-12,y:yBase+20,'text-anchor':'end','font-family':TOUR_BOLD_FONT,'font-weight':'800','font-size':'14.5',style:'fill:#111827 !important'});
+  t0.textContent='0';
+  gLayer.appendChild(t0);
+  const tEnd=createEl('text',{x:margin.l+w+8,y:yBase+20,'text-anchor':'start','font-family':TOUR_BOLD_FONT,'font-weight':'800','font-size':'14.5',style:'fill:#111827 !important'});
+  tEnd.textContent=`${formatTdfKm(dMaxKm)} km`;
+  gLayer.appendChild(tEnd);
+}
+
+/* ---- La Vuelta Shield Badge Helpers (authentic rounded-bottom Vuelta shields!) ---- */
+function drawVueltaShield(cx,cy,kind,label){
+  const g=createEl('g',{transform:`translate(${cx},${cy})`, class:'badge vuelta-shield'+(kind==='sprint'?' vuelta-badge-dark':'')});
+  // Main shield body: width 26 (-13..13), top -10, rounded bottom to +16
+  const bodyPath='M -13 -10 H 13 V 3 C 13 11 5.5 16 0 16 C -5.5 16 -13 11 -13 3 Z';
+
+  if(kind==='start'){
+    // Blue shield with angled start flag bar on top
+    g.appendChild(createEl('path',{d:'M -13 -15 L 13 -12 V -10 H -13 Z',fill:'#3593c2'}));
+    g.appendChild(createEl('path',{d:bodyPath,fill:'#52b3df'}));
+    const txt=createEl('text',{x:0,y:8.5,'text-anchor':'middle','font-family':VUELTA_DISPLAY_FONT,'font-weight':'700','font-size':'18',style:'fill:#fff !important'});
+    txt.textContent='S'; g.appendChild(txt);
+  } else if(kind==='finish'){
+    // Red Meta shield with crisp checkered band on top
+    g.appendChild(createEl('path',{d:bodyPath,fill:'#e52d1a'}));
+    const sw=4.33;
+    for(let r=0;r<2;r++){
+      for(let c=0;c<6;c++){
+        g.appendChild(createEl('rect',{x:-13+c*sw,y:-16+r*3.4,width:sw,height:3.4,fill:(r+c)%2===0?'#e52d1a':'#ffffff'}));
+      }
+    }
+    const txt=createEl('text',{x:0,y:8.5,'text-anchor':'middle','font-family':VUELTA_DISPLAY_FONT,'font-weight':'700','font-size':'18',style:'fill:#fff !important'});
+    txt.textContent='M'; g.appendChild(txt);
+  } else if(kind==='climb'){
+    // Magenta KOM shield with stylized peak silhouette on top edge
+    g.appendChild(createEl('path',{d:'M -13 -10 L -5 -16 L -1 -12 L 5 -15.5 L 13 -10 Z',fill:'#c65a96'}));
+    g.appendChild(createEl('path',{d:bodyPath,fill:'#c65a96'}));
+    if(label){
+      const txt=createEl('text',{x:0,y:8.5,'text-anchor':'middle','font-family':VUELTA_DISPLAY_FONT,'font-weight':'700','font-size':label==='HC'?'14.5':'18',style:'fill:#fff !important'});
+      txt.textContent=label; g.appendChild(txt);
+    } else {
+      g.appendChild(createEl('path',{d:'M -8 7 L -2 -3 L 2 2.5 L 5 -1 L 9 7 Z',fill:'#ffffff'}));
+    }
+  } else if(kind==='sprint'){
+    // Lime-yellow SP shield with dark SP lettering
+    g.appendChild(createEl('path',{d:'M -13 -10 L 13 -15 V -10 Z',fill:'#c5d158'}));
+    g.appendChild(createEl('path',{d:bodyPath,fill:'#dce57b'}));
+    const txt=createEl('text',{x:0,y:8.5,'text-anchor':'middle','font-family':VUELTA_DISPLAY_FONT,'font-weight':'700','font-size':'16',style:'fill:#111827 !important'});
+    txt.textContent='SP'; g.appendChild(txt);
+  } else if(kind==='feed'){
+    g.appendChild(createEl('path',{d:'M -13 -14 H 13 V -10 H -13 Z',fill:'#0d9488'}));
+    g.appendChild(createEl('path',{d:bodyPath,fill:'#0f766e'}));
+    const txt=createEl('text',{x:0,y:8.5,'text-anchor':'middle','font-family':VUELTA_DISPLAY_FONT,'font-weight':'700','font-size':'17',style:'fill:#fff !important'});
+    txt.textContent='F'; g.appendChild(txt);
+  } else if(kind==='gravel'){
+    // Warm orange cobblestone shield (Tramo de Tierra!)
+    g.appendChild(createEl('path',{d:'M -13 -15 H 13 V -12.5 H -13 Z',fill:'#f59e0b'}));
+    g.appendChild(createEl('path',{d:bodyPath,fill:'#f59e0b'}));
+    // Stylized dark pebbles / gravel stones inside shield
+    const stones=[
+      'M -8 -5 L -2 -6 L -1 -1 L -7 0 Z',
+      'M 1 -5 L 8 -4 L 7 1 L 1 0 Z',
+      'M -9 2 L -3 1.5 L -2 7 L -8 6.5 Z',
+      'M -1 2.5 L 5 2 L 6 7.5 L 0 8 Z',
+      'M 7 3 L 10.5 3.5 L 9.5 8.5 L 6.5 8 Z',
+      'M -5 9 L 2 9.5 L 1 13.5 L -4 13 Z'
+    ];
+    stones.forEach(d=>g.appendChild(createEl('path',{d,fill:'#1f2937'})));
+  }
+  return g;
+}
+
+/* ---- Bounded Per-Block Column Packer (zero global drift + respects locked labels & endpoints) ---- */
+function packBoundedColumns(items, leftLimit, rightLimit, gap){
+  const barriers=[[leftLimit, leftLimit], [rightLimit, rightLimit]];
+  for(const it of items){
+    if(it.locked) barriers.push([it.colBox.x - gap, it.colBox.x + it.colBox.w + gap]);
+  }
+  barriers.sort((a,b)=>a[0]-b[0]);
+  const merged=[];
+  for(const b of barriers){
+    if(merged.length && b[0] <= merged[merged.length-1][1]){
+      merged[merged.length-1][1]=Math.max(merged[merged.length-1][1], b[1]);
+    } else {
+      merged.push([b[0], b[1]]);
+    }
+  }
+  const res=new Map();
+  for(const it of items){ if(it.locked) res.set(it, it.colBox.x); }
+
+  const intervals=[];
+  for(let k=0;k<merged.length-1;k++) intervals.push([merged[k][1], merged[k+1][0]]);
+  const buckets=intervals.map(()=>[]);
+  for(const it of items){
+    if(it.locked) continue;
+    const cx=it.colBox.x + it.colBox.w/2;
+    let bestK=0, bestD=Infinity;
+    for(let k=0;k<intervals.length;k++){
+      const [lo,hi]=intervals[k];
+      if(hi-lo < it.colBox.w) continue;
+      if(cx>=lo && cx<=hi){ bestK=k; break; }
+      const d=Math.min(Math.abs(cx-lo), Math.abs(cx-hi));
+      if(d<bestD){ bestD=d; bestK=k; }
+    }
+    if(buckets[bestK]) buckets[bestK].push(it);
+  }
+
+  for(let k=0;k<buckets.length;k++){
+    const grp=buckets[k];
+    if(!grp.length) continue;
+    const [lo, hi]=intervals[k];
+    const cum=[]; let offset=0; const blocks=[];
+    for(let i=0;i<grp.length;i++){
+      cum.push(offset);
+      const desired=Math.max(lo, Math.min(hi - grp[i].colBox.w, grp[i].colBox.x));
+      const target=desired - offset;
+      blocks.push({from:i, to:i, count:1, mean:target});
+      while(blocks.length>1){
+        const b=blocks[blocks.length-1], a=blocks[blocks.length-2];
+        if(a.mean<=b.mean) break;
+        blocks.splice(blocks.length-2,2,{from:a.from,to:b.to,count:a.count+b.count,mean:(a.mean*a.count+b.mean*b.count)/(a.count+b.count)});
+      }
+      offset+=grp[i].colBox.w + gap;
+    }
+    let changed=true, guard=0;
+    while(changed && guard++<40){
+      changed=false;
+      for(const bl of blocks){
+        const fx=bl.mean + cum[bl.from];
+        const li=bl.to;
+        const le=bl.mean + cum[li] + grp[li].colBox.w;
+        if(fx < lo - 0.01){ bl.mean += (lo - fx); changed=true; }
+        else if(le > hi + 0.01){ bl.mean -= (le - hi); changed=true; }
+      }
+      for(let i=0;i<blocks.length-1;){
+        const a=blocks[i], b=blocks[i+1];
+        if(a.mean > b.mean + 0.01){
+          const m=(a.mean*a.count + b.mean*b.count)/(a.count+b.count);
+          blocks.splice(i,2,{from:a.from,to:b.to,count:a.count+b.count,mean:m});
+          changed=true;
+          if(i>0) i--;
+        } else i++;
+      }
+    }
+    for(const bl of blocks){
+      for(let i=bl.from;i<=bl.to;i++) res.set(grp[i], bl.mean + cum[i]);
+    }
+  }
+  return res;
+}
+
+function resolveVerticalLabelCollisions(margin,h){
+  const tpl=normalizeTemplateKey(state.template);
+  const isTour=(tpl==='tour_modern');
+  const isVuelta=(tpl==='vuelta');
+  const all=[...svg.querySelectorAll('[data-auto-label]')].map(el=>{
+    // In Vuelta, measure fullBox (including the 26px shield!) so shields on the shared row never collide.
+    // In Tour, measure ONLY the text column so wide flags don't push neighboring text off their lines.
+    const colEl=(isVuelta && el.querySelector('g.vuelta-shield')) ? el : (el.querySelector('text[data-col-text]') || el);
+    const colBox=svgBoxForElement(colEl);
+    const fullBox=svgBoxForElement(el);
+    const item=labelItemByKey(el.dataset.autoLabel);
+    if(!colBox || !fullBox) return null;
+    return {
+      el, item, colBox, box:fullBox,
+      locked: !!(item && item.manualPos),
+      originalX:+el.dataset.labelAnchorX,
+      labelY:+el.dataset.labelAnchorY,
+      sourceY:+el.dataset.labelSourceY,
+      baseTransform:el.getAttribute('transform')||''
+    };
+  }).filter(Boolean).filter(it=>it.originalX>=margin.l-2 && it.originalX<=1280-margin.r+2);
+
+  if(!all.length) return;
+  all.sort((a,b)=>a.originalX-b.originalX);
+
+  const leftLimit=margin.l + (isTour ? 20 : isVuelta ? 20 : 6);
+  const rightLimit=1280 - margin.r - (isTour ? 18 : isVuelta ? 20 : 6);
+  const gap=isVuelta ? 5 : isTour ? 5 : 6;
+
+  const unlocked=all.filter(it=>!it.locked);
+  const totalWidth=unlocked.reduce((v,it)=>v+it.colBox.w,0) + Math.max(0,unlocked.length-1)*gap;
+  const maxWidth=rightLimit-leftLimit;
+  let activeItems=all;
+  if(totalWidth>maxWidth){
+    const kept=[]; let used=0;
+    for(const it of all){
+      if(it.locked){ kept.push(it); continue; }
+      const prev=kept[kept.length-1];
+      const ok=!prev || (it.originalX - prev.originalX >= 20);
+      if(ok && used + it.colBox.w + (kept.length?gap:0) <= maxWidth){
+        kept.push(it); used += it.colBox.w + (kept.length>1?gap:0);
+      } else {
+        it.el.style.display='none';
+      }
+    }
+    activeItems=kept;
+  }
+
+  const packedX=packBoundedColumns(activeItems, leftLimit, rightLimit, gap);
+  const endpointBoxes=[...svg.querySelectorAll('[data-endpoint-label]')].map(svgBoxForElement).filter(Boolean);
+  const lockedBoxes=activeItems.filter(it=>it.locked).map(it=>it.box);
+  const obstacles=endpointBoxes.concat(lockedBoxes);
+  const overlap=(r,other,pad=4)=>r.x<other.x+other.w+pad && r.x+r.w+pad>other.x && r.y<other.y+other.h+pad && r.y+r.h+pad>other.y;
+
+  const placedFlags=[];
+  for(const it of activeItems){
+    if(it.locked) continue;
+    const targetX=packedX.get(it);
+    const dx=Number.isFinite(targetX) ? (targetX - it.colBox.x) : 0;
+
+    const minDy=Math.ceil(8 - it.box.y);
+    const maxDy=Math.floor(Math.max(it.box.y + it.box.h, it.sourceY - 4) - (it.box.y + it.box.h));
+    let dy=0;
+    if(isVuelta){
+      // Keep Vuelta badges aligned cleanly on the shared horizon (only nudge down if top text clips canvas!)
+      if(it.box.y < 8) dy=Math.min(maxDy, Math.ceil(8 - it.box.y));
+    } else if(it.box.y < 8){
+      dy=Math.min(maxDy, Math.ceil(8 - it.box.y));
+    } else {
+      const tried=[0,12,24,36,48,60,-12,-24,-36,-48,-60];
+      let best=Infinity;
+      for(const req of tried){
+        const cand=Math.max(minDy, Math.min(maxDy, req));
+        if(!Number.isFinite(cand)) continue;
+        const testBox={x:it.colBox.x+dx, y:it.box.y+cand, w:it.colBox.w, h:it.box.h};
+        const collides=obstacles.some(other=>overlap(testBox, other, 4));
+        const cost=(collides?10000:0)+Math.abs(cand)+(cand<0?1:0);
+        if(cost<best){ best=cost; dy=cand; }
+        if(!collides && cand===0) break;
+      }
+    }
+
+    if(Math.abs(dx)>0.2 || Math.abs(dy)>0.2){
+      it.el.setAttribute('transform',`translate(${dx.toFixed(2)} ${dy.toFixed(2)}) ${it.baseTransform}`);
+      setAnnotationGuideAt(it.el.dataset.autoLabel, Number(it.el.dataset.labelPivotX)+dx, it.labelY+dy, Math.abs(dx)>1.5);
+    }
+
+    if(isTour){
+      const fl=it.el.querySelector('g.tour-flag');
+      if(fl){
+        const fb=svgBoxForElement(fl);
+        if(fb) placedFlags.push({ el:fl, box:fb, cx:Number(fl.dataset.flagCx), cy:Number(fl.dataset.flagCy) });
+      }
+    }
+  }
+
+  if(isTour && placedFlags.length>1){
+    placedFlags.sort((a,b)=>a.box.x-b.box.x);
+    for(let i=0;i<placedFlags.length;i++){
+      const cur=placedFlags[i];
+      let lift=0;
+      for(let attempt=0;attempt<4;attempt++){
+        const candBox={x:cur.box.x, y:cur.box.y+lift, w:cur.box.w, h:cur.box.h};
+        const hit=placedFlags.slice(0,i).some(prev=>overlap(candBox, prev.box, 2)) || endpointBoxes.some(eb=>overlap(candBox, eb, 2));
+        if(!hit) break;
+        lift -= 22;
+        if(cur.box.y + lift < 6){ lift = 0; break; }
+      }
+      if(lift !== 0){
+        cur.el.setAttribute('transform',`translate(${cur.cx},${(cur.cy+lift).toFixed(1)})`);
+        cur.box.y += lift;
+      }
     }
   }
 }
@@ -1565,69 +2113,669 @@ function draw(){
   if(state.profileElevations.length){ const mm=minMax(state.profileElevations); state.minEle=mm[0]; state.maxEle=mm[1]; }
   svg.innerHTML='';
   if(!state.points.length){ const t=createEl('text',{x:640,y:260,'text-anchor':'middle',fill:'#94a3b8','font-size':'18'}); t.textContent='Traccia un percorso in DRAW oppure carica un GPX'; svg.appendChild(t); return; }
+  const tpl=normalizeTemplateKey(state.template);
+  const isGiro=(tpl==='giro');
+  const isTour=(tpl==='tour_modern');
+  const isVuelta=(tpl==='vuelta');
+
   const {margin,w,h,xScale,yScale,viewStart,viewEnd}=getScales();
   svg.appendChild(createEl('rect',{x:0,y:0,width:1280,height:520,fill:'#fff'}));
   const yStep = Math.max(50, Math.min(200, parseInt(state.yStep||parseInt(yStepSel.value||'200',10),10)));
   const firstY = Math.ceil(yScale.min / yStep) * yStep;
-  for(let y=firstY; y<=yScale.max; y+=yStep){ const Y=yScale.f(y); svg.appendChild(createEl('line',{x1:margin.l,y1:Y,x2:margin.l+w,y2:Y,stroke:COLORS.grid})); const tt=createEl('text',{x:margin.l-8,y:Y+5,'text-anchor':'end',fill:'#334155','font-size':'13'}); tt.textContent=y; svg.appendChild(tt); }
-  const dMax=state.points[state.points.length-1].d; const dMaxKm=dMax/1000; const step=Math.max(1,parseInt(tickInput.value||10)); const vStartKm=viewStart/1000, vEndKm=viewEnd/1000; const firstTick=Math.ceil(vStartKm/step)*step; const lastWhole=Math.floor(dMaxKm/step)*step; const yBase=margin.t+h, tickLen=10; const gTicks=createEl('g'); const xMax=xScale.f(dMax);
-  for(let km=firstTick; km<=Math.min(lastWhole, Math.ceil(vEndKm/step)*step); km+=step){ const x=xScale.f(km*1000); if(x>xMax) break; gTicks.appendChild(createEl('line',{x1:x,y1:yBase,x2:x,y2:yBase+tickLen,stroke:COLORS.axis,'stroke-width':1.3})); gTicks.appendChild(createEl('text',{x:x,y:yBase+tickLen+10,'text-anchor':'middle',fill:'#334155','font-size':'13'})).textContent=km; }
-  const xEndTick=xMax; gTicks.appendChild(createEl('line',{x1:xEndTick,y1:yBase,x2:xEndTick,y2:yBase+tickLen+2,stroke:'#111827','stroke-width':1.6})); gTicks.appendChild(createEl('text',{x:xEndTick,y:yBase+tickLen+25,'text-anchor':'middle','font-size':'13',fill:'#111827','font-weight':'700'})).textContent=dMaxKm.toFixed(1);
-  svg.appendChild(gTicks);
-  const iS=Math.max(0, state.points.findIndex(p=>p.d>=viewStart)); const iE=state.points.findIndex(p=>p.d>=viewEnd); const endIndex=(iE===-1? state.points.length-1 : iE); const winPts=state.points.slice(Math.max(0,iS-1), Math.min(state.points.length,endIndex+2)).map((p,i)=>({x:xScale.f(p.d), y:yScale.f(visibleElevation(Math.max(0,iS-1)+i))})); const dArea=pathFrom(winPts,true,margin,h); if(!state.noProfileFill) svg.appendChild(createEl('path',{d:dArea,fill:state.fillColor})); if(!state.noProfileLine) svg.appendChild(createEl('path',{d:dArea,fill:'none',stroke:state.lineColor,'stroke-width':3})); const defs=createEl('defs'); const clip=createEl('clipPath',{id:'areaClip'}); clip.appendChild(createEl('path',{d:dArea})); defs.appendChild(clip); const clipPlot=createEl('clipPath',{id:'plotClip'}); clipPlot.appendChild(createEl('rect',{x:margin.l,y:margin.t,width:w,height:h})); defs.appendChild(clipPlot); svg.appendChild(defs);
-  const sTxt=(startLabel.value||'START').toUpperCase(); const fTxt=(finishLabel.value||'FINISH').toUpperCase(); const dMaxAll=state.points[state.points.length-1].d; const x0=xScale.f(0), xF=xScale.f(dMaxAll); const topY=margin.t + h*(1 - Math.min(1,Math.max(0.1,state.vExag))); const baseNameY=Math.max(28,Math.min(43,topY - 24)); const nameYStart=Math.max(12, baseNameY - state.startOffset); const nameYFinish=Math.max(12, baseNameY - state.finishOffset); const altYOffset=16;
+  const dMax=state.points[state.points.length-1].d; const dMaxKm=dMax/1000;
+  const step=Math.max(1,parseInt(tickInput.value||10));
+  const vStartKm=viewStart/1000, vEndKm=viewEnd/1000;
+  const firstTick=Math.ceil(vStartKm/step)*step; const lastWhole=Math.floor(dMaxKm/step)*step;
+  const yBase=margin.t+h, tickLen=10; const xMax=xScale.f(dMax);
 
-  function addAnnotationGuide(group,anchorX,sourceY,baselineX,labelY,key,manualOverride=false){
-    const guide=createEl('path',{'data-annotation-guide':key,'data-guide-anchor-x':anchorX,'data-guide-base-y':margin.t+h,fill:'none',stroke:COLORS.guide,'stroke-width':1,'stroke-opacity':0.8,'pointer-events':'none'});
-    const elbow=manualOverride && Math.abs(baselineX-anchorX)>0.5 ? ` H ${baselineX}` : '';
-    guide.setAttribute('d',`M ${anchorX} ${margin.t+h} V ${labelY}${elbow}`);
-    group.appendChild(guide);
+  const sTxt=(startLabel.value||'START').toUpperCase();
+  const fTxt=(finishLabel.value||'FINISH').toUpperCase();
+  const normCmp=v=>String(v||'').trim().toUpperCase();
+
+  let peakIdx=0, peakEle=-Infinity;
+  for(let i=0;i<state.points.length;i++){
+    const ev=visibleElevation(i);
+    if(ev>peakEle){ peakEle=ev; peakIdx=i; }
+  }
+  const yPeak=yScale.f(peakEle);
+  // Shared horizontal row for Vuelta shield badges (just above highest peak, leaving generous vertical space for labels!)
+  const yVueltaBadge=Math.max(158, Math.min(yBase - 96, yPeak - 36));
+
+  // Build profile path & clip paths
+  const iS=Math.max(0, state.points.findIndex(p=>p.d>=viewStart));
+  const iE=state.points.findIndex(p=>p.d>=viewEnd);
+  const endIndex=(iE===-1? state.points.length-1 : iE);
+  const winPts=state.points.slice(Math.max(0,iS-1), Math.min(state.points.length,endIndex+2)).map((p,i)=>({x:xScale.f(p.d), y:yScale.f(visibleElevation(Math.max(0,iS-1)+i))}));
+  const dArea=pathFrom(winPts,true,margin,h);
+  const dTopLine=pathFrom(winPts,false);
+  const defs=createEl('defs');
+  const clip=createEl('clipPath',{id:'areaClip'}); clip.appendChild(createEl('path',{d:dArea})); defs.appendChild(clip);
+  const clipPlot=createEl('clipPath',{id:'plotClip'}); clipPlot.appendChild(createEl('rect',{x:margin.l,y:margin.t,width:w,height:h})); defs.appendChild(clipPlot);
+  svg.appendChild(defs);
+
+  // 1. Background grid & left altitude scale
+  let highestLeftTickY=yBase;
+  if(tpl==='classic'){
+    for(let y=firstY; y<=yScale.max; y+=yStep){
+      const Y=yScale.f(y);
+      svg.appendChild(createEl('line',{x1:margin.l,y1:Y,x2:margin.l+w,y2:Y,stroke:COLORS.grid}));
+      const tt=createEl('text',{x:margin.l-8,y:Y+5,'text-anchor':'end',fill:'#334155','font-size':'13'});
+      tt.textContent=y; svg.appendChild(tt);
+    }
+  } else if(isTour){
+    for(let y=Math.max(0,firstY); y<=yScale.max; y+=yStep){
+      const Y=yScale.f(y);
+      if(Y<yPeak-12 || Y>yBase-4) continue;
+      if(Y<highestLeftTickY) highestLeftTickY=Y;
+      const tt=createEl('text',{x:margin.l-10,y:Y+3.5,'text-anchor':'end','font-family':TOUR_REG_FONT,'font-size':'11',class:'giro-muted',style:'fill:#475569 !important'});
+      tt.textContent=`${formatSpaceNum(y)} m`; svg.appendChild(tt);
+    }
+  } else if(isVuelta){
+    for(let y=Math.max(0,firstY); y<=yScale.max; y+=yStep){
+      const Y=yScale.f(y);
+      if(Y<yPeak-14 || Y>yBase+2) continue;
+      if(Y<highestLeftTickY) highestLeftTickY=Y;
+      svg.appendChild(createEl('line',{x1:margin.l-4,y1:Y,x2:margin.l,y2:Y,stroke:'#64748b','stroke-width':1}));
+      const tt=createEl('text',{x:margin.l-7,y:Y+3.5,'text-anchor':'end','font-family':VUELTA_DISPLAY_FONT,'font-size':'10.5',class:'giro-muted',style:'fill:#64748b !important'});
+      tt.textContent=String(y); svg.appendChild(tt);
+    }
   }
 
+  // 2. Profile area fill
+  if(!state.noProfileFill){
+    svg.appendChild(createEl('path',{d:dArea,fill:state.fillColor}));
+  }
+
+  // Internal clipped grids for Giro, Tour & Vuelta
+  if(isGiro){
+    const gMill=createEl('g',{'clip-path':'url(#areaClip)','pointer-events':'none'});
+    for(let y=firstY; y<=yScale.max; y+=yStep){
+      const Y=yScale.f(y);
+      gMill.appendChild(createEl('line',{x1:margin.l,y1:Y,x2:margin.l+w,y2:Y,stroke:'#cbd5e1','stroke-width':0.85,'stroke-opacity':0.75}));
+    }
+    for(let km=firstTick; km<=Math.min(lastWhole, Math.ceil(vEndKm/step)*step); km+=step){
+      const x=xScale.f(km*1000); if(x>xMax) break;
+      gMill.appendChild(createEl('line',{x1:x,y1:margin.t,x2:x,y2:yBase,stroke:'#cbd5e1','stroke-width':0.85,'stroke-opacity':0.75}));
+    }
+    svg.appendChild(gMill);
+  } else if(isTour){
+    const gBand=createEl('g',{'clip-path':'url(#areaClip)','pointer-events':'none'});
+    for(let y=firstY; y<=yScale.max; y+=yStep){
+      const Y=yScale.f(y);
+      gBand.appendChild(createEl('line',{x1:margin.l,y1:Y,x2:margin.l+w,y2:Y,stroke:'#b45309','stroke-width':0.85,'stroke-opacity':0.24}));
+    }
+    svg.appendChild(gBand);
+  } else if(isVuelta){
+    const gBand=createEl('g',{'clip-path':'url(#areaClip)','pointer-events':'none'});
+    for(let y=firstY; y<=yScale.max; y+=yStep){
+      const Y=yScale.f(y);
+      gBand.appendChild(createEl('line',{x1:margin.l,y1:Y,x2:margin.l+w,y2:Y,stroke:'#7f1d1d','stroke-width':0.85,'stroke-opacity':0.26}));
+    }
+    svg.appendChild(gBand);
+  }
+
+  // 3. Climb & Gravel area fills (in Vuelta, draw gravel AFTER climbs so golden Tramo de Tierra stands out inside a climb like Puerto El Bartolo!)
   const gGravel=createEl('g');
-  state.gravels.forEach((g,i)=>{ if(!(state.points[g.startIdx]&&state.points[g.endIdx])) return; const a=state.points[g.startIdx], b=state.points[g.endIdx]; const xA=xScale.f(a.d), xB=xScale.f(b.d); const seg=state.points.slice(g.startIdx,g.endIdx+1).map((p,idx)=>({x:xScale.f(p.d), y:yScale.f(visibleElevation(g.startIdx+idx))})); const rect=createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:hexToRgba(COLORS.gravel,0.18),'clip-path':'url(#areaClip)'}); gGravel.appendChild(rect); if(seg.length>=2){ gGravel.appendChild(createEl('path',{d:pathFrom(seg,false),fill:'none',stroke:COLORS.gravel,'stroke-width':2})); }
-    const yEndV=yScale.f(visibleElevation(g.endIdx)); const x=xB; const len=(b.d-a.d)/1000; const labelX=(x-12)+(g.offsetX||0); let labelY=(Math.max(margin.t+10, yEndV-24) - (g.offsetY||0)); addAnnotationGuide(gGravel,x,yEndV,labelX+16,labelY,`g${i}`,!!g.manualPos && Math.abs(g.offsetX||0)>0.5);
-    const text=createEl('text',{x:labelX,y:labelY,fill:COLORS.text,'font-size':'14',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`g${i}`,'data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEndV,'data-label-pivot-x':labelX+16});
-    const displayName=(g.name && g.name.trim())? g.name.trim() : 'GRAVEL';
-    const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-family','Montserrat, sans-serif'); t1.setAttribute('font-weight','700'); t1.setAttribute('x',labelX); t1.setAttribute('y',labelY); t1.textContent=displayName; text.appendChild(t1);
-    const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-family','Montserrat, sans-serif'); t2.setAttribute('font-weight','300'); t2.setAttribute('x',labelX); t2.setAttribute('dy',16); t2.textContent=`${len.toFixed(1)} km`; text.appendChild(t2);
-    gGravel.appendChild(text);
-  }); svg.appendChild(gGravel);
+  const gClimbs=createEl('g');
+  const gBadges=createEl('g'); gBadges.setAttribute('pointer-events','none');
+  const gGuideLayer=createEl('g',{'pointer-events':'none'});
 
-  const gClimbs=createEl('g'); const gPois=createEl('g'); const gBadges=createEl('g'); gBadges.setAttribute('pointer-events','none');
-  function verticalPartial(dist){ if(dMax - dist < 2000) return; const x=xScale.f(dist); const g=createEl('g'); g.appendChild(createEl('line',{x1:x,y1:yBase,x2:x,y2:yBase+8,stroke:COLORS.axis,'stroke-width':1})); const ty=yBase+42; const tx=createEl('text',{x:x,y:ty,'text-anchor':'middle','font-size':'13',fill:'#111827',transform:`rotate(-90 ${x} ${ty})`}); tx.textContent=(dist/1000).toFixed(1); g.appendChild(tx); return g; }
-  state.climbs.forEach((c,i)=>{ if(!(state.points[c.startIdx]&&state.points[c.endIdx])) return; const a=state.points[c.startIdx], b=state.points[c.endIdx]; const len=b.d-a.d; const xA=xScale.f(a.d), xB=xScale.f(b.d); const seg=state.points.slice(c.startIdx, c.endIdx+1).map((p,idx)=>({x:xScale.f(p.d), y:yScale.f(visibleElevation(c.startIdx+idx))})); const overlayInfo=drawClimbOverlay(gClimbs,c.startIdx,c.endIdx,xScale,yScale,margin,h); if(overlayInfo.rectColor){ gClimbs.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:overlayInfo.rectColor,"clip-path":"url(#areaClip)"})); if(seg.length>=2) gClimbs.appendChild(createEl('path',{d:pathFrom(seg,false),fill:'none',stroke:overlayInfo.lineColor,'stroke-width':3})); } const yEnd=yScale.f(visibleElevation(c.endIdx)); const kom=parseKom(c.name); const dispName=kom?kom.label:c.name; const x=xB; const labelX=(x-12)+(c.offsetX||0); let labelY=(Math.max(margin.t+10,yEnd-10) - (c.offsetY||0)); const dataBaselineX=labelX+16*((dispName?wrapLinesMode(dispName,18,true).length:0)+1); addAnnotationGuide(gClimbs,x,yEnd,dataBaselineX,labelY,`c${i}`,!!c.manualPos && Math.abs(c.offsetX||0)>0.5); const text=createEl('text',{x:labelX,y:labelY,fill:COLORS.text,'font-size':'14',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`c${i}`,'data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEnd,'data-label-pivot-x':dataBaselineX}); const hasName=!!dispName; if(hasName){ const nameLines=wrapLinesMode(dispName,18,true); nameLines.forEach((ln,j)=>{ const t=document.createElementNS(NS,'tspan'); t.setAttribute('font-family','Montserrat, sans-serif'); t.setAttribute('font-weight','700'); t.setAttribute('x',labelX); if(j===0) t.setAttribute('y',labelY); else t.setAttribute('dy',16); t.textContent=ln; text.appendChild(t); }); }
-    const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-family','Montserrat, sans-serif'); t2.setAttribute('font-weight','300'); t2.setAttribute('x',labelX); t2.setAttribute('dy',16); t2.textContent=`${(len/1000).toFixed(1)} km · ${(((b.ele - a.ele)/Math.max(1,(b.d - a.d)))*100).toFixed(1)}% · ${Math.round(b.ele)} m`; text.appendChild(t2);
-    gClimbs.appendChild(text);
-    if(kom && state.showKom){ gBadges.appendChild(drawKomBadge(x, yBase, kom.tier)); }
-    const vp=verticalPartial(b.d); if(vp) gClimbs.appendChild(vp);
-  }); svg.appendChild(gClimbs);
+  state.climbs.forEach((c)=>{
+    if(!(state.points[c.startIdx]&&state.points[c.endIdx])) return;
+    const a=state.points[c.startIdx], b=state.points[c.endIdx];
+    const xA=xScale.f(a.d), xB=xScale.f(b.d);
+    const seg=state.points.slice(c.startIdx, c.endIdx+1).map((p,idx)=>({x:xScale.f(p.d), y:yScale.f(visibleElevation(c.startIdx+idx))}));
+    const overlayInfo=drawClimbOverlay(gClimbs,c.startIdx,c.endIdx,xScale,yScale,margin,h);
+    if(isGiro){
+      const fillC = state.climbOverlayMode==='avggrade' ? overlayInfo.rectColor : hexToRgba(state.climbFillColor, 0.42);
+      gClimbs.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:fillC,'clip-path':'url(#areaClip)'}));
+      if(state.climbOverlayMode==='avggrade' && seg.length>=2){
+        gClimbs.appendChild(createEl('path',{d:pathFrom(seg,false),fill:'none',stroke:overlayInfo.lineColor,'stroke-width':3.4}));
+      }
+    } else if(isTour){
+      if(state.climbOverlayMode==='avggrade' && overlayInfo.rectColor){
+        gClimbs.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:overlayInfo.rectColor,'clip-path':'url(#areaClip)'}));
+        if(seg.length>=2) gClimbs.appendChild(createEl('path',{d:pathFrom(seg,false),fill:'none',stroke:overlayInfo.lineColor,'stroke-width':2.5}));
+      } else {
+        gClimbs.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:'rgba(202, 138, 4, 0.14)','clip-path':'url(#areaClip)'}));
+      }
+    } else if(isVuelta){
+      const fillC = state.climbOverlayMode==='avggrade' ? overlayInfo.rectColor : hexToRgba(state.climbFillColor, 0.44);
+      gClimbs.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:fillC,'clip-path':'url(#areaClip)'}));
+    } else {
+      if(overlayInfo.rectColor){
+        gClimbs.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:overlayInfo.rectColor,'clip-path':'url(#areaClip)'}));
+        if(seg.length>=2) gClimbs.appendChild(createEl('path',{d:pathFrom(seg,false),fill:'none',stroke:overlayInfo.lineColor,'stroke-width':3}));
+      }
+    }
+  });
 
-  state.pois.forEach((p,i)=>{ if(!state.points[p.idx]) return; const pt=state.points[p.idx]; const x=xScale.f(pt.d); const yEnd=yScale.f(visibleElevation(p.idx)); const labelX=x+(p.offsetX||0); let labelY=(Math.max(margin.t+10,yEnd-10) - (p.offsetY||0)); addAnnotationGuide(gPois,x,yEnd,labelX,labelY,`p${i}`,!!p.manualPos && Math.abs(p.offsetX||0)>0.5);
-    const text=createEl('text',{x:labelX,y:labelY,fill:COLORS.text,'font-size':'14','text-anchor':'start',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`p${i}`,'data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEnd,'data-label-pivot-x':labelX});
-    const tName=document.createElementNS(NS,'tspan'); tName.setAttribute('font-family','Montserrat, sans-serif'); tName.setAttribute('font-weight','300'); tName.setAttribute('x',labelX); tName.setAttribute('y',labelY); tName.textContent=`${poiDisplayName(p.name)} · ${Math.round(visibleElevation(p.idx))} m`; text.appendChild(tName); gPois.appendChild(text);
-    if(state.showSprint){ const k=poiKind(p.name); if(k && k.type==='sprint') gBadges.appendChild(drawSprintBadge(x, yBase)); else if(k && k.type==='feed') gBadges.appendChild(drawFeedBadge(x, yBase)); }
-    const vp=verticalPartial(pt.d); if(vp) gPois.appendChild(vp); }); svg.appendChild(gPois);
+  state.gravels.forEach((g)=>{
+    if(!(state.points[g.startIdx]&&state.points[g.endIdx])) return;
+    const a=state.points[g.startIdx], b=state.points[g.endIdx];
+    const xA=xScale.f(a.d), xB=xScale.f(b.d);
+    const seg=state.points.slice(g.startIdx,g.endIdx+1).map((p,idx)=>({x:xScale.f(p.d), y:yScale.f(visibleElevation(g.startIdx+idx))}));
+    if(isVuelta){
+      gGravel.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:'rgba(234, 179, 8, 0.56)','clip-path':'url(#areaClip)'}));
+    } else {
+      gGravel.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:hexToRgba(COLORS.gravel,isTour?0.24:0.18),'clip-path':'url(#areaClip)'}));
+      if(seg.length>=2){ gGravel.appendChild(createEl('path',{d:pathFrom(seg,false),fill:'none',stroke:COLORS.gravel,'stroke-width':2})); }
+    }
+  });
 
-  svg.appendChild(gBadges);
-  hitBoxEl=createEl('rect',{x:margin.l,y:margin.t,width:w,height:h,fill:'transparent','pointer-events':'all',id:'hitbox'}); svg.appendChild(hitBoxEl);
-  const annotationLayer=createEl('g',{id:'annotation-label-layer'});
-  svg.querySelectorAll('text[data-auto-label]').forEach(text=>annotationLayer.appendChild(text));
-  svg.appendChild(annotationLayer);
-  const gTop=createEl('g',{'pointer-events':'none'});
-  function addEndpointLabel(name,alt,x,y,anchor,which){
-    if(x<margin.l||x>margin.l+w) return;
-    const group=createEl('g',{'data-endpoint-label':which,'data-name-y':y,'pointer-events':'visiblePainted'});
-    const heading=createEl('text',{x,y,'font-family':'Montserrat, sans-serif','font-weight':'800','font-size':'18','text-anchor':anchor});
-    heading.textContent=name;
-    const altitude=createEl('text',{x,y:y+altYOffset,'font-size':'13','text-anchor':anchor});
-    altitude.textContent=`${alt} m`;
-    group.appendChild(heading);group.appendChild(altitude);
-    gTop.appendChild(group);
+  if(isVuelta){ svg.appendChild(gClimbs); svg.appendChild(gGravel); }
+  else { svg.appendChild(gGravel); svg.appendChild(gClimbs); }
+
+  // 4. Profile top stroke line
+  if(!state.noProfileLine){
+    svg.appendChild(createEl('path',{d:isGiro?dTopLine:dArea,fill:'none',stroke:state.lineColor,'stroke-width':isGiro?3.5:(isTour||isVuelta?1.8:3),'stroke-linejoin':'round','stroke-linecap':'round'}));
   }
-  addEndpointLabel(sTxt,Math.round(state.points[0].eleS),x0,nameYStart,'start','start');
-  addEndpointLabel(fTxt,Math.round(state.points[state.points.length-1].eleS),xF,nameYFinish,'end','finish');
-  svg.appendChild(gTop);
+
+  // Tunnel portal icons on baseline (no dark marks on elevation silhouette!)
+  (state.tunnels||[]).forEach(t=>{
+    if(!(state.points[t.startIdx]&&state.points[t.endIdx])) return;
+    const a=state.points[t.startIdx], b=state.points[t.endIdx];
+    const xA=xScale.f(a.d), xB=xScale.f(b.d);
+    if(xB<margin.l || xA>margin.l+w) return;
+    const xMid=Math.max(margin.l+8, Math.min(margin.l+w-8, (xA+xB)/2));
+    gBadges.appendChild(drawTunnelPortalBadge(xMid, yBase, tpl));
+  });
+
+  // Giro subtle altitude scale drawn along highest peak's vertical line (skipping 0 so it never crowds baseline)
+  if(isGiro && state.points[peakIdx]){
+    const xPeak=xScale.f(state.points[peakIdx].d);
+    const placeLeft=(xPeak > margin.l + w - 46);
+    const txPos=placeLeft ? (xPeak - 4) : (xPeak + 4);
+    const tAnchor=placeLeft ? 'end' : 'start';
+    for(let y=Math.max(yStep, firstY); y<=yScale.max; y+=yStep){
+      const Y=yScale.f(y);
+      if(Y<yPeak+8 || Y>yBase-12) continue;
+      const tt=createEl('text',{x:txPos,y:Y+3,'text-anchor':tAnchor,'font-family':GIRO_SMALL_FONT,'font-size':'10.5',class:'giro-muted',style:'fill:#64748b !important','pointer-events':'none'});
+      tt.textContent=String(y); svg.appendChild(tt);
+    }
+  }
+
+  // 5. Annotation guide helper
+  function addAnnotationGuide(anchorX,sourceY,baselineX,labelY,key,opts={}){
+    const strokeCol=opts.stroke || (isGiro?'#64748b':isTour?'#475569':isVuelta?'#64748b':COLORS.guide);
+    const attrs={
+      'data-annotation-guide':key,'data-guide-anchor-x':anchorX,'data-guide-base-y':yBase,'data-guide-source-y':sourceY,
+      fill:'none',stroke:strokeCol,'stroke-width':opts.width||1,'stroke-opacity':opts.opacity??0.85,'pointer-events':'none'
+    };
+    if(opts.dashed) attrs['stroke-dasharray']='3 3';
+    const guide=createEl('path',attrs);
+    gGuideLayer.appendChild(guide);
+    setAnnotationGuideAt(key, baselineX, labelY, !!opts.manualOverride && Math.abs(baselineX-anchorX)>1.5);
+  }
+  svg.appendChild(gGuideLayer);
+
+  const bottomMarkers=[];
+  const annotationLayer=createEl('g',{id:'annotation-label-layer'});
+  const postMeasureCallbacks=[];
+
+  // 6. Gravel labels
+  state.gravels.forEach((g,i)=>{
+    if(!(state.points[g.startIdx]&&state.points[g.endIdx])) return;
+    const a=state.points[g.startIdx], b=state.points[g.endIdx];
+    const x=xScale.f(b.d), xMid=xScale.f((a.d+b.d)/2), yEndV=yScale.f(visibleElevation(g.endIdx));
+    const len=(b.d-a.d)/1000;
+    const displayName=(g.name && g.name.trim())? g.name.trim() : (isVuelta?'Tramo de Tierra':'GRAVEL');
+
+    if(isVuelta){
+      const cx=xMid+(g.offsetX||0);
+      const badgeY=yVueltaBadge-(g.offsetY||0);
+      const textY=badgeY-20;
+      addAnnotationGuide(xMid,yEndV,cx,badgeY+15,`g${i}`,{stroke:'#475569',width:0.9,manualOverride:!!g.manualPos && Math.abs(g.offsetX||0)>0.5});
+      const grp=createEl('g',{'data-auto-label':`g${i}`,'data-label-anchor-x':xMid,'data-label-anchor-y':badgeY+15,'data-label-source-y':yEndV,'data-label-pivot-x':cx});
+      grp.appendChild(drawVueltaShield(cx, badgeY, 'gravel', ''));
+      const txt=createEl('text',{x:cx+4,y:textY,'text-anchor':'start','font-family':VUELTA_TEXT_FONT,'font-size':'12.5','data-col-text':'1',transform:`rotate(-90 ${cx+4} ${textY})`,style:'fill:#0f172a !important'});
+      const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-weight','700'); t1.textContent=displayName; txt.appendChild(t1);
+      const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-weight','400'); t2.setAttribute('style','fill:#475569 !important'); t2.textContent=` / ${len.toFixed(1)} km`; txt.appendChild(t2);
+      grp.appendChild(txt);
+      annotationLayer.appendChild(grp);
+      bottomMarkers.push({x:xMid, d:(a.d+b.d)/2, label:formatVueltaKm(((a.d+b.d)/2)/1000), bold:false, prio:2});
+    } else {
+      const labelX=(x-12)+(g.offsetX||0);
+      const labelY=(Math.max(margin.t+10, yEndV-24) - (g.offsetY||0));
+      addAnnotationGuide(x,yEndV,labelX+16,labelY,`g${i}`,{manualOverride:!!g.manualPos && Math.abs(g.offsetX||0)>0.5, dashed:isTour});
+      const text=createEl('text',{x:labelX,y:labelY,fill:COLORS.text,'font-size':'13.5',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`g${i}`,'data-col-text':'1','data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEndV,'data-label-pivot-x':labelX+16});
+      const fam=isGiro?GIRO_SMALL_FONT:(isTour?TOUR_BOLD_FONT:'Montserrat, sans-serif');
+      const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-family',fam); t1.setAttribute('font-weight','700'); t1.setAttribute('x',labelX); t1.setAttribute('y',labelY); t1.textContent=displayName; text.appendChild(t1);
+      const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-family',fam); t2.setAttribute('font-weight','400'); t2.setAttribute('x',labelX); t2.setAttribute('dy',15); t2.textContent=`${len.toFixed(1)} km`; text.appendChild(t2);
+      annotationLayer.appendChild(text);
+    }
+  });
+
+  let tourSummitFinishInfo=null;
+  let vueltaSummitFinishInfo=null;
+
+  // 7. Climb labels, summit dots, badges & bottom markers
+  state.climbs.forEach((c,i)=>{
+    if(!(state.points[c.startIdx]&&state.points[c.endIdx])) return;
+    const a=state.points[c.startIdx], b=state.points[c.endIdx];
+    const len=b.d-a.d;
+    const avgPct=((b.ele - a.ele)/Math.max(1,len))*100;
+    const xA=xScale.f(a.d), x=xScale.f(b.d), yEnd=yScale.f(visibleElevation(c.endIdx));
+    const kom=parseKom(c.name);
+    const dispName=(kom?kom.label:c.name)||'';
+    const hasName=!!dispName.trim();
+    const isSummitFinish=(dMax - b.d) <= Math.max(500, dMax * 0.015);
+    const sameAsFinish=hasName && normCmp(dispName)===normCmp(fTxt);
+
+    if(isGiro){
+      if(kom && state.showKom){ gBadges.appendChild(drawGiroKomBadge(x, yBase, kom.tier)); }
+      if(isSummitFinish){
+        const bandW=Math.max(18, x - xA);
+        const cxBand=xA + bandW * 0.52;
+        const midEleY=yScale.f(visibleElevation(Math.round((c.startIdx+c.endIdx)/2)));
+        const cyBand=Math.max(midEleY + 26, Math.min(yBase - 42, (midEleY + yBase) * 0.55));
+        const gStat=createEl('g',{'pointer-events':'none'});
+        const tS1=createEl('text',{x:cxBand,y:cyBand,'text-anchor':'middle','font-family':GIRO_SMALL_FONT,'font-weight':'700','font-size':'13.5',style:'fill:#0f172a !important;paint-order:stroke;stroke:rgba(255,255,255,0.88);stroke-width:3px;stroke-linejoin:round'});
+        tS1.textContent=`${(len/1000).toFixed(1)} km`;
+        const tS2=createEl('text',{x:cxBand,y:cyBand+14,'text-anchor':'middle','font-family':GIRO_SMALL_FONT,'font-weight':'600','font-size':'12.5',style:'fill:#0f172a !important;paint-order:stroke;stroke:rgba(255,255,255,0.88);stroke-width:3px;stroke-linejoin:round'});
+        tS2.textContent=`${avgPct.toFixed(1)}%`;
+        gStat.appendChild(tS1); gStat.appendChild(tS2);
+        gBadges.appendChild(gStat);
+        if(hasName && !sameAsFinish){
+          const labelX=(x-10)+(c.offsetX||0);
+          const labelY=(Math.max(margin.t+14, yEnd-14) - (c.offsetY||0));
+          addAnnotationGuide(x,yEnd,labelX+4,labelY,`c${i}`,{stroke:'#111827',width:1.15,opacity:0.9,manualOverride:!!c.manualPos && Math.abs(c.offsetX||0)>0.5});
+          gBadges.appendChild(createEl('circle',{cx:x,cy:yEnd,r:3.5,fill:'#111827'}));
+          const text=createEl('text',{x:labelX,y:labelY,fill:'#0f172a','font-size':'18','letter-spacing':'0.4',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`c${i}`,'data-col-text':'1','data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEnd,'data-label-pivot-x':labelX+4});
+          const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-family',GIRO_KOM_FONT); t1.setAttribute('font-weight','400'); t1.setAttribute('x',labelX); t1.setAttribute('y',labelY); t1.textContent=`${Math.round(b.ele)} - ${dispName.toUpperCase()}`; text.appendChild(t1);
+          annotationLayer.appendChild(text);
+        }
+        return;
+      }
+      const labelX=(x-4)+(c.offsetX||0);
+      const labelY=(Math.max(margin.t+14, yEnd-16) - (c.offsetY||0));
+      addAnnotationGuide(x,yEnd,labelX+4,labelY,`c${i}`,{stroke:'#111827',width:1.15,opacity:0.9,manualOverride:!!c.manualPos && Math.abs(c.offsetX||0)>0.5});
+      gBadges.appendChild(createEl('circle',{cx:x,cy:yEnd,r:3.5,fill:'#111827'}));
+      const text=createEl('text',{x:labelX,y:labelY,fill:'#0f172a','font-size':'18','letter-spacing':'0.4',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`c${i}`,'data-col-text':'1','data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEnd,'data-label-pivot-x':labelX+4});
+      const mainStr=hasName?`${Math.round(b.ele)} - ${dispName.toUpperCase()}`:`${Math.round(b.ele)} m`;
+      const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-family',GIRO_KOM_FONT); t1.setAttribute('font-weight','400'); t1.setAttribute('x',labelX); t1.setAttribute('y',labelY); t1.textContent=mainStr; text.appendChild(t1);
+      const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-family',GIRO_SMALL_FONT); t2.setAttribute('font-weight','600'); t2.setAttribute('font-size','12'); t2.setAttribute('letter-spacing','0'); t2.setAttribute('x',labelX); t2.setAttribute('dy',14); t2.setAttribute('style','fill:#475569 !important'); t2.textContent=`${(len/1000).toFixed(1)} km · ${avgPct.toFixed(1)}%`; text.appendChild(t2);
+      annotationLayer.appendChild(text);
+      bottomMarkers.push({x, d:b.d, label:(b.d/1000).toFixed(1), bold:true, prio:3});
+    } else if(isTour){
+      if(isSummitFinish && (!hasName || sameAsFinish)){
+        tourSummitFinishInfo={ lenKm:(len/1000).toFixed(1), avgPct:avgPct.toFixed(1), tier:kom?(kom.tier==='0'?'▼':kom.tier):'' };
+        return;
+      }
+      const labelX=(x+4)+(c.offsetX||0);
+      const labelY=(Math.max(margin.t+16, yEnd-16) - (c.offsetY||0));
+      addAnnotationGuide(x,yEnd,labelX-4,labelY,`c${i}`,{stroke:'#111827',width:1.1,dashed:true,manualOverride:!!c.manualPos && Math.abs(c.offsetX||0)>0.5});
+      const grp=createEl('g',{'data-auto-label':`c${i}`,'data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEnd,'data-label-pivot-x':labelX-4});
+      const txt=createEl('text',{x:labelX,y:labelY,'text-anchor':'start','font-family':TOUR_BOLD_FONT,'font-size':'12.5','data-col-text':'1',transform:`rotate(-90 ${labelX} ${labelY})`,style:'fill:#0f172a !important'});
+      const tAlt=document.createElementNS(NS,'tspan'); tAlt.setAttribute('font-family',TOUR_REG_FONT); tAlt.setAttribute('font-weight','600'); tAlt.textContent=`${formatSpaceNum(b.ele)} m `; txt.appendChild(tAlt);
+      const tRest=document.createElementNS(NS,'tspan'); tRest.setAttribute('font-weight','800'); tRest.textContent=(hasName?`${dispName} `:'')+`(${(len/1000).toFixed(1)} km · ${avgPct.toFixed(1)}%)`; txt.appendChild(tRest);
+      grp.appendChild(txt);
+      annotationLayer.appendChild(grp);
+      postMeasureCallbacks.push(()=>{
+        let tl=txt.getComputedTextLength ? txt.getComputedTextLength() : 110;
+        let fy=labelY - tl - 15;
+        if(fy < 16 && tl > 40){
+          const avail=Math.max(55, labelY - 30);
+          if(tl > avail){
+            const sc=Math.max(0.76, avail/tl);
+            txt.setAttribute('font-size', (12.5*sc).toFixed(1));
+            tl=txt.getComputedTextLength ? txt.getComputedTextLength() : tl*sc;
+            fy=Math.max(14, labelY - tl - 14);
+          }
+        }
+        grp.appendChild(drawTourSlantedFlag(labelX-4, fy, 'climb', kom?(kom.tier==='0'?'▼':kom.tier):''));
+      });
+      bottomMarkers.push({x, d:b.d, label:formatTdfKm(b.d/1000), bold:true, prio:3});
+    } else if(isVuelta){
+      if(isSummitFinish && (!hasName || sameAsFinish)){
+        vueltaSummitFinishInfo={ lenKm:(len/1000).toFixed(1), avgPct:avgPct.toFixed(1), tier:kom?(kom.tier==='0'?'▼':kom.tier):'' };
+        return;
+      }
+      const cx=x+(c.offsetX||0);
+      const badgeY=yVueltaBadge-(c.offsetY||0);
+      const textY=badgeY-20;
+      addAnnotationGuide(x,yEnd,cx,badgeY+15,`c${i}`,{stroke:'#475569',width:0.95,manualOverride:!!c.manualPos && Math.abs(c.offsetX||0)>0.5});
+      const grp=createEl('g',{'data-auto-label':`c${i}`,'data-label-anchor-x':x,'data-label-anchor-y':badgeY+15,'data-label-source-y':yEnd,'data-label-pivot-x':cx});
+      grp.appendChild(drawVueltaShield(cx, badgeY, 'climb', kom?(kom.tier==='0'?'▼':kom.tier):''));
+      const txt=createEl('text',{x:cx+4,y:textY,'text-anchor':'start','font-family':VUELTA_TEXT_FONT,'font-size':'13','data-col-text':'1',transform:`rotate(-90 ${cx+4} ${textY})`,style:'fill:#0f172a !important'});
+      const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-weight','700'); t1.textContent=hasName?dispName:'Puerto'; txt.appendChild(t1);
+      const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-weight','400'); t2.setAttribute('style','fill:#475569 !important'); t2.textContent=` / ${Math.round(b.ele)} m`; txt.appendChild(t2);
+      const t3=document.createElementNS(NS,'tspan'); t3.setAttribute('font-weight','400'); t3.setAttribute('font-size','10.5'); t3.setAttribute('x',cx+4); t3.setAttribute('dy',13); t3.setAttribute('style','fill:#64748b !important'); t3.textContent=`${(len/1000).toFixed(1)} km · ${avgPct.toFixed(1)}%`; txt.appendChild(t3);
+      grp.appendChild(txt);
+      annotationLayer.appendChild(grp);
+      postMeasureCallbacks.push(()=>{
+        try{
+          const tl=t1.getComputedTextLength() + t2.getComputedTextLength();
+          const avail=Math.max(48, textY - 10);
+          if(tl > avail && tl > 0){
+            const sc=Math.max(0.75, avail / tl);
+            txt.setAttribute('font-size', (13*sc).toFixed(1));
+          }
+        }catch(_){}
+      });
+      bottomMarkers.push({x, d:b.d, label:formatVueltaKm(b.d/1000), bold:true, prio:3});
+    } else {
+      const labelX=(x-12)+(c.offsetX||0);
+      const labelY=(Math.max(margin.t+10,yEnd-10) - (c.offsetY||0));
+      const dataBaselineX=labelX+16*((hasName?wrapLinesMode(dispName,18,true).length:0)+1);
+      addAnnotationGuide(x,yEnd,dataBaselineX,labelY,`c${i}`,{manualOverride:!!c.manualPos && Math.abs(c.offsetX||0)>0.5});
+      const text=createEl('text',{x:labelX,y:labelY,fill:COLORS.text,'font-size':'14',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`c${i}`,'data-col-text':'1','data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEnd,'data-label-pivot-x':dataBaselineX});
+      if(hasName){
+        const nameLines=wrapLinesMode(dispName,18,true);
+        nameLines.forEach((ln,j)=>{ const t=document.createElementNS(NS,'tspan'); t.setAttribute('font-family','Montserrat, sans-serif'); t.setAttribute('font-weight','700'); t.setAttribute('x',labelX); if(j===0) t.setAttribute('y',labelY); else t.setAttribute('dy',16); t.textContent=ln; text.appendChild(t); });
+      }
+      const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-family','Montserrat, sans-serif'); t2.setAttribute('font-weight','300'); t2.setAttribute('x',labelX); t2.setAttribute('dy',16); t2.textContent=`${(len/1000).toFixed(1)} km · ${avgPct.toFixed(1)}% · ${Math.round(b.ele)} m`; text.appendChild(t2);
+      annotationLayer.appendChild(text);
+      if(kom && state.showKom){ gBadges.appendChild(drawKomBadge(x, yBase, kom.tier)); }
+      bottomMarkers.push({x, d:b.d, label:(b.d/1000).toFixed(1), bold:false, prio:2});
+    }
+  });
+
+  // 8. POI labels, badges & bottom markers
+  state.pois.forEach((p,i)=>{
+    if(!state.points[p.idx]) return;
+    const pt=state.points[p.idx];
+    const x=xScale.f(pt.d), yEnd=yScale.f(visibleElevation(p.idx));
+    const ele=Math.round(visibleElevation(p.idx));
+    const k=poiKind(p.name);
+    const disp=poiDisplayName(p.name);
+
+    if(isGiro){
+      const isSpecial=!!k;
+      const labelX=(x+4)+(p.offsetX||0);
+      const labelY=(Math.max(margin.t+14, yEnd-16) - (p.offsetY||0));
+      addAnnotationGuide(x,yEnd,labelX-4,labelY,`p${i}`,{stroke:isSpecial?'#111827':'#94a3b8',width:isSpecial?1.15:0.9,manualOverride:!!p.manualPos && Math.abs(p.offsetX||0)>0.5});
+      if(isSpecial) gBadges.appendChild(createEl('circle',{cx:x,cy:yEnd,r:3.2,fill:'#111827'}));
+      const text=createEl('text',{x:labelX,y:labelY,'font-size':isSpecial?'16.5':'13','letter-spacing':isSpecial?'0.4':'0.1','text-anchor':'start',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`p${i}`,'data-col-text':'1','data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEnd,'data-label-pivot-x':labelX-4,style:isSpecial?'fill:#0f172a !important':'fill:#475569 !important'});
+      const tName=document.createElementNS(NS,'tspan'); tName.setAttribute('font-family',isSpecial?GIRO_KOM_FONT:GIRO_SMALL_FONT); tName.setAttribute('font-weight','400'); tName.setAttribute('x',labelX); tName.setAttribute('y',labelY); tName.textContent=`${ele} - ${isSpecial?disp.toUpperCase():disp}`; text.appendChild(tName);
+      annotationLayer.appendChild(text);
+      if(state.showSprint && k){
+        if(k.type==='sprint') gBadges.appendChild(drawGiroSprintBadge(x, yBase));
+        else if(k.type==='feed') gBadges.appendChild(drawGiroFeedBadge(x, yBase));
+      }
+      bottomMarkers.push({x, d:pt.d, label:(pt.d/1000).toFixed(1), bold:isSpecial, prio:isSpecial?2:1});
+    } else if(isTour){
+      const labelX=(x+4)+(p.offsetX||0);
+      const labelY=(Math.max(margin.t+14, yEnd-14) - (p.offsetY||0));
+      addAnnotationGuide(x,yEnd,labelX-4,labelY,`p${i}`,{stroke:k?'#111827':'#64748b',width:k?1.1:0.9,dashed:true,manualOverride:!!p.manualPos && Math.abs(p.offsetX||0)>0.5});
+      const grp=createEl('g',{'data-auto-label':`p${i}`,'data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEnd,'data-label-pivot-x':labelX-4});
+      const txt=createEl('text',{x:labelX,y:labelY,'text-anchor':'start','font-family':k?TOUR_BOLD_FONT:TOUR_REG_FONT,'font-size':'12','data-col-text':'1',transform:`rotate(-90 ${labelX} ${labelY})`,style:k?'fill:#0f172a !important':'fill:#334155 !important'});
+      txt.setAttribute('font-weight', k?'700':'400');
+      txt.textContent=`${formatSpaceNum(ele)} m ${disp}`;
+      grp.appendChild(txt);
+      annotationLayer.appendChild(grp);
+      if(k){
+        postMeasureCallbacks.push(()=>{
+          const tl=txt.getComputedTextLength ? txt.getComputedTextLength() : 90;
+          grp.appendChild(drawTourSlantedFlag(labelX-4, Math.max(14, labelY - tl - 15), k.type, k.type==='sprint'?'S':'F'));
+        });
+      }
+      bottomMarkers.push({x, d:pt.d, label:formatTdfKm(pt.d/1000), bold:!!k, prio:k?2:1});
+    } else if(isVuelta){
+      const cx=x+(p.offsetX||0);
+      if(k){
+        const badgeY=yVueltaBadge-(p.offsetY||0);
+        const textY=badgeY-20;
+        addAnnotationGuide(x,yEnd,cx,badgeY+15,`p${i}`,{stroke:'#475569',width:0.95,manualOverride:!!p.manualPos && Math.abs(p.offsetX||0)>0.5});
+        const grp=createEl('g',{'data-auto-label':`p${i}`,'data-label-anchor-x':x,'data-label-anchor-y':badgeY+15,'data-label-source-y':yEnd,'data-label-pivot-x':cx});
+        grp.appendChild(drawVueltaShield(cx, badgeY, k.type, k.type==='sprint'?'SP':'F'));
+        const txt=createEl('text',{x:cx+4,y:textY,'text-anchor':'start','font-family':VUELTA_TEXT_FONT,'font-size':'12.5','data-col-text':'1',transform:`rotate(-90 ${cx+4} ${textY})`,style:'fill:#0f172a !important'});
+        const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-weight','600'); t1.textContent=disp; txt.appendChild(t1);
+        const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-weight','400'); t2.setAttribute('style','fill:#64748b !important'); t2.textContent=` / ${ele} m`; txt.appendChild(t2);
+        grp.appendChild(txt);
+        annotationLayer.appendChild(grp);
+        bottomMarkers.push({x, d:pt.d, label:formatVueltaKm(pt.d/1000), bold:true, prio:2});
+      } else {
+        const textY=(yVueltaBadge+12)-(p.offsetY||0);
+        addAnnotationGuide(x,yEnd,cx,textY+5,`p${i}`,{stroke:'#64748b',width:0.85,manualOverride:!!p.manualPos && Math.abs(p.offsetX||0)>0.5});
+        const text=createEl('text',{x:cx+4,y:textY,'text-anchor':'start','font-family':VUELTA_TEXT_FONT,'font-size':'12.5',transform:`rotate(-90 ${cx+4} ${textY})`,'data-auto-label':`p${i}`,'data-col-text':'1','data-label-anchor-x':x,'data-label-anchor-y':textY+5,'data-label-source-y':yEnd,'data-label-pivot-x':cx,style:'fill:#0f172a !important'});
+        const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-weight','600'); t1.textContent=disp; text.appendChild(t1);
+        const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-weight','400'); t2.setAttribute('style','fill:#64748b !important'); t2.textContent=` / ${ele} m`; text.appendChild(t2);
+        annotationLayer.appendChild(text);
+        bottomMarkers.push({x, d:pt.d, label:formatVueltaKm(pt.d/1000), bold:false, prio:1});
+      }
+    } else {
+      const labelX=x+(p.offsetX||0);
+      const labelY=(Math.max(margin.t+10,yEnd-10) - (p.offsetY||0));
+      addAnnotationGuide(x,yEnd,labelX,labelY,`p${i}`,{manualOverride:!!p.manualPos && Math.abs(p.offsetX||0)>0.5});
+      const text=createEl('text',{x:labelX,y:labelY,fill:COLORS.text,'font-size':'14','text-anchor':'start',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`p${i}`,'data-col-text':'1','data-label-anchor-x':x,'data-label-anchor-y':labelY,'data-label-source-y':yEnd,'data-label-pivot-x':labelX});
+      const tName=document.createElementNS(NS,'tspan'); tName.setAttribute('font-family','Montserrat, sans-serif'); tName.setAttribute('font-weight','300'); tName.setAttribute('x',labelX); tName.setAttribute('y',labelY); tName.textContent=`${disp} · ${ele} m`; text.appendChild(tName);
+      annotationLayer.appendChild(text);
+      if(state.showSprint && k){
+        if(k.type==='sprint') gBadges.appendChild(drawSprintBadge(x, yBase));
+        else if(k.type==='feed') gBadges.appendChild(drawFeedBadge(x, yBase));
+      }
+      bottomMarkers.push({x, d:pt.d, label:(pt.d/1000).toFixed(1), bold:false, prio:1});
+    }
+  });
+
+  // 9. Bottom Axis, Distance Ribbon & Partials
+  const gTicks=createEl('g');
+  if(tpl==='classic'){
+    for(let km=firstTick; km<=Math.min(lastWhole, Math.ceil(vEndKm/step)*step); km+=step){
+      const x=xScale.f(km*1000); if(x>xMax) break;
+      gTicks.appendChild(createEl('line',{x1:x,y1:yBase,x2:x,y2:yBase+tickLen,stroke:COLORS.axis,'stroke-width':1.3}));
+      gTicks.appendChild(createEl('text',{x:x,y:yBase+tickLen+10,'text-anchor':'middle',fill:'#334155','font-size':'13'})).textContent=km;
+    }
+    gTicks.appendChild(createEl('line',{x1:xMax,y1:yBase,x2:xMax,y2:yBase+tickLen+2,stroke:'#111827','stroke-width':1.6}));
+    gTicks.appendChild(createEl('text',{x:xMax,y:yBase+tickLen+25,'text-anchor':'middle','font-size':'13',fill:'#111827','font-weight':'700'})).textContent=dMaxKm.toFixed(1);
+    for(const m of bottomMarkers){
+      if(dMax - m.d < 2000) continue;
+      gTicks.appendChild(createEl('line',{x1:m.x,y1:yBase,x2:m.x,y2:yBase+8,stroke:COLORS.axis,'stroke-width':1}));
+      const ty=yBase+42;
+      const tx=createEl('text',{x:m.x,y:ty,'text-anchor':'middle','font-size':'13',fill:'#111827',transform:`rotate(-90 ${m.x} ${ty})`});
+      tx.textContent=m.label; gTicks.appendChild(tx);
+    }
+  } else if(isGiro){
+    gTicks.appendChild(createEl('line',{x1:margin.l,y1:yBase,x2:margin.l+w,y2:yBase,stroke:'#111827','stroke-width':2}));
+    gTicks.appendChild(createEl('line',{x1:margin.l,y1:margin.t+10,x2:margin.l,y2:yBase+18,stroke:'#111827','stroke-width':1.8}));
+    gTicks.appendChild(createEl('line',{x1:margin.l+w,y1:margin.t+10,x2:margin.l+w,y2:yBase+18,stroke:'#111827','stroke-width':1.8}));
+    for(let km=firstTick; km<=Math.min(lastWhole, Math.ceil(vEndKm/step)*step); km+=step){
+      const x=xScale.f(km*1000); if(x>xMax-8 || x<margin.l+8) continue;
+      gTicks.appendChild(createEl('line',{x1:x,y1:yBase,x2:x,y2:yBase+5,stroke:'#475569','stroke-width':1}));
+      const tKm=createEl('text',{x:x,y:yBase+14,'text-anchor':'middle','font-family':GIRO_SMALL_FONT,'font-size':'11',class:'giro-muted',style:'fill:#475569 !important'});
+      tKm.textContent=String(km); gTicks.appendChild(tKm);
+    }
+    const giroPartials=[
+      {x:xScale.f(0), label:'0.0', bold:true, prio:4},
+      {x:xMax, label:dMaxKm.toFixed(1), bold:true, prio:4},
+      ...bottomMarkers.filter(m=>m.x>margin.l+14 && m.x<margin.l+w-14)
+    ].sort((a,b)=>b.prio-a.prio || a.x-b.x);
+    const usedX=[];
+    for(const m of giroPartials){
+      if(m.x<margin.l-2 || m.x>margin.l+w+2) continue;
+      if(usedX.some(ux=>Math.abs(ux-m.x)<14)) continue;
+      usedX.push(m.x);
+      gTicks.appendChild(createEl('line',{x1:m.x,y1:yBase,x2:m.x,y2:yBase+20,stroke:m.bold?'#111827':'#94a3b8','stroke-width':m.bold?1.2:0.8}));
+      const ty=yBase+48;
+      const tx=createEl('text',{x:m.x+4,y:ty,'text-anchor':'middle','font-family':m.bold?GIRO_ENDPOINT_FONT:GIRO_SMALL_FONT,'font-size':m.bold?'12.5':'11.5','font-weight':m.bold?'700':'400',transform:`rotate(-90 ${m.x+4} ${ty})`,style:m.bold?'fill:#0f172a !important':'fill:#475569 !important'});
+      tx.textContent=m.label; gTicks.appendChild(tx);
+    }
+  } else if(isTour){
+    let ribbonMarkers=bottomMarkers;
+    if(!ribbonMarkers.length){
+      ribbonMarkers=[];
+      for(let km=firstTick; km<=Math.min(lastWhole, Math.ceil(vEndKm/step)*step); km+=step){
+        if(km<=0) continue;
+        const x=xScale.f(km*1000); if(x>xMax-18) break;
+        ribbonMarkers.push({x, d:km*1000, label:String(km), prio:1});
+      }
+    }
+    drawTourBlackRibbon(gTicks,margin,w,yBase,ribbonMarkers,dMaxKm);
+  } else if(isVuelta){
+    gTicks.appendChild(createEl('line',{x1:margin.l,y1:yBase,x2:margin.l+w,y2:yBase,stroke:'#64748b','stroke-width':1.2}));
+    let vMarkers=bottomMarkers.slice();
+    if(!vMarkers.length){
+      for(let km=firstTick; km<=Math.min(lastWhole, Math.ceil(vEndKm/step)*step); km+=step){
+        if(km<=0) continue;
+        const x=xScale.f(km*1000); if(x>xMax-28) break;
+        vMarkers.push({x, d:km*1000, label:String(km), bold:false, prio:1});
+      }
+    }
+    const allV=[
+      {x:xScale.f(0), label:'0', bold:true, prio:5, end:false},
+      {x:xMax, label:`${formatVueltaKm(dMaxKm)} km`, bold:true, prio:5, end:true},
+      ...vMarkers.filter(m=>m.x>margin.l+18 && m.x<margin.l+w-34)
+    ].sort((a,b)=>b.prio-a.prio || a.x-b.x);
+    const usedV=[];
+    for(const m of allV){
+      if(m.x<margin.l-2 || m.x>margin.l+w+2) continue;
+      const minSep = m.end ? 38 : 26;
+      if(usedV.some(ux=>Math.abs(ux-m.x)<minSep)) continue;
+      usedV.push(m.x);
+      gTicks.appendChild(createEl('line',{x1:m.x,y1:yBase,x2:m.x,y2:yBase+6,stroke:'#475569','stroke-width':1}));
+      const tx=createEl('text',{x:m.x,y:yBase+22,'text-anchor':'middle','font-family':VUELTA_DISPLAY_FONT,'font-weight':m.bold?'600':'500','font-size':'13.5',style:'fill:#111827 !important'});
+      tx.textContent=m.label; gTicks.appendChild(tx);
+    }
+  }
+  svg.appendChild(gTicks);
+  svg.appendChild(gBadges);
+
+  // 10. Hitbox + Annotation Layer
+  hitBoxEl=createEl('rect',{x:margin.l,y:margin.t,width:w,height:h,fill:'transparent','pointer-events':'all',id:'hitbox'});
+  svg.appendChild(hitBoxEl);
+  svg.appendChild(annotationLayer);
+  postMeasureCallbacks.forEach(fn=>{ try{ fn(); }catch(_){} });
+
+  // 11. Start & Finish Endpoints
+  const dMaxAll=state.points[state.points.length-1].d;
+  const x0=xScale.f(0), xF=xScale.f(dMaxAll);
+  const topY=margin.t + h*(1 - Math.min(1,Math.max(0.1,state.vExag)));
+  const baseNameY=Math.max(28,Math.min(43,topY - 24));
+  const nameYStart=Math.max(12, baseNameY - state.startOffset);
+  const nameYFinish=Math.max(12, baseNameY - state.finishOffset);
+  const altYOffset=16;
+  const gTop=createEl('g',{'pointer-events':'none'});
+
+  if(isGiro){
+    const yStartEle=yScale.f(visibleElevation(0));
+    const yFinishEle=yScale.f(visibleElevation(state.points.length-1));
+    const sAnchorBot=Math.min(yBase+4, Math.max(margin.t+110, yStartEle+28)) - state.startOffset;
+    const fAnchorBot=Math.min(yBase+4, Math.max(margin.t+110, yFinishEle+28)) - state.finishOffset;
+    const sPill=drawGiroEndpointPill(margin.l-24, sAnchorBot, 10, yBase+6, state.points[0].eleS, sTxt, true, 'start');
+    const fPill=drawGiroEndpointPill(margin.l+w+24, fAnchorBot, 10, yBase+6, state.points[state.points.length-1].eleS, fTxt, false, 'finish');
+    gTop.appendChild(sPill); gTop.appendChild(fPill);
+    svg.appendChild(gTop);
+    sPill.__fitPill?.(); fPill.__fitPill?.();
+  } else if(isTour){
+    const yStartEle=yScale.f(visibleElevation(0));
+    const yFinishEle=yScale.f(visibleElevation(state.points.length-1));
+    const yStartBase=Math.max(96, Math.min(yBase-24, yStartEle-18, highestLeftTickY-14) - state.startOffset);
+    const yFinishBase=Math.max(96, Math.min(yBase-24, yFinishEle-18) - state.finishOffset);
+
+    const gS=createEl('g',{'data-endpoint-label':'start','data-name-y':yStartBase,'pointer-events':'visiblePainted'});
+    const sLine=createEl('line',{x1:margin.l,y1:yBase,x2:margin.l,y2:yStartBase+4,stroke:'#334155','stroke-width':1.2});
+    gS.appendChild(sLine);
+    const tS=createEl('text',{x:margin.l+5,y:yStartBase,'text-anchor':'start','font-family':TOUR_BOLD_FONT,'font-size':'15',transform:`rotate(-90 ${margin.l+5} ${yStartBase})`,style:'fill:#0f172a !important'});
+    const tS1=document.createElementNS(NS,'tspan'); tS1.setAttribute('font-family',TOUR_REG_FONT); tS1.setAttribute('font-weight','400'); tS1.setAttribute('font-size','12.5'); tS1.textContent=`${formatSpaceNum(state.points[0].eleS)} m `; tS.appendChild(tS1);
+    const tS2=document.createElementNS(NS,'tspan'); tS2.setAttribute('font-weight','800'); tS2.textContent=sTxt; tS.appendChild(tS2);
+    gS.appendChild(tS);
+    gTop.appendChild(gS);
+
+    const gF=createEl('g',{'data-endpoint-label':'finish','data-name-y':yFinishBase,'pointer-events':'visiblePainted'});
+    const fLine=createEl('line',{x1:margin.l+w,y1:yBase,x2:margin.l+w,y2:yFinishBase+4,stroke:'#334155','stroke-width':1.2});
+    gF.appendChild(fLine);
+    const tF=createEl('text',{x:margin.l+w+5,y:yFinishBase,'text-anchor':'start','font-family':TOUR_BOLD_FONT,'font-size':'15',transform:`rotate(-90 ${margin.l+w+5} ${yFinishBase})`,style:'fill:#0f172a !important'});
+    const tF1=document.createElementNS(NS,'tspan'); tF1.setAttribute('font-family',TOUR_REG_FONT); tF1.setAttribute('font-weight','400'); tF1.setAttribute('font-size','12.5'); tF1.textContent=`${formatSpaceNum(state.points[state.points.length-1].eleS)} m `; tF.appendChild(tF1);
+    const tF2=document.createElementNS(NS,'tspan'); tF2.setAttribute('font-weight','800'); tF2.textContent=fTxt; tF.appendChild(tF2);
+    if(tourSummitFinishInfo){
+      const tF3=document.createElementNS(NS,'tspan'); tF3.setAttribute('font-weight','700'); tF3.setAttribute('font-size','12');
+      tF3.textContent=` (${tourSummitFinishInfo.lenKm} km · ${tourSummitFinishInfo.avgPct}%)`;
+      tF.appendChild(tF3);
+    }
+    gF.appendChild(tF);
+    gTop.appendChild(gF);
+
+    svg.appendChild(gTop);
+    try{
+      let ls=tS.getComputedTextLength();
+      let sBaseFinal=yStartBase;
+      if(sBaseFinal - ls - 28 < 8){
+        const shift=Math.min(yBase - 24 - sBaseFinal, 8 - (sBaseFinal - ls - 28));
+        if(shift > 0){
+          sBaseFinal += shift;
+          tS.setAttribute('y', String(sBaseFinal));
+          tS.setAttribute('transform', `rotate(-90 ${margin.l+5} ${sBaseFinal})`); sLine.setAttribute('y2', String(sBaseFinal+4));
+        }
+        if(sBaseFinal - ls - 28 < 8){
+          const sc=Math.max(0.75, (sBaseFinal - 30) / Math.max(1, ls));
+          tS.setAttribute('font-size', (15*sc).toFixed(1));
+          ls=tS.getComputedTextLength();
+        }
+      }
+      gS.appendChild(drawTourSlantedFlag(margin.l, Math.max(14, sBaseFinal - ls - 16), 'start', ''));
+
+      let lf=tF.getComputedTextLength();
+      let fBaseFinal=yFinishBase;
+      const topNeed=28;
+      if(fBaseFinal - lf - topNeed < 8){
+        const maxDown=Math.max(0, yBase - 20 - fBaseFinal);
+        const shift=Math.min(maxDown, 8 - (fBaseFinal - lf - topNeed));
+        if(shift > 0){
+          fBaseFinal += shift;
+          tF.setAttribute('y', String(fBaseFinal));
+          tF.setAttribute('transform', `rotate(-90 ${margin.l+w+5} ${fBaseFinal})`); fLine.setAttribute('y2', String(fBaseFinal+4));
+        }
+        if(fBaseFinal - lf - topNeed < 8){
+          const sc=Math.max(0.72, (fBaseFinal - topNeed - 8) / Math.max(1, lf));
+          tF.setAttribute('font-size', (15*sc).toFixed(1));
+          lf=tF.getComputedTextLength();
+        }
+      }
+      if(tourSummitFinishInfo){
+        const flagY1=Math.max(14, fBaseFinal - lf - 15);
+        gF.appendChild(drawTourSlantedFlag(margin.l+w, flagY1, 'climb', tourSummitFinishInfo.tier));
+        gF.appendChild(drawTourSlantedFlag(margin.l+w+30, flagY1, 'finish', ''));
+      } else {
+        gF.appendChild(drawTourSlantedFlag(margin.l+w, Math.max(14, fBaseFinal - lf - 15), 'finish', ''));
+      }
+    }catch(_){}
+  } else if(isVuelta){
+    // Vuelta Start (left vertical bold Denominary + sky-blue S shield on horizon) & Finish (right vertical + red M shield)
+    const ySBot=Math.min(yBase, yBase - state.startOffset);
+    const yFBot=Math.min(yBase, yBase - state.finishOffset);
+    const gS=createEl('g',{'data-endpoint-label':'start','data-name-y':yVueltaBadge-16,'pointer-events':'visiblePainted'});
+    gS.appendChild(createEl('line',{x1:margin.l,y1:yBase,x2:margin.l,y2:yVueltaBadge+15,stroke:'#475569','stroke-width':1}));
+    gS.appendChild(drawVueltaShield(margin.l, yVueltaBadge, 'start', 'S'));
+    const tS=createEl('text',{x:margin.l-42,y:ySBot,'text-anchor':'start','font-family':VUELTA_DISPLAY_FONT,'font-size':'22','letter-spacing':'0.3',transform:`rotate(-90 ${margin.l-42} ${ySBot})`,style:'fill:#111827 !important'});
+    const tS1=document.createElementNS(NS,'tspan'); tS1.setAttribute('font-weight','600'); tS1.textContent=sTxt; tS.appendChild(tS1);
+    const tS2=document.createElementNS(NS,'tspan'); tS2.setAttribute('font-weight','400'); tS2.setAttribute('font-size','14'); tS2.setAttribute('style','fill:#475569 !important'); tS2.textContent=` / ${Math.round(state.points[0].eleS)} m`; tS.appendChild(tS2);
+    gS.appendChild(tS);
+    gTop.appendChild(gS);
+
+    const gF=createEl('g',{'data-endpoint-label':'finish','data-name-y':yVueltaBadge-16,'pointer-events':'visiblePainted'});
+    gF.appendChild(createEl('line',{x1:margin.l+w,y1:yBase,x2:margin.l+w,y2:yVueltaBadge+15,stroke:'#475569','stroke-width':1}));
+    gF.appendChild(drawVueltaShield(margin.l+w, yVueltaBadge, 'finish', 'M'));
+    if(vueltaSummitFinishInfo){
+      gF.appendChild(drawVueltaShield(margin.l+w, Math.max(24, yVueltaBadge - 38), 'climb', vueltaSummitFinishInfo.tier));
+    }
+    const tF=createEl('text',{x:margin.l+w+42,y:yFBot,'text-anchor':'start','font-family':VUELTA_DISPLAY_FONT,'font-size':'22','letter-spacing':'0.3',transform:`rotate(-90 ${margin.l+w+42} ${yFBot})`,style:'fill:#111827 !important'});
+    const tF1=document.createElementNS(NS,'tspan'); tF1.setAttribute('font-weight','600'); tF1.textContent=fTxt; tF.appendChild(tF1);
+    const tF2=document.createElementNS(NS,'tspan'); tF2.setAttribute('font-weight','400'); tF2.setAttribute('font-size','14'); tF2.setAttribute('style','fill:#475569 !important'); tF2.textContent=` / ${Math.round(state.points[state.points.length-1].eleS)} m`; tF.appendChild(tF2);
+    if(vueltaSummitFinishInfo){
+      const tF3=document.createElementNS(NS,'tspan'); tF3.setAttribute('font-family',VUELTA_TEXT_FONT); tF3.setAttribute('font-weight','600'); tF3.setAttribute('font-size','11.5'); tF3.setAttribute('style','fill:#475569 !important');
+      tF3.textContent=` (${vueltaSummitFinishInfo.lenKm} km · ${vueltaSummitFinishInfo.avgPct}%)`;
+      tF.appendChild(tF3);
+    }
+    gF.appendChild(tF);
+    gTop.appendChild(gF);
+    svg.appendChild(gTop);
+  } else {
+    function addEndpointLabel(name,alt,x,y,anchor,which){
+      if(x<margin.l||x>margin.l+w) return;
+      const group=createEl('g',{'data-endpoint-label':which,'data-name-y':y,'pointer-events':'visiblePainted'});
+      const heading=createEl('text',{x,y,'font-family':'Montserrat, sans-serif','font-weight':'800','font-size':'18','text-anchor':anchor});
+      heading.textContent=name;
+      const altitude=createEl('text',{x,y:y+altYOffset,'font-size':'13','text-anchor':anchor});
+      altitude.textContent=`${alt} m`;
+      group.appendChild(heading);group.appendChild(altitude);
+      gTop.appendChild(group);
+    }
+    addEndpointLabel(sTxt,Math.round(state.points[0].eleS),x0,nameYStart,'start','start');
+    addEndpointLabel(fTxt,Math.round(state.points[state.points.length-1].eleS),xF,nameYFinish,'end','finish');
+    svg.appendChild(gTop);
+  }
+
   resolveVerticalLabelCollisions(margin,h);
 
   refreshMapOverlays();
@@ -1725,8 +2873,8 @@ async function handleGpxXml(xml){
 function autofillEndpointLabels(){
   if(!state.poiAutofillComune || !state.points.length) return;
   const first=state.points[0], last=state.points[state.points.length-1];
-  if(first && !startLabel.value.trim()){ queueComune(first.lat,first.lon,(nm)=>{ if(nm && !startLabel.value.trim()){ startLabel.value=nm; draw(); } }); }
-  if(last && !finishLabel.value.trim()){ queueComune(last.lat,last.lon,(nm)=>{ if(nm && !finishLabel.value.trim()){ finishLabel.value=nm; draw(); } }); }
+  if(first && !startLabel.value.trim()){ queueComune(first.lat,first.lon,(nm)=>{ if(nm && !startLabel.value.trim()){ startLabel.value=nm; draw(); } },'endpoint'); }
+  if(last && !finishLabel.value.trim()){ queueComune(last.lat,last.lon,(nm)=>{ if(nm && !finishLabel.value.trim()){ finishLabel.value=nm; draw(); } },'endpoint'); }
 }
 function fileBaseName(n){ if(!n) return 'elevation'; return n.replace(/\.[^.]*$/,''); }
 
@@ -1735,6 +2883,7 @@ gpxInput.addEventListener('change', async e=>{ try{ const file=e.target.files[0]
 yStepSel.addEventListener('change', ()=>{ state.yStep=parseInt(yStepSel.value,10)||200; state.points.length&&draw(); });
 vExagInput.addEventListener('input', ()=>{ let v=parseFloat(vExagInput.value); if(!Number.isFinite(v)) v=0.5; v=Math.min(1, Math.max(0.1, v)); state.vExag=v; vExagOut.textContent='× '+state.vExag.toFixed(2); state.points.length&&draw(); });
 smoothInput.addEventListener('input', ()=>{ if(!state.points.length) return; const w=parseFloat(smoothInput.value||0); const sm=movingAverage(state.points.map(p=>p.ele), w, state.points.map(p=>p.d)); state.points.forEach((p,i)=>p.eleS=Number.isFinite(sm[i])?sm[i]:p.ele); const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; draw(); });
+document.querySelectorAll('#templateBar .tpl-btn').forEach(btn=>btn.addEventListener('click',()=>applyTemplate(btn.dataset.tpl,true)));
 fillColorInput.addEventListener('input', ()=>{ state.fillColor=fillColorInput.value; state.points.length&&draw(); });
 lineColorInput.addEventListener('input', ()=>{ state.lineColor=lineColorInput.value; state.points.length&&draw(); });
 noProfileFillInput.addEventListener('change',()=>{state.noProfileFill=noProfileFillInput.checked;state.points.length&&draw();});
@@ -1809,7 +2958,7 @@ function indexFromChartEvent(e){
 
 let endpointDrag=null, annotationDrag=null, ignoreEndpointClick=false;
 svg.addEventListener('pointerdown',e=>{
-  const anno=e.target.closest?.('text[data-auto-label]');
+  const anno=e.target.closest?.('[data-auto-label]');
   if(anno && state.points.length && e.button===0){
     const key=anno.dataset.autoLabel, item=labelItemByKey(key);
     if(item){
@@ -1888,13 +3037,13 @@ function endEndpointDrag(e){
 svg.addEventListener('pointerup',endEndpointDrag);
 svg.addEventListener('pointercancel',endEndpointDrag);
 svg.addEventListener('mousemove',e=>{
-  if(!state.points.length||endpointDrag||annotationDrag||e.target.closest?.('[data-endpoint-label]')||e.target.closest?.('text[data-auto-label]')) return;
+  if(!state.points.length||endpointDrag||annotationDrag||e.target.closest?.('[data-endpoint-label]')||e.target.closest?.('[data-auto-label]')) return;
   const idx=indexFromChartEvent(e);if(idx!=null)showCrosshairAtIndex(idx,false,true);
 });
 svg.addEventListener('click',e=>{
   blurActiveFormField();
   if(ignoreEndpointClick){ignoreEndpointClick=false;return;}
-  if(e.target.closest?.('[data-endpoint-label]')||e.target.closest?.('text[data-auto-label]'))return;
+  if(e.target.closest?.('[data-endpoint-label]')||e.target.closest?.('[data-auto-label]'))return;
   if((!state.selecting&&!state.selectingPoi)||!state.points.length) return;
   const idx=indexFromChartEvent(e); if(idx!=null) handleSelectionClick(idx);
 });
@@ -1977,7 +3126,7 @@ document.addEventListener('keydown', (e)=>{
 });
 
 async function fetchAsDataUrl(url){ const res=await fetch(url,{mode:'cors'}); const blob=await res.blob(); return new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); }
-async function buildEmbeddedFontCSS(){ const cssUrls=[ 'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&display=swap', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' ]; let fullCSS=''; for(const cssUrl of cssUrls){ const cssText=await (await fetch(cssUrl)).text(); const urlRegex=/url\(([^)]+)\)/g; let m; let replaced=cssText; const promises=[]; const urls=[]; while((m=urlRegex.exec(cssText))!==null){ const raw=m[1].replace(/["']/g,''); urls.push(raw); promises.push(fetchAsDataUrl(raw)); } const dataUrls=await Promise.all(promises); for(let i=0;i<urls.length;i++){ const u=urls[i]; const dat=dataUrls[i]; replaced=replaced.split(u).join(dat); } fullCSS+=replaced+'\n'; } fullCSS+='\ntext,tspan{font-family:Montserrat, Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}'; return fullCSS; }
+async function buildEmbeddedFontCSS(){ const cssUrls=[ 'https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;500;600;700&display=swap', 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap', 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap', 'https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600;700&display=swap', 'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&display=swap', 'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&display=swap', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' ]; let fullCSS=''; for(const cssUrl of cssUrls){ const cssText=await (await fetch(cssUrl)).text(); const urlRegex=/url\(([^)]+)\)/g; let m; let replaced=cssText; const promises=[]; const urls=[]; while((m=urlRegex.exec(cssText))!==null){ const raw=m[1].replace(/["']/g,''); urls.push(raw); promises.push(fetchAsDataUrl(raw)); } const dataUrls=await Promise.all(promises); for(let i=0;i<urls.length;i++){ const u=urls[i]; const dat=dataUrls[i]; replaced=replaced.split(u).join(dat); } fullCSS+=replaced+'\n'; } fullCSS+='\ntext,tspan{font-family:Montserrat, Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}'; return fullCSS; }
 function currentSvgNode(extraStyle=''){
   const clone=svg.cloneNode(true);
   clone.querySelector('#hover-guide')?.remove();
@@ -1985,7 +3134,7 @@ function currentSvgNode(extraStyle=''){
   clone.setAttribute('xmlns',NS); clone.setAttribute('xmlns:xlink',XLINK);
   clone.setAttribute('width','1280'); clone.setAttribute('height','520');
   const styleEl=document.createElementNS(NS,'style');
-  styleEl.textContent=`text{fill:${COLORS.text}} g.badge text{fill:#fff !important}`+"\n"+extraStyle;
+  styleEl.textContent=`text{fill:${COLORS.text}} g.badge text{fill:#fff !important} g.giro-kom text{fill:#1d4ed8 !important} g.vuelta-badge-dark text{fill:#111827 !important} text.tdf-km{fill:#fde017 !important} text.giro-muted{fill:#64748b !important}`+"\n"+extraStyle;
   clone.insertBefore(styleEl, clone.firstChild);
   return clone;
 }
@@ -2061,8 +3210,8 @@ function onMapClick(e){ blurActiveFormField(); if(!state.points.length)return; c
 const PRESET_KEY='se_presets_v1';
 function readPresets(){ try{ return JSON.parse(localStorage.getItem(PRESET_KEY)||'{}'); }catch(_){ return {}; } }
 function writePresets(obj){ try{ localStorage.setItem(PRESET_KEY, JSON.stringify(obj)); }catch(_){} }
-function presetFromState(){ return { vExag: state.vExag, yStep: parseInt(yStepSel.value,10)||200, smoothing: parseFloat(smoothInput.value)||0, tick: parseInt(tickInput.value,10)||10, fillColor: fillColorInput.value, lineColor: lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbColor: climbColorInput.value, climbFillColor: climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOffset: parseFloat(startOffInput.value)||0, finishOffset: parseFloat(finishOffInput.value)||0 }; }
-function applyPreset(p){ if(!p) return; vExagInput.value=p.vExag; state.vExag=p.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.yStep); state.yStep=p.yStep; smoothInput.value=p.smoothing; tickInput.value=p.tick; fillColorInput.value=p.fillColor; lineColorInput.value=p.lineColor; climbColorInput.value=p.climbColor; climbFillColorInput.value=p.climbFillColor || '#15a34a'; climbOverlayModeSel.value=((p.climbOverlayMode==='avggrade'||p.climbOverlayMode==='solid')?p.climbOverlayMode:'solid'); startOffInput.value=p.startOffset; finishOffInput.value=p.finishOffset; state.fillColor=p.fillColor; state.lineColor=p.lineColor; state.noProfileFill=!!p.noProfileFill; state.noProfileLine=!!p.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=p.climbColor; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=p.startOffset; state.finishOffset=p.finishOffset; draw(); }
+function presetFromState(){ return { template: state.template||'classic', vExag: state.vExag, yStep: parseInt(yStepSel.value,10)||200, smoothing: parseFloat(smoothInput.value)||0, tick: parseInt(tickInput.value,10)||10, fillColor: fillColorInput.value, lineColor: lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbColor: climbColorInput.value, climbFillColor: climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOffset: parseFloat(startOffInput.value)||0, finishOffset: parseFloat(finishOffInput.value)||0 }; }
+function applyPreset(p){ if(!p) return; state.template=normalizeTemplateKey(p.template); syncTemplateButtons(); vExagInput.value=p.vExag; state.vExag=p.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.yStep); state.yStep=p.yStep; smoothInput.value=p.smoothing; tickInput.value=p.tick; fillColorInput.value=p.fillColor; lineColorInput.value=p.lineColor; climbColorInput.value=p.climbColor; climbFillColorInput.value=p.climbFillColor || '#15a34a'; climbOverlayModeSel.value=((p.climbOverlayMode==='avggrade'||p.climbOverlayMode==='solid')?p.climbOverlayMode:'solid'); startOffInput.value=p.startOffset; finishOffInput.value=p.finishOffset; state.fillColor=p.fillColor; state.lineColor=p.lineColor; state.noProfileFill=!!p.noProfileFill; state.noProfileLine=!!p.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=p.climbColor; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=p.startOffset; state.finishOffset=p.finishOffset; draw(); }
 function refreshPresetList(){ const all=readPresets(); const names=Object.keys(all).sort(); presetSelect.innerHTML=''; names.forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; presetSelect.appendChild(o); }); }
 savePresetBtn.addEventListener('click',()=>{ const name=(presetNameInput.value||'Preset').trim(); if(!name) return; const all=readPresets(); all[name]=presetFromState(); writePresets(all); refreshPresetList(); if(!Array.from(presetSelect.options).some(o=>o.value===name)){ const o=document.createElement('option'); o.value=name; o.textContent=name; presetSelect.appendChild(o); } presetSelect.value=name; });
 loadPresetBtn.addEventListener('click',()=>{ const name=presetSelect.value; const all=readPresets(); applyPreset(all[name]); });
@@ -2070,8 +3219,8 @@ deletePresetBtn.addEventListener('click',()=>{ const name=presetSelect.value; if
 refreshPresetList();
 
 /* JSON I/O */
-function projectState(){ return { meta:{version:'2.3.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ vExag:state.vExag, yStep:parseInt(yStepSel.value,10), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
-function applyProject(p){ if(!p||!p.points) return; state.points=p.points; state.climbs=p.climbs||[]; state.pois=p.pois||[]; state.gravels=p.gravels||[]; state.tunnels=(p.tunnels||[]).filter(t=>Number.isInteger(t.startIdx)&&Number.isInteger(t.endIdx)&&t.startIdx>=0&&t.endIdx<state.points.length&&t.endIdx>t.startIdx); state.hoverIndex=null; state.profileElevations=[]; startLabel.value=p.labels?.start||'START'; finishLabel.value=p.labels?.finish||'FINISH'; state.vExag=p.settings?.vExag||state.vExag; vExagInput.value=state.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.settings?.yStep||200); smoothInput.value=p.settings?.smooth||500; tickInput.value=p.settings?.tick||10; fillColorInput.value=p.settings?.fill||state.fillColor; lineColorInput.value=p.settings?.line||state.lineColor; climbColorInput.value=p.settings?.climbLine||state.climbColor; climbFillColorInput.value=p.settings?.climbFill||state.climbFillColor; climbOverlayModeSel.value=((p.settings?.climbOverlayMode==='avggrade'||p.settings?.climbOverlayMode==='solid')?p.settings?.climbOverlayMode:(state.climbOverlayMode||'solid')); startOffInput.value=p.settings?.startOff||0; finishOffInput.value=p.settings?.finishOff||0; state.fillColor=fillColorInput.value; state.lineColor=lineColorInput.value; state.noProfileFill=!!p.settings?.noProfileFill; state.noProfileLine=!!p.settings?.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=climbColorInput.value; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=parseFloat(startOffInput.value)||0; state.finishOffset=parseFloat(finishOffInput.value)||0; { const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.viewStart=0; state.viewEnd=state.points[state.points.length-1].d; state.projectName = (p.meta && (p.meta.name||p.meta.projectName)) ? (p.meta.name||p.meta.projectName) : 'elevation'; sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois); ensureAllMarkerGeo(state.points); setButtonsEnabled(true); resetUndo(); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
+function projectState(){ return { meta:{version:'2.3.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ template:state.template||'classic', vExag:state.vExag, yStep:parseInt(yStepSel.value,10), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
+function applyProject(p){ if(!p||!p.points) return; state.points=p.points; state.climbs=p.climbs||[]; state.pois=p.pois||[]; state.gravels=p.gravels||[]; state.tunnels=(p.tunnels||[]).filter(t=>Number.isInteger(t.startIdx)&&Number.isInteger(t.endIdx)&&t.startIdx>=0&&t.endIdx<state.points.length&&t.endIdx>t.startIdx); state.hoverIndex=null; state.profileElevations=[]; startLabel.value=p.labels?.start||'START'; finishLabel.value=p.labels?.finish||'FINISH'; state.template=normalizeTemplateKey(p.settings?.template); syncTemplateButtons(); state.vExag=p.settings?.vExag||state.vExag; vExagInput.value=state.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.settings?.yStep||200); smoothInput.value=p.settings?.smooth||500; tickInput.value=p.settings?.tick||10; fillColorInput.value=p.settings?.fill||state.fillColor; lineColorInput.value=p.settings?.line||state.lineColor; climbColorInput.value=p.settings?.climbLine||state.climbColor; climbFillColorInput.value=p.settings?.climbFill||state.climbFillColor; climbOverlayModeSel.value=((p.settings?.climbOverlayMode==='avggrade'||p.settings?.climbOverlayMode==='solid')?p.settings?.climbOverlayMode:(state.climbOverlayMode||'solid')); startOffInput.value=p.settings?.startOff||0; finishOffInput.value=p.settings?.finishOff||0; state.fillColor=fillColorInput.value; state.lineColor=lineColorInput.value; state.noProfileFill=!!p.settings?.noProfileFill; state.noProfileLine=!!p.settings?.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=climbColorInput.value; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=parseFloat(startOffInput.value)||0; state.finishOffset=parseFloat(finishOffInput.value)||0; { const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.viewStart=0; state.viewEnd=state.points[state.points.length-1].d; state.projectName = (p.meta && (p.meta.name||p.meta.projectName)) ? (p.meta.name||p.meta.projectName) : 'elevation'; sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois); ensureAllMarkerGeo(state.points); setButtonsEnabled(true); resetUndo(); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
 exportJsonBtn.addEventListener('click',()=>{ if(!state.points.length) return; const blob=new Blob([JSON.stringify(projectState())],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=exportName('json'); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
 importJsonInput.addEventListener('change', async e=>{
   try{
@@ -2107,7 +3256,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     track: [],            // concatenated [{lat, lon, ele, d, segIdx}]
     undoStack: [],
     redoStack: [],
-    profile: 'fastbike',
+    profile: 'car-eco',
     busyCount: 0,
     hoverIdx: null,
     selection: null,      // { a, b } indices into dState.track
@@ -4608,7 +5757,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     elSaveGeoHint.textContent = "Rilevamento comuni di partenza e arrivo in corso…";
     try{
       if(needStart){
-        const sCity = await nearestComune(firstPt.lat, firstPt.lon);
+        const sCity = await nearestComune(firstPt.lat, firstPt.lon, 'endpoint');
         if(sCity && (force || !elSaveStart.value.trim())) elSaveStart.value = sCity;
       }
       if(needEnd){
@@ -4616,7 +5765,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
         if(same && elSaveStart.value.trim()){
           if(force || !elSaveEnd.value.trim()) elSaveEnd.value = elSaveStart.value.trim();
         } else {
-          const eCity = await nearestComune(lastPt.lat, lastPt.lon);
+          const eCity = await nearestComune(lastPt.lat, lastPt.lon, 'endpoint');
           if(eCity && (force || !elSaveEnd.value.trim())) elSaveEnd.value = eCity;
         }
       }
