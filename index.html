@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.24 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.27 — DRAW, PAINT &amp; SCULPT</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700&family=Inter:wght@400;600;700&family=Montserrat:wght@300;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -74,6 +74,7 @@
   .hdr-mode{display:none;align-items:center;gap:6px;flex:1 1 auto;justify-content:flex-end;min-width:0;flex-wrap:wrap}
   body.mode-draw .hdr-draw{display:flex}
   body.mode-paint .hdr-paint{display:flex}
+  body.mode-sculpt .hdr-sculpt{display:flex}
   .hdr-group{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
   .hdr-sep{width:1px;height:22px;background:var(--border);margin:0 4px;flex:0 0 auto}
   .hdr-draw .ghost{padding:6px 9px;font-size:12px;border-radius:9px}
@@ -86,6 +87,7 @@
   .env-view{display:none !important;flex:1 1 auto;min-height:0}
   body.mode-draw #drawView{display:flex !important}
   body.mode-paint #layout{display:flex !important}
+  body.mode-sculpt #sculptView{display:flex !important}
 
   /* Shared form & button primitives */
   .content,.list,.viz,.scroll-y{scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
@@ -322,6 +324,55 @@
     .sv-card{width:calc(100vw - 24px);right:12px;top:12px}
   }
 
+  /* ==================== SCULPT ENVIRONMENT (Detailed Climbs) ==================== */
+  #sculptView{display:flex;gap:0;flex:1 1 auto;min-height:0;padding:10px}
+  .sculpt-left{flex:0 0 320px;min-width:250px}
+  .sculpt-right{flex:1 1 auto;min-width:360px}
+  .hdr-sculpt .ghost{padding:6px 10px;font-size:12px;border-radius:9px}
+  .hdr-sculpt .pink{padding:7px 12px;font-size:12.5px;border-radius:9px}
+  .hdr-sculpt .ghost.active-mode{background:#0f172a;color:#fff;border-color:#0f172a;box-shadow:0 2px 8px rgba(15,23,42,.2)}
+  .hdr-sculpt .ghost.active-mode:hover:not(:disabled){background:#1e293b}
+  .sculpt-climb-card{cursor:pointer;position:relative;border:1px solid var(--border);border-radius:9px;padding:6px 8px;background:#fff;display:flex;align-items:flex-start;gap:7px;transition:all .14s}
+  .sculpt-climb-card:hover{border-color:#93c5fd;background:#f8fbff}
+  .sculpt-climb-card.is-flagged{border-color:#93c5fd;background:#f8fbff}
+  .sculpt-climb-card.active{border-color:#e6007e;background:#fdf2f8;box-shadow:0 0 0 2px rgba(230,0,126,.14)}
+  .sculpt-tick-wrap{flex:0 0 auto;display:inline-flex;align-items:center;padding-top:2px}
+  .sculpt-tick{width:14px !important;height:14px;margin:0;padding:0;cursor:pointer;accent-color:#e6007e;flex:0 0 auto}
+  .sculpt-climb-body{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .sculpt-batch-bar{display:flex;align-items:center;justify-content:space-between;gap:5px;padding-bottom:6px;margin-bottom:2px;border-bottom:1px dashed var(--border);flex-wrap:wrap}
+  .sculpt-batch-bar .sv-mini{padding:3px 7px;font-size:11px;border-radius:7px}
+  .sculpt-batch-bar .sv-mini.dl-primary{background:#0f172a;color:#fff;border-color:#0f172a}
+  .sculpt-batch-bar .sv-mini.dl-primary:hover:not(:disabled){background:#1e293b}
+  .sculpt-batch-bar .sv-mini:disabled{opacity:.42;cursor:not-allowed}
+  .sculpt-climb-top{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+  .sculpt-climb-name{font-size:12.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto}
+  .sculpt-cat-pill{font-family:Montserrat,Inter,sans-serif;font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:999px;background:#2c7be5;color:#fff;flex:0 0 auto;letter-spacing:.2px}
+  .sculpt-cat-pill.cat-hc{background:#0d9488}
+  .sculpt-cat-pill.cat-none{background:#e2e8f0;color:#475569}
+  .sculpt-meta-pill{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:#fce7f3;color:#be185d;flex:0 0 auto}
+  .sculpt-svg-wrap{background:#fff;border:1px dashed var(--border);border-radius:18px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;padding:6px;min-height:420px}
+  svg#sculptChart{display:block;width:100%;max-height:66vh;height:auto;cursor:crosshair;user-select:none;-webkit-user-select:none}
+  #sculptChart [data-sculpt-drag]{cursor:grab}
+  #sculptChart.dragging [data-sculpt-drag]{cursor:grabbing}
+  #sculptChart [data-sculpt-split]{cursor:pointer}
+  .sculpt-readout{font-size:11.5px;font-weight:700;color:#9d174d;background:#fdf2f8;border:1px solid #fbcfe8;border-radius:999px;padding:3px 11px;white-space:nowrap}
+  .sculpt-ctrl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px 10px;align-items:end}
+  .sculpt-ctrl-grid label{margin-bottom:3px;font-size:11px;font-weight:600}
+  .sculpt-ctrl-grid input,.sculpt-ctrl-grid select{padding:6px 9px;font-size:12px;border-radius:9px}
+  .sculpt-ctrl-grid input[type=color]{padding:3px 5px;height:31px}
+  .sculpt-ctrl-grid input[type=range]{padding:0;height:26px;border:none;accent-color:#e6007e}
+  .sculpt-split-row{display:flex;align-items:center;justify-content:space-between;gap:6px;border:1px solid var(--border);border-radius:8px;padding:4px 7px;background:#fff;font-size:11.5px}
+  .sculpt-split-swatch{width:10px;height:10px;border-radius:3px;border:1px solid rgba(15,23,42,.25);flex:0 0 auto}
+  .sculpt-cut-btn{border:1px solid var(--border);background:#fff;color:#475569;border-radius:5px;width:21px;height:21px;padding:0;cursor:pointer;font-size:10px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+  .sculpt-cut-btn:hover{background:#fdf2f8;border-color:#f9a8d4;color:#be185d}
+  .sculpt-cut-btn.active{background:#e6007e;border-color:#be185d;color:#fff}
+  @media (max-width: 1024px){
+    body.mode-sculpt{overflow:auto;height:auto}
+    #sculptView{flex-direction:column;height:auto;min-height:calc(100vh - 64px);gap:10px}
+    .sculpt-left,.sculpt-right{flex:1 1 auto !important;min-width:0 !important;width:100%;overflow:visible}
+    .sculpt-right{order:1}.sculpt-left{order:2}
+  }
+
   /* Archive & Save header buttons + Modals */
   .arch-hdr-btns{display:inline-flex;align-items:center;gap:6px;margin-left:2px}
   .arch-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s}
@@ -403,10 +454,11 @@
 
 <header class="top">
   <div class="brand-wrap">
-    <div class="brand-title"><h1>Simple Elevation</h1><span class="ver-badge" title="Versione corrente">v2.24</span></div>
+    <div class="brand-title"><h1>Simple Elevation</h1><span class="ver-badge" title="Versione corrente">v2.27</span></div>
     <div class="env-tabs" role="tablist" aria-label="Ambiente">
       <button id="tabDraw" class="env-tab active" role="tab" aria-selected="true">1. DRAW</button>
       <button id="tabPaint" class="env-tab" role="tab" aria-selected="false">2. PAINT</button>
+      <button id="tabSculpt" class="env-tab" role="tab" aria-selected="false">3. SCULPT</button>
     </div>
     <div class="arch-hdr-btns">
       <button id="archiveSaveOpenBtn" class="arch-btn primary" title="Salva traccia nell'archivio locale o esporta JSON (Ctrl+S)">💾 Salva</button>
@@ -448,6 +500,24 @@
       <button id="undoBtn" class="ghost" disabled title="Annulla (Ctrl+Z)">↶ Annulla</button>
       <button id="redoBtn" class="ghost" disabled title="Ripeti (Ctrl+Maiusc+Z)">↷ Ripeti</button>
       <button id="clearAllBtn" class="ghost" title="Rimuovi GPX e tutte le marcature per ricominciare">🗑 Pulisci tutto</button>
+    </div>
+  </div>
+
+  <!-- Header controls for SCULPT -->
+  <div class="hdr-mode hdr-sculpt">
+    <span id="sculptHoverReadout" class="sculpt-readout">Seleziona una salita</span>
+    <span class="hdr-sep" aria-hidden="true"></span>
+    <div class="hdr-group">
+      <button id="sculptModeSplitBtn" type="button" class="ghost active-mode" title="Clicca sul profilo per spaccare la pendenza nelle sezioni">✂ Taglia sezioni</button>
+      <button id="sculptModePoiBtn" type="button" class="ghost" title="Inserisci un POI solo in SCULPT (tasto P)">📍 + POI (P)</button>
+      <button id="sculptModeSlopeBtn" type="button" class="ghost" title="Inserisci un indicatore di pendenza su 200m (tasto S)">📐 + Pendenza 200m (S)</button>
+    </div>
+    <span class="hdr-sep" aria-hidden="true"></span>
+    <div class="hdr-group">
+      <button id="sculptUndoBtn" type="button" class="ghost" disabled title="Annulla in SCULPT (Ctrl+Z)">↶ Annulla</button>
+      <button id="sculptRedoBtn" type="button" class="ghost" disabled title="Ripeti in SCULPT (Ctrl+Maiusc+Z)">↷ Ripeti</button>
+      <button id="sculptExportSvg" type="button" class="ghost" disabled>Export SVG</button>
+      <button id="sculptExportPng" type="button" class="pink" disabled>Export PNG</button>
     </div>
   </div>
 </header>
@@ -770,6 +840,10 @@
               </select>
             </div>
             <div>
+              <label for="baselinePad" title="Margine altimetrico sotto il punto più basso (alza/abbassa la baseline)">Baseline (m)</label>
+              <input id="baselinePad" type="number" min="0" max="1500" step="50" value="100" />
+            </div>
+            <div>
               <label for="smooth">Smoothing (m)</label>
               <input id="smooth" type="number" min="0" step="100" value="500" />
             </div>
@@ -849,6 +923,171 @@
     </section>
   </div>
 </div>
+
+<!-- ==================== ENVIRONMENT 3: SCULPT ==================== -->
+<section id="sculptView" class="env-view">
+  <div class="col sculpt-left">
+    <section class="card" style="height:100%">
+      <header style="padding:10px 14px"><h2>Salite &amp; Dettaglio</h2></header>
+      <div class="content" style="display:flex;flex-direction:column;gap:8px;min-height:0;overflow-y:auto;flex:1 1 auto;padding:10px 12px">
+        <div id="sculptHint" class="sel-hint"></div>
+        <div class="muted" style="font-size:11px;line-height:1.4;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:6px 8px">
+          <strong>Clic profilo:</strong> taglia sezione · <strong>P:</strong> POI (<strong>⌘+hover</strong> Sprint/Feed) · <strong>S:</strong> pendenza puntuale 200m · <strong>Clic dx su taglio/pin:</strong> rimuovi.<br>
+          <span style="color:#475569">Le modifiche qui restano isolate e <strong>non influiscono su PAINT</strong>.</span>
+        </div>
+
+        <div class="acc-sec" id="secSculptClimbs">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" data-acc-target="secSculptClimbs" aria-expanded="true"><span class="acc-arrow">▾</span><span>Salite (da PAINT)</span><span id="sculptClimbCount" class="acc-cnt">0</span></button>
+            <div class="acc-acts">
+              <button id="sculptFlagAllBtn" type="button" class="ghost" disabled title="Seleziona o deseleziona tutte le salite">☑ Tutte</button>
+            </div>
+          </div>
+          <div class="acc-body">
+            <div class="sculpt-batch-bar">
+              <span id="sculptFlagStatus" class="muted" style="font-size:11px">0 flaggate</span>
+              <div style="display:inline-flex;gap:4px">
+                <button id="sculptDlFlagSvg" type="button" class="sv-mini" disabled title="Scarica le altimetrie flaggate in formato SVG (ZIP se più di una)">⬇ SVG</button>
+                <button id="sculptDlFlagPng" type="button" class="sv-mini dl-primary" disabled title="Scarica le altimetrie flaggate in formato PNG 2× (ZIP se più di una)">⬇ PNG</button>
+              </div>
+            </div>
+            <div id="sculptClimbList" class="list"><span class="list-empty">Nessuna salita definita in PAINT</span></div>
+          </div>
+        </div>
+
+        <div class="acc-sec" id="secSculptSplits">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" data-acc-target="secSculptSplits" aria-expanded="true"><span class="acc-arrow">▾</span><span>Sezioni pendenza</span><span id="sculptSplitCount" class="acc-cnt">0</span></button>
+            <div class="acc-acts">
+              <button id="sculptClearSplits" type="button" class="ghost" disabled title="Rimuovi tutti i tagli sezione">Clear</button>
+            </div>
+          </div>
+          <div class="acc-body">
+            <div id="sculptSplitList" class="list"><span class="list-empty">Clicca sul profilo per spaccare la pendenza</span></div>
+          </div>
+        </div>
+
+        <div class="acc-sec" id="secSculptPois">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" data-acc-target="secSculptPois" aria-expanded="true"><span class="acc-arrow">▾</span><span>POI salita</span><span id="sculptPoiCount" class="acc-cnt">0</span></button>
+            <div class="acc-acts">
+              <button id="sculptAddPoiBtn" type="button" class="pink" disabled title="Aggiungi POI in SCULPT (tasto P)">+ Add</button>
+              <button id="sculptClearPoisBtn" type="button" class="ghost" disabled title="Cancella tutti i POI di questa salita">Clear</button>
+            </div>
+          </div>
+          <div class="acc-body">
+            <div id="sculptPoiList" class="list"><span class="list-empty">Nessun POI su questa salita</span></div>
+          </div>
+        </div>
+
+        <div class="acc-sec" id="secSculptSlopes">
+          <div class="acc-head">
+            <button type="button" class="acc-toggle" data-acc-target="secSculptSlopes" aria-expanded="true"><span class="acc-arrow">▾</span><span>Pendenze puntuali (S)</span><span id="sculptSlopeCount" class="acc-cnt">0</span></button>
+            <div class="acc-acts">
+              <button id="sculptAddSlopeBtn" type="button" class="pink" disabled title="Aggiungi indicatore pendenza 200m (tasto S)">+ Add</button>
+              <button id="sculptClearSlopesBtn" type="button" class="ghost" disabled title="Cancella tutti gli indicatori di pendenza">Clear</button>
+            </div>
+          </div>
+          <div class="acc-body">
+            <div id="sculptSlopeList" class="list"><span class="list-empty">Premi S sul profilo per aggiungere</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="resizer" id="sculptResizer"></div>
+  <div class="col sculpt-right">
+    <section class="card viz grid-layout" style="flex:1 1 auto">
+      <div id="sculptSvgWrap" class="sculpt-svg-wrap">
+        <svg id="sculptChart" viewBox="0 0 980 740" preserveAspectRatio="xMidYMid meet" width="980" height="740" role="img" aria-label="Detailed climb elevation profile"></svg>
+      </div>
+      <div class="content settings-content" style="padding-top:0">
+        <div class="settings-block">
+          <div class="settings-title">Stile &amp; dettagli salita (solo SCULPT)</div>
+          <div class="sculpt-ctrl-grid" style="margin-top:8px">
+            <div>
+              <label for="sculptStartName">Etichetta base salita</label>
+              <input id="sculptStartName" type="text" placeholder="Auto località…" />
+            </div>
+            <div>
+              <label for="sculptSummitName">Etichetta vetta</label>
+              <input id="sculptSummitName" type="text" placeholder="Nome salita" />
+            </div>
+            <div>
+              <label for="sculptCatSel">Categoria vetta</label>
+              <select id="sculptCatSel">
+                <option value="auto">Auto (da PAINT)</option>
+                <option value="none">Nessuna</option>
+                <option value="HC">Cima Coppi / HC (C)</option>
+                <option value="1">1ª categoria</option>
+                <option value="2">2ª categoria</option>
+                <option value="3">3ª categoria</option>
+                <option value="4">4ª categoria</option>
+              </select>
+            </div>
+            <div>
+              <label for="sculptSliceSel">Tagli fissi</label>
+              <select id="sculptSliceSel">
+                <option value="250">Ogni 250 m</option>
+                <option value="500" selected>Ogni 500 m</option>
+                <option value="1000">Ogni 1000 m</option>
+              </select>
+            </div>
+            <div>
+              <label for="sculptYStepSel">Griglia altitudine</label>
+              <select id="sculptYStepSel">
+                <option value="50">50 m</option>
+                <option value="100" selected>100 m</option>
+                <option value="200">200 m</option>
+              </select>
+            </div>
+            <div>
+              <label for="sculptCalcMode">Calcolo pendenze</label>
+              <select id="sculptCalcMode" title="LOESS + OLS elimina gli artefatti dei nodi OSM sui tornanti e il rumore DEM">
+                <option value="loess" selected>Accurato (LOESS + OLS)</option>
+                <option value="gauss">Gaussiano 10m</option>
+                <option value="paint">Da profilo PAINT</option>
+              </select>
+            </div>
+            <div>
+              <label for="sculptSmooth">Smoothing <span id="sculptSmoothOut" style="font-weight:700;color:#0f172a">400 m</span></label>
+              <input id="sculptSmooth" type="range" min="0" max="1200" step="50" value="400" title="Smoothing indipendente per questa salita in SCULPT (non modifica PAINT)" />
+            </div>
+            <div>
+              <label for="sculptVScale">Scala verticale <span id="sculptVScaleOut" style="font-weight:700;color:#0f172a">× 1.00</span></label>
+              <input id="sculptVScale" type="range" min="0.45" max="1.35" step="0.05" value="1.00" />
+            </div>
+            <div>
+              <label for="sculptBaselineH">Altezza baseline <span id="sculptBaselineOut" style="font-weight:700;color:#0f172a">24 px</span></label>
+              <input id="sculptBaselineH" type="range" min="0" max="240" step="5" value="24" title="Alza o abbassa il profilo rispetto alla barra delle pendenze" />
+            </div>
+            <div>
+              <label for="sculptWidthPct">Larghezza profilo <span id="sculptWidthOut" style="font-weight:700;color:#0f172a">Auto</span></label>
+              <input id="sculptWidthPct" type="range" min="0" max="100" step="5" value="0" title="0 = Auto in base alla lunghezza della salita" />
+            </div>
+            <div>
+              <label for="sculptLineColor">Linea &amp; barra</label>
+              <input id="sculptLineColor" type="color" value="#e6007e" />
+            </div>
+            <div>
+              <label for="sculptFillColor">Riempimento</label>
+              <input id="sculptFillColor" type="color" value="#fcfbe6" />
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;padding-bottom:2px">
+              <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;color:#0f172a;font-size:11.5px">
+                <input id="sculptShowMax" type="checkbox" checked style="width:auto;margin:0;flex:0 0 auto" /> Max pendenza (200m)
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;color:#0f172a;font-size:11.5px">
+                <input id="sculptPoiAutoCut" type="checkbox" checked style="width:auto;margin:0;flex:0 0 auto" /> POI taglia sezione
+              </label>
+            </div>
+          </div>
+          <div class="muted" style="margin-top:7px">Trascina etichette POI, indicatore <strong>max</strong>, pin <strong>S</strong> o il box riepilogo per perfezionare il layout · <strong>Alt + clic</strong> per taglio esatto senza snap a 50 m.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</section>
 
 <!-- ==================== MODAL: SALVA TRACCIA ==================== -->
 <div id="saveTrackModal" class="se-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="saveModalTitle">
@@ -942,6 +1181,7 @@
 let activeEnv = 'draw';
 const tabDraw = document.getElementById('tabDraw');
 const tabPaint = document.getElementById('tabPaint');
+const tabSculpt = document.getElementById('tabSculpt');
 
 function makeSharedBaseLayer(key){
   if(key==='GoogleStreets') return L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=it&scale=2&x={x}&y={y}&z={z}',{
@@ -968,14 +1208,17 @@ function makeSharedBaseLayer(key){
 }
 
 function switchEnv(env){
-  if(env !== 'draw' && env !== 'paint') return;
+  if(env !== 'draw' && env !== 'paint' && env !== 'sculpt') return;
   activeEnv = env;
   document.body.classList.toggle('mode-draw', env === 'draw');
   document.body.classList.toggle('mode-paint', env === 'paint');
+  document.body.classList.toggle('mode-sculpt', env === 'sculpt');
   tabDraw.classList.toggle('active', env === 'draw');
   tabPaint.classList.toggle('active', env === 'paint');
+  if(tabSculpt) tabSculpt.classList.toggle('active', env === 'sculpt');
   tabDraw.setAttribute('aria-selected', String(env === 'draw'));
   tabPaint.setAttribute('aria-selected', String(env === 'paint'));
+  if(tabSculpt) tabSculpt.setAttribute('aria-selected', String(env === 'sculpt'));
   requestAnimationFrame(()=>{
     if(env === 'draw' && window.DrawEnv){
       window.DrawEnv.onActivate();
@@ -988,17 +1231,20 @@ function switchEnv(env){
         }
       }
       if(state.points.length) draw();
+    } else if(env === 'sculpt' && window.SculptEnv){
+      window.SculptEnv.onActivate();
     }
   });
 }
 tabDraw.addEventListener('click', ()=> switchEnv('draw'));
 tabPaint.addEventListener('click', ()=> switchEnv('paint'));
+if(tabSculpt) tabSculpt.addEventListener('click', ()=> switchEnv('sculpt'));
 
 /* ==================== PAINT ENVIRONMENT (Simple Elevation v1.19) ==================== */
 const NS='http://www.w3.org/2000/svg';
 const XLINK='http://www.w3.org/1999/xlink';
 const COLORS={ pink:'#ff2d96', fill:'#fbf6ea', grid:'#e8edf2', green:'#15a34a', axis:'#475569', text:'#0f172a', guide:'#94a3b8', gravel:'#6b7280', kom:'#2c7be5', komMid:'#3aa0ff', sprint:'#f97316', sprintMid:'#fb923c'};
-const state={ points:[], tunnels:[], profileElevations:[], hoverIndex:null, selectingTunnel:false, minEle:0, maxEle:0, climbs:[], pois:[], gravels:[], vExag:0.5, viewStart:0, viewEnd:1, yStep:100, namedWaypoints:[], selecting:null, selectingPoi:false, selectingGravel:false, climbAutofill:false, tempStart:null, autoReplicate:true, syncEdits:true, poiAutofillComune:true, loopMode:false, focusClimbIndex:null, focusPoiIndex:null, focusGravelIndex:null, fillColor:COLORS.fill, lineColor:COLORS.pink, noProfileFill:false, noProfileLine:false, climbColor:COLORS.green, climbFillColor:COLORS.green, climbOverlayMode:'solid', startOffset:0, finishOffset:0, showKom:true, showSprint:true, template:'classic', projectName:'elevation' };
+const state={ points:[], tunnels:[], profileElevations:[], hoverIndex:null, selectingTunnel:false, minEle:0, maxEle:0, climbs:[], pois:[], gravels:[], vExag:0.5, viewStart:0, viewEnd:1, yStep:100, baselinePad:100, namedWaypoints:[], selecting:null, selectingPoi:false, selectingGravel:false, climbAutofill:false, tempStart:null, autoReplicate:true, syncEdits:true, poiAutofillComune:true, loopMode:false, focusClimbIndex:null, focusPoiIndex:null, focusGravelIndex:null, fillColor:COLORS.fill, lineColor:COLORS.pink, noProfileFill:false, noProfileLine:false, climbColor:COLORS.green, climbFillColor:COLORS.green, climbOverlayMode:'solid', startOffset:0, finishOffset:0, showKom:true, showSprint:true, template:'classic', projectName:'elevation' };
 let hitBoxEl=null; let guideGroup=null;
 const svg=document.getElementById('chart');
 const gpxInput=document.getElementById('gpx');
@@ -1007,6 +1253,7 @@ const finishLabel=document.getElementById('finishLabel');
 const smoothInput=document.getElementById('smooth');
 const tickInput=document.getElementById('tick');
 const yStepSel=document.getElementById('ystepSel');
+const baselinePadInput=document.getElementById('baselinePad');
 const vExagInput=document.getElementById('vex');
 const vExagOut=document.getElementById('vexOut');
 const addClimbBtn=document.getElementById('addClimb');
@@ -1089,7 +1336,7 @@ function getScales(){
   else if(tpl==='vuelta'){ baseL=76; baseR=74; baseT=124; baseB=46; }
   let margin={l:baseL,r:baseR,t:baseT,b:baseB}; let w=1280-margin.l-margin.r; let h=520-margin.t-margin.b;
   const dMax=state.points.length?state.points[state.points.length-1].d:1;
-  const padBottom=100;
+  const padBottom=Math.max(0, Number.isFinite(state.baselinePad) ? state.baselinePad : 100);
   const min=Math.floor((state.minEle - padBottom)/50)*50;
   const max=Math.ceil((state.maxEle + 20)/50)*50;
   const yTop=margin.t + h*(1 - Math.min(1,Math.max(0.1,state.vExag)));
@@ -3837,6 +4084,7 @@ function fileBaseName(n){ if(!n) return 'elevation'; return n.replace(/\.[^.]*$/
 gpxInput.addEventListener('change', async e=>{ try{ const file=e.target.files[0]; if(!file) return; state.projectName=fileBaseName(file.name); const text=await file.text(); const xml=await loadTextAsXml(text); await handleGpxXml(xml); }catch(err){ alert('Unable to open the GPX.'); } });
 [startLabel,finishLabel,tickInput].forEach(el=> el.addEventListener('input', ()=> state.points.length&&draw()));
 yStepSel.addEventListener('change', ()=>{ state.yStep=parseInt(yStepSel.value,10)||100; state.points.length&&draw(); });
+baselinePadInput.addEventListener('input', ()=>{ const v=parseFloat(baselinePadInput.value); state.baselinePad=Number.isFinite(v)?Math.max(0,v):100; state.points.length&&draw(); });
 vExagInput.addEventListener('input', ()=>{ let v=parseFloat(vExagInput.value); if(!Number.isFinite(v)) v=0.5; v=Math.min(1, Math.max(0.1, v)); state.vExag=v; vExagOut.textContent='× '+state.vExag.toFixed(2); state.points.length&&draw(); });
 smoothInput.addEventListener('input', ()=>{ if(!state.points.length) return; const w=parseFloat(smoothInput.value||0); const sm=movingAverage(state.points.map(p=>p.ele), w, state.points.map(p=>p.d)); state.points.forEach((p,i)=>p.eleS=Number.isFinite(sm[i])?sm[i]:p.ele); const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; draw(); });
 document.querySelectorAll('#templateBar .tpl-btn').forEach(btn=>btn.addEventListener('click',()=>applyTemplate(btn.dataset.tpl,true)));
@@ -4129,6 +4377,7 @@ function renderClimbList(focusLast){
       setTimeout(()=>{ name.focus(); name.select(); state.focusClimbIndex=null; },0);
     }
   });
+  window.SculptEnv?.onClimbsChanged?.();
 }
 function renderPoiList(focusLast){
   const list=document.getElementById('poiList');
@@ -4290,6 +4539,25 @@ document.addEventListener('keydown', (e)=>{
       e.preventDefault();
       return;
     }
+    return;
+  }
+  if(activeEnv === 'sculpt'){
+    if(e.key==='Escape'){ window.SculptEnv?.onEscape(); e.preventDefault(); return; }
+    if(tag==='input'||tag==='textarea'||tag==='select') return;
+    if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){
+      if(e.shiftKey) window.SculptEnv?.redo();
+      else window.SculptEnv?.undo();
+      e.preventDefault();
+      return;
+    }
+    if((e.ctrlKey||e.metaKey) && (e.key==='y'||e.key==='Y')){
+      window.SculptEnv?.redo();
+      e.preventDefault();
+      return;
+    }
+    if(e.ctrlKey||e.metaKey||e.altKey) return;
+    if(e.key==='s'||e.key==='S'){ window.SculptEnv?.onPressS(); e.preventDefault(); return; }
+    if(e.key==='p'||e.key==='P'){ window.SculptEnv?.setMode('poi'); e.preventDefault(); return; }
     return;
   }
   if(e.key==='Escape'){ if(state.selecting||state.selectingPoi||state.selectingGravel||state.selectingTunnel||state.loopMode){ cancelSelection(); e.preventDefault(); } return; }
@@ -4497,8 +4765,8 @@ function onMapClick(e){ blurActiveFormField(); if(!state.points.length)return; c
 const PRESET_KEY='se_presets_v1';
 function readPresets(){ try{ return JSON.parse(localStorage.getItem(PRESET_KEY)||'{}'); }catch(_){ return {}; } }
 function writePresets(obj){ try{ localStorage.setItem(PRESET_KEY, JSON.stringify(obj)); }catch(_){} }
-function presetFromState(){ return { template: state.template||'classic', vExag: state.vExag, yStep: parseInt(yStepSel.value,10)||100, smoothing: parseFloat(smoothInput.value)||0, tick: parseInt(tickInput.value,10)||10, fillColor: fillColorInput.value, lineColor: lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbColor: climbColorInput.value, climbFillColor: climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOffset: parseFloat(startOffInput.value)||0, finishOffset: parseFloat(finishOffInput.value)||0 }; }
-function applyPreset(p){ if(!p) return; state.template=normalizeTemplateKey(p.template); syncTemplateButtons(); vExagInput.value=p.vExag; state.vExag=p.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.yStep); state.yStep=p.yStep; smoothInput.value=p.smoothing; tickInput.value=p.tick; fillColorInput.value=p.fillColor; lineColorInput.value=p.lineColor; climbColorInput.value=p.climbColor; climbFillColorInput.value=p.climbFillColor || '#15a34a'; climbOverlayModeSel.value=((p.climbOverlayMode==='avggrade'||p.climbOverlayMode==='solid')?p.climbOverlayMode:'solid'); startOffInput.value=p.startOffset; finishOffInput.value=p.finishOffset; state.fillColor=p.fillColor; state.lineColor=p.lineColor; state.noProfileFill=!!p.noProfileFill; state.noProfileLine=!!p.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=p.climbColor; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=p.startOffset; state.finishOffset=p.finishOffset; draw(); }
+function presetFromState(){ return { template: state.template||'classic', vExag: state.vExag, yStep: parseInt(yStepSel.value,10)||100, baselinePad: Math.max(0, parseFloat(baselinePadInput.value)||0), smoothing: parseFloat(smoothInput.value)||0, tick: parseInt(tickInput.value,10)||10, fillColor: fillColorInput.value, lineColor: lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbColor: climbColorInput.value, climbFillColor: climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOffset: parseFloat(startOffInput.value)||0, finishOffset: parseFloat(finishOffInput.value)||0 }; }
+function applyPreset(p){ if(!p) return; state.template=normalizeTemplateKey(p.template); syncTemplateButtons(); vExagInput.value=p.vExag; state.vExag=p.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.yStep); state.yStep=p.yStep; const bp=Number.isFinite(p.baselinePad)?Math.max(0,p.baselinePad):100; baselinePadInput.value=String(bp); state.baselinePad=bp; smoothInput.value=p.smoothing; tickInput.value=p.tick; fillColorInput.value=p.fillColor; lineColorInput.value=p.lineColor; climbColorInput.value=p.climbColor; climbFillColorInput.value=p.climbFillColor || '#15a34a'; climbOverlayModeSel.value=((p.climbOverlayMode==='avggrade'||p.climbOverlayMode==='solid')?p.climbOverlayMode:'solid'); startOffInput.value=p.startOffset; finishOffInput.value=p.finishOffset; state.fillColor=p.fillColor; state.lineColor=p.lineColor; state.noProfileFill=!!p.noProfileFill; state.noProfileLine=!!p.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=p.climbColor; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=p.startOffset; state.finishOffset=p.finishOffset; draw(); }
 function refreshPresetList(){ const all=readPresets(); const names=Object.keys(all).sort(); presetSelect.innerHTML=''; names.forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; presetSelect.appendChild(o); }); }
 savePresetBtn.addEventListener('click',()=>{ const name=(presetNameInput.value||'Preset').trim(); if(!name) return; const all=readPresets(); all[name]=presetFromState(); writePresets(all); refreshPresetList(); if(!Array.from(presetSelect.options).some(o=>o.value===name)){ const o=document.createElement('option'); o.value=name; o.textContent=name; presetSelect.appendChild(o); } presetSelect.value=name; });
 loadPresetBtn.addEventListener('click',()=>{ const name=presetSelect.value; const all=readPresets(); applyPreset(all[name]); });
@@ -4506,8 +4774,8 @@ deletePresetBtn.addEventListener('click',()=>{ const name=presetSelect.value; if
 refreshPresetList();
 
 /* JSON I/O */
-function projectState(){ return { meta:{version:'2.3.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ template:state.template||'classic', vExag:state.vExag, yStep:parseInt(yStepSel.value,10), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
-function applyProject(p){ if(!p||!p.points) return; state.points=p.points; state.climbs=p.climbs||[]; state.pois=p.pois||[]; state.gravels=p.gravels||[]; state.tunnels=(p.tunnels||[]).filter(t=>Number.isInteger(t.startIdx)&&Number.isInteger(t.endIdx)&&t.startIdx>=0&&t.endIdx<state.points.length&&t.endIdx>t.startIdx); state.hoverIndex=null; state.profileElevations=[]; startLabel.value=p.labels?.start||'START'; finishLabel.value=p.labels?.finish||'FINISH'; state.template=normalizeTemplateKey(p.settings?.template); syncTemplateButtons(); state.vExag=p.settings?.vExag||state.vExag; vExagInput.value=state.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.settings?.yStep||100); state.yStep=parseInt(yStepSel.value,10)||100; smoothInput.value=p.settings?.smooth||500; tickInput.value=p.settings?.tick||10; fillColorInput.value=p.settings?.fill||state.fillColor; lineColorInput.value=p.settings?.line||state.lineColor; climbColorInput.value=p.settings?.climbLine||state.climbColor; climbFillColorInput.value=p.settings?.climbFill||state.climbFillColor; climbOverlayModeSel.value=((p.settings?.climbOverlayMode==='avggrade'||p.settings?.climbOverlayMode==='solid')?p.settings?.climbOverlayMode:(state.climbOverlayMode||'solid')); startOffInput.value=p.settings?.startOff||0; finishOffInput.value=p.settings?.finishOff||0; state.fillColor=fillColorInput.value; state.lineColor=lineColorInput.value; state.noProfileFill=!!p.settings?.noProfileFill; state.noProfileLine=!!p.settings?.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=climbColorInput.value; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=parseFloat(startOffInput.value)||0; state.finishOffset=parseFloat(finishOffInput.value)||0; { const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.viewStart=0; state.viewEnd=state.points[state.points.length-1].d; state.projectName = (p.meta && (p.meta.name||p.meta.projectName)) ? (p.meta.name||p.meta.projectName) : 'elevation'; sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois); ensureAllMarkerGeo(state.points); setButtonsEnabled(true); resetUndo(); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
+function projectState(){ return { meta:{version:'2.3.0', name: state.projectName}, points:state.points, climbs:state.climbs, pois:state.pois, gravels:state.gravels, tunnels:state.tunnels, labels:{start:startLabel.value, finish:finishLabel.value}, settings:{ template:state.template||'classic', vExag:state.vExag, yStep:parseInt(yStepSel.value,10), baselinePad:Math.max(0, Number.isFinite(state.baselinePad)?state.baselinePad:100), smooth:parseFloat(smoothInput.value)||0, tick:parseInt(tickInput.value,10)||10, fill:fillColorInput.value, line:lineColorInput.value, noProfileFill:state.noProfileFill, noProfileLine:state.noProfileLine, climbLine:climbColorInput.value, climbFill:climbFillColorInput.value, climbOverlayMode: state.climbOverlayMode||'solid', startOff:parseFloat(startOffInput.value)||0, finishOff:parseFloat(finishOffInput.value)||0, showKom:true, showSprint:true } }; }
+function applyProject(p){ if(!p||!p.points) return; state.points=p.points; state.climbs=p.climbs||[]; state.pois=p.pois||[]; state.gravels=p.gravels||[]; state.tunnels=(p.tunnels||[]).filter(t=>Number.isInteger(t.startIdx)&&Number.isInteger(t.endIdx)&&t.startIdx>=0&&t.endIdx<state.points.length&&t.endIdx>t.startIdx); state.hoverIndex=null; state.profileElevations=[]; startLabel.value=p.labels?.start||'START'; finishLabel.value=p.labels?.finish||'FINISH'; state.template=normalizeTemplateKey(p.settings?.template); syncTemplateButtons(); state.vExag=p.settings?.vExag||state.vExag; vExagInput.value=state.vExag; vExagOut.textContent='× '+state.vExag.toFixed(2); yStepSel.value=String(p.settings?.yStep||100); state.yStep=parseInt(yStepSel.value,10)||100; const bp=(p.settings && Number.isFinite(p.settings.baselinePad))?Math.max(0,p.settings.baselinePad):100; baselinePadInput.value=String(bp); state.baselinePad=bp; smoothInput.value=p.settings?.smooth||500; tickInput.value=p.settings?.tick||10; fillColorInput.value=p.settings?.fill||state.fillColor; lineColorInput.value=p.settings?.line||state.lineColor; climbColorInput.value=p.settings?.climbLine||state.climbColor; climbFillColorInput.value=p.settings?.climbFill||state.climbFillColor; climbOverlayModeSel.value=((p.settings?.climbOverlayMode==='avggrade'||p.settings?.climbOverlayMode==='solid')?p.settings?.climbOverlayMode:(state.climbOverlayMode||'solid')); startOffInput.value=p.settings?.startOff||0; finishOffInput.value=p.settings?.finishOff||0; state.fillColor=fillColorInput.value; state.lineColor=lineColorInput.value; state.noProfileFill=!!p.settings?.noProfileFill; state.noProfileLine=!!p.settings?.noProfileLine; noProfileFillInput.checked=state.noProfileFill; noProfileLineInput.checked=state.noProfileLine; state.climbColor=climbColorInput.value; state.climbFillColor=climbFillColorInput.value; state.climbOverlayMode=climbOverlayModeSel.value; state.startOffset=parseFloat(startOffInput.value)||0; state.finishOffset=parseFloat(finishOffInput.value)||0; { const [mn,mx]=minMax(state.points.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.viewStart=0; state.viewEnd=state.points[state.points.length-1].d; state.projectName = (p.meta && (p.meta.name||p.meta.projectName)) ? (p.meta.name||p.meta.projectName) : 'elevation'; sortSegArr(state.climbs); sortSegArr(state.gravels); sortSegArr(state.tunnels); sortPoiArr(state.pois); ensureAllMarkerGeo(state.points); setButtonsEnabled(true); resetUndo(); buildMap(); renderClimbList(); renderPoiList(); renderGravelList(); renderTunnelList(); draw(); }
 exportJsonBtn.addEventListener('click',()=>{ if(!state.points.length) return; const blob=new Blob([JSON.stringify(projectState())],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=exportName('json'); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
 importJsonInput.addEventListener('change', async e=>{
   try{
@@ -7361,7 +7629,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     const hasPaint = state.points && state.points.length >= 2;
     const paintData = hasPaint ? projectState() : null;
 
-    let primary = activeEnv;
+    let primary = (activeEnv === 'sculpt') ? 'paint' : activeEnv;
     if(primary === 'draw' && !drawData && hasPaint) primary = 'paint';
     if(primary === 'paint' && !hasPaint && drawData) primary = 'draw';
     if(!drawData && !hasPaint) return null;
@@ -7946,6 +8214,1870 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   };
 
   refreshCache().then(()=> restoreLinkedFileHandleOnBoot());
+})();
+
+/* ==================== SCULPT ENVIRONMENT (Detailed Climb Profiles — Isolated from PAINT) ==================== */
+(function(){
+  const sSvg = document.getElementById('sculptChart');
+  const sClimbList = document.getElementById('sculptClimbList');
+  const sClimbCount = document.getElementById('sculptClimbCount');
+  const sSplitList = document.getElementById('sculptSplitList');
+  const sSplitCount = document.getElementById('sculptSplitCount');
+  const sClearSplits = document.getElementById('sculptClearSplits');
+  const sPoiList = document.getElementById('sculptPoiList');
+  const sPoiCount = document.getElementById('sculptPoiCount');
+  const sAddPoiBtn = document.getElementById('sculptAddPoiBtn');
+  const sClearPoisBtn = document.getElementById('sculptClearPoisBtn');
+  const sSlopeList = document.getElementById('sculptSlopeList');
+  const sSlopeCount = document.getElementById('sculptSlopeCount');
+  const sAddSlopeBtn = document.getElementById('sculptAddSlopeBtn');
+  const sClearSlopesBtn = document.getElementById('sculptClearSlopesBtn');
+  const sHint = document.getElementById('sculptHint');
+  const sReadout = document.getElementById('sculptHoverReadout');
+
+  const sModeSplitBtn = document.getElementById('sculptModeSplitBtn');
+  const sModePoiBtn = document.getElementById('sculptModePoiBtn');
+  const sModeSlopeBtn = document.getElementById('sculptModeSlopeBtn');
+  const sUndoBtn = document.getElementById('sculptUndoBtn');
+  const sRedoBtn = document.getElementById('sculptRedoBtn');
+  const sExportSvgBtn = document.getElementById('sculptExportSvg');
+  const sExportPngBtn = document.getElementById('sculptExportPng');
+
+  const sStartName = document.getElementById('sculptStartName');
+  const sSummitName = document.getElementById('sculptSummitName');
+  const sCatSel = document.getElementById('sculptCatSel');
+  const sSliceSel = document.getElementById('sculptSliceSel');
+  const sYStepSel = document.getElementById('sculptYStepSel');
+  const sFlagAllBtn = document.getElementById('sculptFlagAllBtn');
+  const sFlagStatus = document.getElementById('sculptFlagStatus');
+  const sDlFlagSvg = document.getElementById('sculptDlFlagSvg');
+  const sDlFlagPng = document.getElementById('sculptDlFlagPng');
+
+  const sCalcMode = document.getElementById('sculptCalcMode');
+  const sSmooth = document.getElementById('sculptSmooth');
+  const sSmoothOut = document.getElementById('sculptSmoothOut');
+  const sVScale = document.getElementById('sculptVScale');
+  const sVScaleOut = document.getElementById('sculptVScaleOut');
+  const sBaselineH = document.getElementById('sculptBaselineH');
+  const sBaselineOut = document.getElementById('sculptBaselineOut');
+  const sWidthPct = document.getElementById('sculptWidthPct');
+  const sWidthOut = document.getElementById('sculptWidthOut');
+  const sLineColor = document.getElementById('sculptLineColor');
+  const sFillColor = document.getElementById('sculptFillColor');
+  const sShowMax = document.getElementById('sculptShowMax');
+  const sPoiAutoCut = document.getElementById('sculptPoiAutoCut');
+
+  let selectedIdx = 0;
+  let mode = 'split'; // 'split' | 'poi' | 'slope'
+  let hoverRelD = null;
+  let lastRenderCtx = null;
+  let guideG = null;
+  let dragCtx = null;
+
+  const sUndoStack = [];
+  const sRedoStack = [];
+  const SCULPT_UNDO_MAX = 50;
+
+  function activeClimb(){
+    if(!state.points.length || !state.climbs.length) return null;
+    if(selectedIdx < 0 || selectedIdx >= state.climbs.length) selectedIdx = 0;
+    const c = state.climbs[selectedIdx];
+    if(!c || !state.points[c.startIdx] || !state.points[c.endIdx] || c.endIdx <= c.startIdx) return null;
+    return c;
+  }
+
+  function ensureSculpt(c){
+    if(!c) return null;
+    if(!c.sculpt || typeof c.sculpt !== 'object'){
+      c.sculpt = {
+        startName: '',
+        summitName: '',
+        catOverride: 'auto',
+        splits: [],
+        pois: [],
+        slopes: [],
+        showMax: true,
+        maxOffsetY: 0,
+        boxOffset: null,
+        sliceStep: 500,
+        yStep: 100,
+        calcMode: 'loess',
+        smoothM: 400,
+        vScale: 1.0,
+        baselineHeight: 24,
+        widthPct: 0,
+        lineColor: '#e6007e',
+        fillColor: '#fcfbe6',
+        poiAutoCut: true,
+        flagged: false
+      };
+    }
+    const sc = c.sculpt;
+    if(!Array.isArray(sc.splits)) sc.splits = [];
+    if(!Array.isArray(sc.pois)) sc.pois = [];
+    if(!Array.isArray(sc.slopes)) sc.slopes = [];
+    if(sc.showMax === undefined) sc.showMax = true;
+    if(!Number.isFinite(sc.maxOffsetY)) sc.maxOffsetY = 0;
+    if(!Number.isFinite(sc.sliceStep)) sc.sliceStep = 500;
+    if(!Number.isFinite(sc.yStep)) sc.yStep = 100;
+    if(sc.calcMode !== 'loess' && sc.calcMode !== 'gauss' && sc.calcMode !== 'paint') sc.calcMode = 'loess';
+    if(!Number.isFinite(sc.smoothM)) sc.smoothM = 400;
+    if(!Number.isFinite(sc.vScale)) sc.vScale = 1.0;
+    if(!Number.isFinite(sc.baselineHeight)) sc.baselineHeight = 24;
+    if(!Number.isFinite(sc.widthPct)) sc.widthPct = 0;
+    if(!sc.lineColor) sc.lineColor = '#e6007e';
+    if(!sc.fillColor) sc.fillColor = '#fcfbe6';
+    if(!sc.catOverride) sc.catOverride = 'auto';
+    if(sc.poiAutoCut === undefined) sc.poiAutoCut = true;
+    if(typeof sc.flagged !== 'boolean') sc.flagged = false;
+    return sc;
+  }
+
+  function pushSculptUndo(){
+    const c = activeClimb();
+    if(!c) return;
+    const sc = ensureSculpt(c);
+    sUndoStack.push({ idx: selectedIdx, data: JSON.parse(JSON.stringify(sc)) });
+    if(sUndoStack.length > SCULPT_UNDO_MAX) sUndoStack.shift();
+    sRedoStack.length = 0;
+    updateSculptUndoBtns();
+  }
+  function updateSculptUndoBtns(){
+    if(sUndoBtn) sUndoBtn.disabled = !sUndoStack.length;
+    if(sRedoBtn) sRedoBtn.disabled = !sRedoStack.length;
+  }
+  function undo(){
+    if(!sUndoStack.length) return;
+    const snap = sUndoStack.pop();
+    if(!state.climbs[snap.idx]){ updateSculptUndoBtns(); return; }
+    const cur = ensureSculpt(state.climbs[snap.idx]);
+    sRedoStack.push({ idx: snap.idx, data: JSON.parse(JSON.stringify(cur)) });
+    selectedIdx = snap.idx;
+    state.climbs[snap.idx].sculpt = snap.data;
+    updateSculptUndoBtns();
+    syncControlsFromClimb();
+    renderAll();
+  }
+  function redo(){
+    if(!sRedoStack.length) return;
+    const snap = sRedoStack.pop();
+    if(!state.climbs[snap.idx]){ updateSculptUndoBtns(); return; }
+    const cur = ensureSculpt(state.climbs[snap.idx]);
+    sUndoStack.push({ idx: snap.idx, data: JSON.parse(JSON.stringify(cur)) });
+    selectedIdx = snap.idx;
+    state.climbs[snap.idx].sculpt = snap.data;
+    updateSculptUndoBtns();
+    syncControlsFromClimb();
+    renderAll();
+  }
+
+  function setSculptHint(msg){
+    if(!sHint) return;
+    sHint.textContent = msg || '';
+    sHint.classList.toggle('active', !!msg);
+  }
+
+  function setMode(nextMode){
+    mode = nextMode || 'split';
+    sModeSplitBtn.classList.toggle('active-mode', mode === 'split');
+    sModePoiBtn.classList.toggle('active-mode', mode === 'poi');
+    sModeSlopeBtn.classList.toggle('active-mode', mode === 'slope');
+    if(mode === 'poi') setSculptHint('Modalità POI: clicca sul profilo della salita per inserire un POI locale (Esc per tornare a Taglia).');
+    else if(mode === 'slope') setSculptHint('Modalità Pendenza 200m (S): clicca sul profilo per posizionare l\'indicatore (Esc per tornare a Taglia).');
+    else setSculptHint('');
+  }
+
+  /* ---- Accurate Climb Geometry: Uniform 10m Resampling + Hampel Despiker + Gaussian LOESS + OLS 200m Slope ---- */
+  function rawWithTunnelsAt(idx){
+    const p = state.points[idx];
+    if(!p) return 0;
+    for(const t of (state.tunnels || [])){
+      if(idx > t.startIdx && idx < t.endIdx && state.points[t.startIdx] && state.points[t.endIdx]){
+        const a = state.points[t.startIdx], b = state.points[t.endIdx];
+        const span = Math.max(1e-6, b.d - a.d);
+        const f = Math.max(0, Math.min(1, (p.d - a.d) / span));
+        return a.ele + (b.ele - a.ele) * f;
+      }
+    }
+    return p.ele;
+  }
+
+  function hampelDespikeUniform(vals, halfWin=5){
+    const n = vals.length;
+    if(n < halfWin * 2 + 3) return vals.slice();
+    const out = vals.slice();
+    const tmp = [];
+    for(let i = 0; i < n; i++){
+      const lo = Math.max(0, i - halfWin);
+      const hi = Math.min(n - 1, i + halfWin);
+      tmp.length = 0;
+      for(let k = lo; k <= hi; k++) tmp.push(vals[k]);
+      tmp.sort((a,b)=>a-b);
+      const med = tmp[tmp.length >> 1];
+      for(let k = 0; k < tmp.length; k++) tmp[k] = Math.abs(tmp[k] - med);
+      tmp.sort((a,b)=>a-b);
+      const mad = tmp[tmp.length >> 1];
+      const thresh = Math.max(4.0, 3.5 * 1.4826 * mad);
+      if(Math.abs(vals[i] - med) > thresh) out[i] = med;
+    }
+    return out;
+  }
+
+  function smoothUniformGrid(u, y, smoothM, useLoess){
+    const n = u.length;
+    if(smoothM <= 1 || n < 3) return y.slice();
+    const step = n > 1 ? Math.max(1, u[1] - u[0]) : 10;
+    const sigma = smoothM / 2.3548; // FWHM = smoothM
+    const halfN = Math.max(1, Math.ceil(3.0 * sigma / step));
+    const inv2Sig2 = 0.5 / (sigma * sigma);
+    const out = new Array(n);
+    for(let i = 0; i < n; i++){
+      const ui = u[i];
+      const lo = Math.max(0, i - halfN);
+      const hi = Math.min(n - 1, i + halfN);
+      let s0 = 0, s1 = 0, s2 = 0, sy = 0, sxy = 0;
+      for(let k = lo; k <= hi; k++){
+        const dx = u[k] - ui;
+        const w = Math.exp(-dx * dx * inv2Sig2);
+        const yk = y[k];
+        s0 += w;
+        sy += w * yk;
+        if(useLoess){
+          const wdx = w * dx;
+          s1 += wdx;
+          s2 += wdx * dx;
+          sxy += wdx * yk;
+        }
+      }
+      if(useLoess){
+        const det = s0 * s2 - s1 * s1;
+        out[i] = det > 1e-8 ? (s2 * sy - s1 * sxy) / det : (sy / Math.max(1e-9, s0));
+      } else {
+        out[i] = sy / Math.max(1e-9, s0);
+      }
+    }
+    return out;
+  }
+
+  function buildClimbModel(c){
+    if(!c || !state.points.length) return null;
+    if(!state.profileElevations.length || state.profileElevations.length !== state.points.length){
+      state.profileElevations = calculateProfileElevations();
+    }
+    const sc = ensureSculpt(c);
+    const calcMode = sc.calcMode || 'loess';
+    const smoothM = Math.max(0, Math.min(1200, Number.isFinite(sc.smoothM) ? sc.smoothM : 400));
+
+    const d0 = state.points[c.startIdx].d;
+    const dEnd = state.points[c.endIdx].d;
+    const L = Math.max(1, dEnd - d0);
+
+    // Collect raw source points with ±350m context buffer from the main track to prevent edge flattening
+    const bufM = Math.max(350, smoothM * 0.8);
+    let iLo = c.startIdx;
+    while(iLo > 0 && state.points[iLo].d > d0 - bufM) iLo--;
+    let iHi = c.endIdx;
+    while(iHi < state.points.length - 1 && state.points[iHi].d < dEnd + bufM) iHi++;
+
+    const src = [];
+    for(let i = iLo; i <= iHi; i++){
+      const p = state.points[i];
+      const relD = p.d - d0;
+      const eleVal = (calcMode === 'paint') ? visibleElevation(i) : rawWithTunnelsAt(i);
+      if(!src.length || relD > src[src.length - 1].d + 1e-4){
+        src.push({ d: relD, ele: eleVal, lat: p.lat, lon: p.lon });
+      }
+    }
+    if(src.length < 2) return null;
+
+    function interpSrc(arr, qd){
+      if(qd <= arr[0].d) return { ele: arr[0].ele, lat: arr[0].lat, lon: arr[0].lon };
+      const last = arr[arr.length - 1];
+      if(qd >= last.d) return { ele: last.ele, lat: last.lat, lon: last.lon };
+      let lo = 0, hi = arr.length - 1;
+      while(hi - lo > 1){
+        const mid = (lo + hi) >> 1;
+        if(arr[mid].d <= qd) lo = mid; else hi = mid;
+      }
+      const a = arr[lo], b = arr[hi];
+      const t = (qd - a.d) / Math.max(1e-6, b.d - a.d);
+      return {
+        ele: a.ele + (b.ele - a.ele) * t,
+        lat: a.lat + (b.lat - a.lat) * t,
+        lon: a.lon + (b.lon - a.lon) * t
+      };
+    }
+
+    // Resample extended span onto a uniform 10m grid (completely eliminates OSM hairpin node-density bias!)
+    const STEP = 10;
+    const extStart = Math.floor(src[0].d / STEP) * STEP;
+    const extEnd = Math.ceil(src[src.length - 1].d / STEP) * STEP;
+    const uGrid = [], yGrid = [];
+    for(let d = extStart; d <= extEnd + 0.5; d += STEP){
+      uGrid.push(d);
+      yGrid.push(interpSrc(src, d).ele);
+    }
+
+    let yClean = yGrid;
+    if(calcMode === 'loess'){
+      yClean = hampelDespikeUniform(yGrid, 5);
+      yClean = smoothUniformGrid(uGrid, yClean, smoothM, true);
+    } else if(calcMode === 'gauss'){
+      yClean = smoothUniformGrid(uGrid, yGrid, smoothM, false);
+    } else {
+      // 'paint': already smoothed by PAINT; apply optional extra SCULPT smoothing on uniform grid
+      if(smoothM > 0) yClean = smoothUniformGrid(uGrid, yGrid, smoothM, false);
+    }
+
+    function eleFromGrid(relD){
+      const d = Math.max(0, Math.min(L, relD));
+      const fIdx = (d - extStart) / STEP;
+      const i0 = Math.max(0, Math.min(uGrid.length - 2, Math.floor(fIdx)));
+      const t = Math.max(0, Math.min(1, fIdx - i0));
+      return yClean[i0] + (yClean[i0 + 1] - yClean[i0]) * t;
+    }
+
+    // Build uniform 10m climb points [0 .. L]
+    const pts = [];
+    for(let d = 0; d < L - 1; d += STEP){
+      const ll = interpSrc(src, d);
+      pts.push({ d, absD: d0 + d, ele: eleFromGrid(d), lat: ll.lat, lon: ll.lon });
+    }
+    const llEnd = interpSrc(src, L);
+    pts.push({ d: L, absD: dEnd, ele: eleFromGrid(L), lat: llEnd.lat, lon: llEnd.lon });
+
+    function eleAt(relD){ return eleFromGrid(relD); }
+    function latLonAt(relD){
+      const ll = interpSrc(src, Math.max(0, Math.min(L, relD)));
+      return { lat: ll.lat, lon: ll.lon };
+    }
+
+    // 200m gradient: OLS linear regression over 200m window in 'loess' mode (resistant to DEM step noise!),
+    // or classic 2-endpoint difference in 'gauss'/'paint' modes.
+    function grade200At(centerD){
+      const W = Math.min(200, L);
+      const a = Math.max(0, Math.min(L - W, centerD - W / 2));
+      const b = a + W;
+      if(calcMode === 'loess' && W >= 40){
+        const kSteps = Math.max(4, Math.round(W / STEP));
+        const h = W / kSteps;
+        const meanX = W / 2;
+        let num = 0, den = 0;
+        for(let k = 0; k <= kSteps; k++){
+          const x = k * h;
+          const dx = x - meanX;
+          num += dx * eleAt(a + x);
+          den += dx * dx;
+        }
+        return (num / Math.max(1e-6, den)) * 100;
+      }
+      return ((eleAt(b) - eleAt(a)) / Math.max(1, b - a)) * 100;
+    }
+
+    // Compute exact 200m max gradient along climb
+    const W = Math.min(200, L);
+    let maxGrade = -Infinity, maxD = L / 2;
+    for(let d = W / 2; d <= L - W / 2 + 0.1; d += STEP){
+      const g = grade200At(d);
+      if(g > maxGrade){ maxGrade = g; maxD = d; }
+    }
+    if(!Number.isFinite(maxGrade)){
+      maxGrade = ((pts[pts.length - 1].ele - pts[0].ele) / L) * 100;
+      maxD = L / 2;
+    }
+
+    const startEle = pts[0].ele;
+    const endEle = pts[pts.length - 1].ele;
+    const gain = endEle - startEle;
+    const avgGrade = (gain / L) * 100;
+
+    // Detect overlapping gravel sections from PAINT (read-only!)
+    const gravelSpans = [];
+    for(const gr of (state.gravels || [])){
+      if(!state.points[gr.startIdx] || !state.points[gr.endIdx]) continue;
+      const gA = state.points[gr.startIdx].d - d0;
+      const gB = state.points[gr.endIdx].d - d0;
+      const ovA = Math.max(0, gA);
+      const ovB = Math.min(L, gB);
+      if(ovB - ovA > 40) gravelSpans.push({ a: ovA, b: ovB });
+    }
+
+    return { pts, L, d0, startEle, endEle, gain, avgGrade, eleAt, latLonAt, grade200At, maxGrade, maxD, gravelSpans };
+  }
+
+  function hexToRgbObj(hex){
+    let h = String(hex || '#e6007e').replace('#', '');
+    if(h.length === 3) h = h.split('').map(x=>x+x).join('');
+    return {
+      r: parseInt(h.slice(0,2), 16) || 230,
+      g: parseInt(h.slice(2,4), 16) || 0,
+      b: parseInt(h.slice(4,6), 16) || 126
+    };
+  }
+  function mixColor(hexBase, pctGrade){
+    // Authentic Giro SDS pink shading: pale blush at <=1%, rich magenta at >=11%
+    const base = hexToRgbObj(hexBase);
+    const t = Math.max(0.08, Math.min(0.92, (Math.max(0, pctGrade) - 0.5) / 11.5));
+    const r = Math.round(255 * (1 - t) + base.r * t);
+    const g = Math.round(248 * (1 - t) + base.g * t);
+    const b = Math.round(252 * (1 - t) + base.b * t);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function drawCimaCoppiBadge(cx, cy){
+    const r = 16;
+    const g = createEl('g', { transform:`translate(${cx.toFixed(1)},${cy.toFixed(1)})`, class:'badge sculpt-cima-coppi' });
+    g.appendChild(createEl('circle', { cx:0, cy:0, r:r, fill:'#8ecad4', stroke:'#111827', 'stroke-width':1.35 }));
+    g.appendChild(createEl('circle', { cx:0, cy:0, r:r-2.8, fill:'#b4dfe6' }));
+    g.appendChild(createEl('path', { d:`M ${-r+3.5} 5.8 L 0 -12.0 L ${r-3.5} 5.8 Q 0 12.6 ${-r+3.5} 5.8 Z`, fill:'#ffffff', opacity:'0.96' }));
+    const txt = createEl('text', { x:0, y:5.6, 'text-anchor':'middle', 'font-size':'17', 'font-family':GIRO_KOM_FONT, 'font-weight':'700', style:'fill:#111827 !important' });
+    txt.textContent = 'C';
+    g.appendChild(txt);
+    return g;
+  }
+
+  function drawSculptGiroSprintBadge(cx, cy){
+    const r = 13.5;
+    const g = createEl('g', { transform:`translate(${cx.toFixed(1)},${cy.toFixed(1)})`, class:'badge sculpt-sprint-badge' });
+    g.appendChild(createEl('circle', { cx:0, cy:0, r:r, fill:'#9b1b76', stroke:'#111827', 'stroke-width':1.2 }));
+    g.appendChild(createEl('circle', { cx:0, cy:0, r:r-2.5, fill:'#b02287' }));
+    const txt = createEl('text', { x:0, y:5.4, 'text-anchor':'middle', 'font-size':'16.5', 'font-family':GIRO_KOM_FONT, 'font-weight':'700', style:'fill:#ffffff !important' });
+    txt.textContent = 'S';
+    g.appendChild(txt);
+    return g;
+  }
+
+  function drawSculptFeedBadge(cx, cy){
+    const r = 13.5;
+    const g = createEl('g', { transform:`translate(${cx.toFixed(1)},${cy.toFixed(1)})`, class:'badge sculpt-feed-badge' });
+    g.appendChild(createEl('circle', { cx:0, cy:0, r:r, fill:'#0f766e', stroke:'#111827', 'stroke-width':1.2 }));
+    g.appendChild(createEl('circle', { cx:0, cy:0, r:r-2.5, fill:'#14b8a6' }));
+    const txt = createEl('text', { x:0, y:5.2, 'text-anchor':'middle', 'font-size':'15.5', 'font-family':GIRO_KOM_FONT, 'font-weight':'700', style:'fill:#ffffff !important' });
+    txt.textContent = 'F';
+    g.appendChild(txt);
+    return g;
+  }
+
+  function drawMaxWarningTriangle(cx, cy){
+    const g = createEl('g', { transform:`translate(${cx.toFixed(1)},${cy.toFixed(1)})`, class:'sculpt-max-tri' });
+    // Iconic Italian road sign warning triangle (red border, white interior, black right-triangle slope wedge!)
+    g.appendChild(createEl('polygon', {
+      points:'0,-14 14.5,11 -14.5,11',
+      fill:'#ffffff', stroke:'#dc2626', 'stroke-width':'2.6', 'stroke-linejoin':'round'
+    }));
+    g.appendChild(createEl('polygon', {
+      points:'0,-14 14.5,11 -14.5,11',
+      fill:'none', stroke:'#111827', 'stroke-width':'0.7', 'stroke-linejoin':'round'
+    }));
+    // Black slope ramp icon inside triangle
+    g.appendChild(createEl('polygon', {
+      points:'-7.2,7.6 7.2,7.6 7.2,1.6',
+      fill:'#111827'
+    }));
+    return g;
+  }
+
+  function effectiveCategory(c, sc){
+    if(sc.catOverride && sc.catOverride !== 'auto'){
+      return sc.catOverride === 'none' ? '' : sc.catOverride;
+    }
+    const kom = parseKom(c.name);
+    return kom ? kom.tier : '';
+  }
+
+  function effectiveSummitName(c, sc){
+    if(sc.summitName && sc.summitName.trim()) return sc.summitName.trim();
+    const kom = parseKom(c.name);
+    const raw = (kom ? kom.label : c.name) || '';
+    return raw.trim() || `SALITA ${selectedIdx + 1}`;
+  }
+
+  function effectiveStartName(c, sc){
+    if(sc.startName && sc.startName.trim()) return sc.startName.trim();
+    return 'INIZIO SALITA';
+  }
+
+  function maybeAutofillStartName(c){
+    if(!c || !state.points[c.startIdx]) return;
+    const sc = ensureSculpt(c);
+    if(sc.startName || sc.__startAutoTried) return;
+    sc.__startAutoTried = true;
+    const pt = state.points[c.startIdx];
+    queueComune(pt.lat, pt.lon, (nm)=>{
+      if(!nm || sc.startName) return;
+      sc.startName = nm;
+      if(activeClimb() === c){
+        sStartName.value = nm;
+        drawSculpt();
+      }
+    }, 'poi');
+  }
+
+  function setControlsEnabled(enabled){
+    [sClearSplits, sAddPoiBtn, sClearPoisBtn, sAddSlopeBtn, sClearSlopesBtn, sExportSvgBtn, sExportPngBtn,
+     sStartName, sSummitName, sCatSel, sSliceSel, sYStepSel, sCalcMode, sSmooth, sVScale, sBaselineH, sWidthPct, sLineColor, sFillColor, sShowMax, sPoiAutoCut,
+     sModeSplitBtn, sModePoiBtn, sModeSlopeBtn].forEach(el=>{ if(el) el.disabled = !enabled; });
+  }
+
+  function syncControlsFromClimb(){
+    const c = activeClimb();
+    if(!c){ setControlsEnabled(false); return; }
+    setControlsEnabled(true);
+    const sc = ensureSculpt(c);
+    maybeAutofillStartName(c);
+    sStartName.value = sc.startName || '';
+    sSummitName.value = sc.summitName || '';
+    const kom = parseKom(c.name);
+    sSummitName.placeholder = (kom ? kom.label : c.name) || 'Nome vetta';
+    sCatSel.value = sc.catOverride || 'auto';
+    sSliceSel.value = String(sc.sliceStep || 500);
+    sYStepSel.value = String(sc.yStep || 100);
+    sCalcMode.value = sc.calcMode || 'loess';
+    const smVal = Number.isFinite(sc.smoothM) ? sc.smoothM : 400;
+    sSmooth.value = String(smVal);
+    sSmoothOut.textContent = `${Math.round(smVal)} m`;
+    sVScale.value = String(sc.vScale || 1.0);
+    sVScaleOut.textContent = '× ' + Number(sc.vScale || 1.0).toFixed(2);
+    const bh = Number.isFinite(sc.baselineHeight) ? sc.baselineHeight : 24;
+    sBaselineH.value = String(bh);
+    sBaselineOut.textContent = `${Math.round(bh)} px`;
+    sWidthPct.value = String(sc.widthPct || 0);
+    sWidthOut.textContent = sc.widthPct > 0 ? (sc.widthPct + '%') : 'Auto';
+    sLineColor.value = sc.lineColor || '#e6007e';
+    sFillColor.value = sc.fillColor || '#fcfbe6';
+    sShowMax.checked = sc.showMax !== false;
+    sPoiAutoCut.checked = sc.poiAutoCut !== false;
+  }
+
+  /* ---- Sidebar Renderers (isolated from PAINT) ---- */
+  function flaggedIndices(){
+    const out = [];
+    state.climbs.forEach((c, i)=>{
+      if(c && state.points[c.startIdx] && state.points[c.endIdx] && c.endIdx > c.startIdx && c.sculpt && c.sculpt.flagged){
+        out.push(i);
+      }
+    });
+    return out;
+  }
+
+  function updateFlagBatchUi(){
+    const total = state.climbs.length;
+    const flagged = flaggedIndices().length;
+    if(sFlagStatus) sFlagStatus.textContent = flagged === 1 ? '1 flaggata' : `${flagged} flaggate`;
+    if(sDlFlagSvg){
+      sDlFlagSvg.disabled = flagged === 0;
+      sDlFlagSvg.textContent = flagged > 0 ? `⬇ SVG (${flagged})` : '⬇ SVG';
+    }
+    if(sDlFlagPng){
+      sDlFlagPng.disabled = flagged === 0;
+      sDlFlagPng.textContent = flagged > 0 ? `⬇ PNG (${flagged})` : '⬇ PNG';
+    }
+    if(sFlagAllBtn){
+      sFlagAllBtn.disabled = total === 0;
+      sFlagAllBtn.textContent = (total > 0 && flagged === total) ? '☐ Nessuna' : '☑ Tutte';
+    }
+  }
+
+  function renderSculptClimbList(){
+    const n = state.climbs.length;
+    updateSectionCount('sculptClimbCount', n, 'secSculptClimbs', false);
+    if(!n){
+      sClimbList.innerHTML = '<span class="list-empty">Nessuna salita definita in PAINT.<br>Aggiungi almeno una salita nella tab <strong>2. PAINT</strong>.</span>';
+      updateFlagBatchUi();
+      return;
+    }
+    if(selectedIdx < 0 || selectedIdx >= n) selectedIdx = 0;
+    sClimbList.innerHTML = '';
+    state.climbs.forEach((c, i)=>{
+      const sc = ensureSculpt(c);
+      const card = document.createElement('div');
+      card.className = 'sculpt-climb-card' + (i === selectedIdx ? ' active' : '') + (sc.flagged ? ' is-flagged' : '');
+
+      const tickWrap = document.createElement('label');
+      tickWrap.className = 'sculpt-tick-wrap';
+      tickWrap.title = 'Seleziona questa salita per il download multiplo';
+      tickWrap.addEventListener('click', (ev)=> ev.stopPropagation());
+      const tick = document.createElement('input');
+      tick.type = 'checkbox';
+      tick.className = 'sculpt-tick';
+      tick.checked = !!sc.flagged;
+      tick.addEventListener('change', (ev)=>{
+        ev.stopPropagation();
+        sc.flagged = !!tick.checked;
+        card.classList.toggle('is-flagged', sc.flagged);
+        updateFlagBatchUi();
+      });
+      tickWrap.appendChild(tick);
+
+      const kom = parseKom(c.name);
+      const dispName = ((sc && sc.summitName) || (kom ? kom.label : c.name) || '').trim() || `Salita ${i + 1}`;
+      const cat = (sc && sc.catOverride && sc.catOverride !== 'auto')
+        ? (sc.catOverride === 'none' ? '' : sc.catOverride)
+        : (kom ? kom.tier : '');
+
+      const body = document.createElement('div');
+      body.className = 'sculpt-climb-body';
+      const top = document.createElement('div');
+      top.className = 'sculpt-climb-top';
+      const title = document.createElement('div');
+      title.className = 'sculpt-climb-name';
+      title.textContent = dispName;
+      top.appendChild(title);
+
+      if(cat){
+        const cp = document.createElement('span');
+        cp.className = 'sculpt-cat-pill' + (cat === 'HC' ? ' cat-hc' : '');
+        cp.textContent = cat === 'HC' ? 'HC' : ('CAT ' + cat);
+        top.appendChild(cp);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      if(state.points[c.startIdx] && state.points[c.endIdx]){
+        const a = state.points[c.startIdx], b = state.points[c.endIdx];
+        const lenKm = (b.d - a.d) / 1000;
+        const gain = b.ele - a.ele;
+        const slope = (gain / Math.max(1, b.d - a.d)) * 100;
+        meta.textContent = `${lenKm.toFixed(1)} km · ${slope.toFixed(1)}% · +${Math.round(gain)} m · km ${(a.d / 1000).toFixed(1)}`;
+      } else {
+        meta.textContent = '(in attesa)';
+      }
+
+      body.append(top, meta);
+      card.append(tickWrap, body);
+      card.addEventListener('click', ()=>{
+        selectedIdx = i;
+        hoverRelD = null;
+        setMode('split');
+        syncControlsFromClimb();
+        renderAll();
+      });
+      sClimbList.appendChild(card);
+    });
+    updateFlagBatchUi();
+  }
+
+  function renderSculptSplitList(model, sc){
+    if(!model || !sc){
+      updateSectionCount('sculptSplitCount', 0, 'secSculptSplits', false);
+      sSplitList.innerHTML = '<span class="list-empty">Nessuna salita selezionata</span>';
+      return;
+    }
+    const cuts = sc.splits.slice().sort((a,b)=>a-b);
+    const bounds = [0, ...cuts, model.L];
+    updateSectionCount('sculptSplitCount', bounds.length - 1, 'secSculptSplits', false);
+    sSplitList.innerHTML = '';
+    for(let i = 0; i < bounds.length - 1; i++){
+      const dA = bounds[i], dB = bounds[i + 1];
+      const pct = ((model.eleAt(dB) - model.eleAt(dA)) / Math.max(1, dB - dA)) * 100;
+      const row = document.createElement('div');
+      row.className = 'sculpt-split-row';
+      const left = document.createElement('div');
+      left.style.cssText = 'display:flex;align-items:center;gap:6px;min-width:0';
+      const sw = document.createElement('span');
+      sw.className = 'sculpt-split-swatch';
+      sw.style.background = mixColor(sc.lineColor, pct);
+      const txt = document.createElement('span');
+      txt.innerHTML = `<strong>${(dA/1000).toFixed(2)}–${(dB/1000).toFixed(2)} km</strong> · ${pct.toFixed(1)}%`;
+      left.append(sw, txt);
+      row.appendChild(left);
+      if(i < bounds.length - 2){
+        const del = document.createElement('button');
+        del.type = 'button'; del.className = 'del'; del.textContent = '✕';
+        del.title = `Rimuovi taglio a ${(dB/1000).toFixed(2)} km`;
+        del.onclick = ()=>{
+          pushSculptUndo();
+          sc.splits = sc.splits.filter(x=>Math.abs(x - dB) > 1);
+          renderAll();
+        };
+        row.appendChild(del);
+      }
+      sSplitList.appendChild(row);
+    }
+  }
+
+  function syncSculptPoiQuickState(){
+    sPoiList.querySelectorAll('.item.has-quick').forEach(el=>{
+      const inp = el.querySelector('input');
+      const kind = poiKind(inp?.value || '')?.type || '';
+      el.querySelectorAll('.qbtn[data-kind]').forEach(b=>b.classList.toggle('active', b.dataset.kind === kind));
+    });
+  }
+
+  function renderSculptPoiList(model, sc, focusLast){
+    const pois = (sc && sc.pois) ? sc.pois : [];
+    updateSectionCount('sculptPoiCount', pois.length, 'secSculptPois', !!focusLast);
+    if(!pois.length){
+      sPoiList.innerHTML = '<span class="list-empty">Nessun POI su questa salita</span>';
+      return;
+    }
+    const POI_TYPES = [{ kind:'sprint', label:'Sprint', cls:'q-sprint' }, { kind:'feed', label:'Feed', cls:'q-feed' }];
+    sPoiList.innerHTML = '';
+    pois.forEach((p, i)=>{
+      const item = document.createElement('div'); item.className = 'item has-quick';
+      const top = document.createElement('div'); top.className = 'item-top';
+      const name = document.createElement('input');
+      name.type = 'text'; name.placeholder = 'Nome località / POI'; name.value = p.name || '';
+      name.oninput = ()=>{ p.name = name.value; syncSculptPoiQuickState(); drawSculpt(); };
+      name.onkeydown = (ev)=>{ if(ev.key === 'Enter'){ ev.preventDefault(); name.blur(); } };
+
+      const btns = document.createElement('div'); btns.className = 'item-btns';
+      const hasCut = sc.splits.some(sd=>Math.abs(sd - p.d) < 35);
+      const cutBtn = document.createElement('button');
+      cutBtn.type = 'button'; cutBtn.className = 'sculpt-cut-btn' + (hasCut ? ' active' : '');
+      cutBtn.textContent = '✂';
+      cutBtn.title = hasCut ? 'Rimuovi taglio sezione su questo POI' : 'Taglia la barra pendenza in corrispondenza di questo POI';
+      cutBtn.onclick = ()=>{
+        pushSculptUndo();
+        if(hasCut) sc.splits = sc.splits.filter(sd=>Math.abs(sd - p.d) >= 35);
+        else { sc.splits.push(p.d); sc.splits.sort((a,b)=>a-b); }
+        renderAll();
+      };
+
+      const nudge = document.createElement('div'); nudge.className = 'nudge';
+      const up = document.createElement('button'); up.type = 'button'; up.textContent = '▲'; up.title = 'Alza etichetta';
+      up.onclick = ()=>{ pushSculptUndo(); p.offsetY = (p.offsetY || 0) + 10; renderSculptPoiList(model, sc); drawSculpt(); };
+      const down = document.createElement('button'); down.type = 'button'; down.textContent = '▼'; down.title = 'Abbassa etichetta';
+      down.onclick = ()=>{ pushSculptUndo(); p.offsetY = (p.offsetY || 0) - 10; renderSculptPoiList(model, sc); drawSculpt(); };
+      nudge.append(up, down);
+
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = '✕'; del.title = 'Elimina POI';
+      del.onclick = ()=>{ pushSculptUndo(); sc.pois.splice(i, 1); renderAll(); };
+      btns.append(cutBtn, nudge, del);
+      top.append(name, btns);
+
+      const ele = model ? Math.round(model.eleAt(p.d)) : 0;
+      const meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = `${ele} m · km ${(p.d / 1000).toFixed(3)} · ${fmtOff(p.offsetY)}`;
+
+      const quick = document.createElement('div'); quick.className = 'item-quick';
+      const curKind = poiKind(p.name)?.type || '';
+      POI_TYPES.forEach(pt=>{
+        const qb = document.createElement('button');
+        qb.type = 'button';
+        qb.className = 'qbtn ' + pt.cls + (curKind === pt.kind ? ' active' : '');
+        qb.dataset.kind = pt.kind;
+        qb.textContent = pt.label;
+        qb.title = curKind === pt.kind ? `Rimuovi tipo ${pt.label}` : `Imposta come ${pt.label}`;
+        qb.onmousedown = (ev)=>{ ev.preventDefault(); ev.stopPropagation(); };
+        qb.onclick = (ev)=>{
+          ev.preventDefault(); ev.stopPropagation();
+          pushSculptUndo();
+          const cur = poiKind(p.name);
+          const base = (cur ? cur.label : (p.name || '')).trim();
+          if(cur && cur.type === pt.kind) p.name = base;
+          else {
+            const pref = pt.kind === 'sprint' ? 'poisprint' : 'poifeed';
+            p.name = base ? `${pref} ${base}` : pref;
+          }
+          name.value = p.name;
+          syncSculptPoiQuickState();
+          drawSculpt();
+        };
+        quick.appendChild(qb);
+      });
+
+      item.append(top, meta, quick);
+      sPoiList.appendChild(item);
+      if(focusLast && i === pois.length - 1){
+        setTimeout(()=>{ name.focus(); name.select(); }, 0);
+      }
+    });
+  }
+
+  function renderSculptSlopeList(model, sc){
+    const slopes = (sc && sc.slopes) ? sc.slopes : [];
+    updateSectionCount('sculptSlopeCount', slopes.length, 'secSculptSlopes', false);
+    if(!slopes.length){
+      sSlopeList.innerHTML = '<span class="list-empty">Premi <strong>S</strong> sul profilo per inserire una pendenza 200m</span>';
+      return;
+    }
+    sSlopeList.innerHTML = '';
+    slopes.forEach((sp, i)=>{
+      const g200 = model ? model.grade200At(sp.d) : 0;
+      const ele = model ? Math.round(model.eleAt(sp.d)) : 0;
+      const row = document.createElement('div');
+      row.className = 'sculpt-split-row';
+      const left = document.createElement('span');
+      left.innerHTML = `<strong>${g200.toFixed(1)}%</strong> · km ${(sp.d / 1000).toFixed(2)} (${ele} m)`;
+      const right = document.createElement('div');
+      right.className = 'item-btns';
+      const nudge = document.createElement('div'); nudge.className = 'nudge';
+      const up = document.createElement('button'); up.type = 'button'; up.textContent = '▲'; up.title = 'Alza indicatore';
+      up.onclick = ()=>{ pushSculptUndo(); sp.offsetY = (sp.offsetY || 0) + 10; drawSculpt(); };
+      const down = document.createElement('button'); down.type = 'button'; down.textContent = '▼'; down.title = 'Abbassa indicatore';
+      down.onclick = ()=>{ pushSculptUndo(); sp.offsetY = (sp.offsetY || 0) - 10; drawSculpt(); };
+      nudge.append(up, down);
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = '✕'; del.title = 'Elimina indicatore';
+      del.onclick = ()=>{ pushSculptUndo(); sc.slopes.splice(i, 1); renderAll(); };
+      right.append(nudge, del);
+      row.append(left, right);
+      sSlopeList.appendChild(row);
+    });
+  }
+
+  /* ---- Detailed Giro SDS Climb SVG Renderer ---- */
+  function drawSculpt(){
+    sSvg.innerHTML = '';
+    lastRenderCtx = null;
+    guideG = null;
+
+    const c = activeClimb();
+    if(!c){
+      const msg = !state.points.length
+        ? 'Carica o disegna una traccia e aggiungi almeno una salita in 2. PAINT'
+        : 'Nessuna salita definita: aggiungi una salita in 2. PAINT per visualizzarla in SCULPT';
+      sSvg.appendChild(createEl('rect', { x:0, y:0, width:980, height:740, fill:'#ffffff' }));
+      const t = createEl('text', { x:490, y:370, 'text-anchor':'middle', fill:'#94a3b8', 'font-size':'16', 'font-family':'Inter, sans-serif' });
+      t.textContent = msg;
+      sSvg.appendChild(t);
+      sReadout.textContent = 'Nessuna salita';
+      return;
+    }
+
+    const sc = ensureSculpt(c);
+    const model = buildClimbModel(c);
+    if(!model) return;
+
+    const W_SVG = 980, H_SVG = 740;
+    sSvg.appendChild(createEl('rect', { x:0, y:0, width:W_SVG, height:H_SVG, fill:'#ffffff' }));
+
+    // Responsive plot width proportional to climb length (like Finestre vs Giau vs Colla dei Scioli)
+    const lenKm = model.L / 1000;
+    const autoPlotW = Math.round(Math.max(300, Math.min(730, 210 + lenKm * 30)));
+    const plotW = sc.widthPct > 0 ? Math.round(280 + (sc.widthPct / 100) * 480) : autoPlotW;
+    // Slight left bias when narrow so outside-right summary box fits neatly
+    const needsOutsideBox = plotW < 410;
+    const x0 = Math.round((W_SVG - plotW) / 2 - (needsOutsideBox ? 32 : 0));
+    const xEnd = x0 + plotW;
+
+    const marginT = 132;
+    const plotH = 446;
+    const yBarTop = marginT + plotH; // 578
+    const barH = 26;
+    const yBarBot = yBarTop + barH;  // 604
+    const sliceStripH = 42;          // Reserved band at bottom of cream area for 500m vertical numbers
+
+    const yStep = Math.max(50, Math.min(200, sc.yStep || 100));
+    const rawMin = Math.min(...model.pts.map(p=>p.ele));
+    const rawMax = Math.max(...model.pts.map(p=>p.ele));
+    const eleSpan = Math.max(80, rawMax - rawMin);
+
+    const vScale = Math.max(0.45, Math.min(1.35, sc.vScale || 1.0));
+    const baseLift = Math.max(0, Math.min(240, Number.isFinite(sc.baselineHeight) ? sc.baselineHeight : 24));
+    const yStripTop = yBarTop - sliceStripH;
+    const yAtMin = yStripTop - baseLift;
+    const topCeilY = 104;
+    const availClimbH = Math.max(80, yAtMin - topCeilY);
+    const climbH = Math.min(availClimbH, 330 * vScale);
+    const pxPerMeter = climbH / eleSpan;
+    const eleAtBarTop = rawMin - (yBarTop - yAtMin) / pxPerMeter;
+    const yMinEle = Math.floor(eleAtBarTop / yStep) * yStep;
+    const yMaxEle = Math.ceil((rawMax + yStep) / yStep) * yStep;
+
+    const xOf = (relD)=> x0 + (relD / model.L) * plotW;
+    const yOf = (ele)=> yAtMin - (ele - rawMin) * pxPerMeter;
+
+    const curvePts = model.pts.map(p=>({ x: xOf(p.d), y: yOf(p.ele) }));
+    const dCurve = pathFrom(curvePts, false);
+    const dArea = dCurve + ` L ${xEnd.toFixed(2)} ${yBarTop} L ${x0.toFixed(2)} ${yBarTop} Z`;
+
+    const defs = createEl('defs');
+    const clip = createEl('clipPath', { id:'sculptAreaClip' });
+    clip.appendChild(createEl('path', { d:dArea }));
+    defs.appendChild(clip);
+    sSvg.appendChild(defs);
+
+    // 1. Cream fill under profile
+    sSvg.appendChild(createEl('path', { d:dArea, fill:sc.fillColor || '#fcfbe6' }));
+
+    // 2. Clipped internal fine grid (dotted horizontal every yStep, light vertical every sliceStep)
+    const gGrid = createEl('g', { 'clip-path':'url(#sculptAreaClip)', 'pointer-events':'none' });
+    const minAllowedGridEle = rawMin >= 0 ? 0 : -10000;
+    const firstGridY = Math.max(minAllowedGridEle, Math.ceil(eleAtBarTop / yStep) * yStep);
+    for(let e = firstGridY; e <= yMaxEle; e += yStep){
+      const Y = yOf(e);
+      if(Y >= yBarTop - 3 || Y <= yOf(rawMax) - 2) continue;
+      gGrid.appendChild(createEl('line', {
+        x1:x0, y1:Y.toFixed(1), x2:xEnd, y2:Y.toFixed(1),
+        stroke:'#94a3b8', 'stroke-width':'0.75', 'stroke-dasharray':'1.8 2.4', 'stroke-opacity':'0.78'
+      }));
+    }
+
+    // Fixed slices (default every 500 m)
+    const sliceM = Math.max(250, sc.sliceStep || 500);
+    const slices = [];
+    for(let dA = 0; dA < model.L - 1; dA += sliceM){
+      let dB = Math.min(model.L, dA + sliceM);
+      // Avoid tiny sliver at the very end (< 80 m) by merging into previous slice
+      if(model.L - dB > 0 && model.L - dB < 80){
+        dB = model.L;
+      }
+      const gPct = ((model.eleAt(dB) - model.eleAt(dA)) / Math.max(1, dB - dA)) * 100;
+      slices.push({ dA, dB, xA: xOf(dA), xB: xOf(dB), pct: gPct });
+      if(dB >= model.L) break;
+    }
+
+    for(let i = 1; i < slices.length; i++){
+      const sx = slices[i].xA;
+      gGrid.appendChild(createEl('line', {
+        x1:sx.toFixed(2), y1:marginT - 14, x2:sx.toFixed(2), y2:yBarTop,
+        stroke:'#cbd5e1', 'stroke-width':'0.8', 'stroke-opacity':'0.85'
+      }));
+    }
+    sSvg.appendChild(gGrid);
+
+    // 3. Altitude labels along inner-right edge (exact Giro SDS style: 500, 600, ..., 2100)
+    const gAlt = createEl('g', { 'pointer-events':'none' });
+    for(let e = firstGridY; e <= yMaxEle; e += yStep){
+      const Y = yOf(e);
+      if(Y > yStripTop + 4 || Y < yOf(model.endEle) + 8) continue;
+      const tAlt = createEl('text', {
+        x:(xEnd - 4).toFixed(1), y:(Y + 3.5).toFixed(1), 'text-anchor':'end',
+        'font-family':GIRO_SMALL_FONT, 'font-weight':'500', 'font-size':'11.5',
+        style:'fill:#64748b !important;paint-order:stroke;stroke:rgba(252,251,230,0.85);stroke-width:2.5px;stroke-linejoin:round'
+      });
+      tAlt.textContent = String(e);
+      gAlt.appendChild(tAlt);
+    }
+    sSvg.appendChild(gAlt);
+
+    // 4. Fixed 500 m slice gradient numbers along bottom of cream fill
+    const gSliceNums = createEl('g', { 'pointer-events':'none' });
+    const avgSliceW = plotW / Math.max(1, slices.length);
+    const sliceFontSz = Math.max(8.5, Math.min(13.0, avgSliceW * 0.72));
+    slices.forEach(sl=>{
+      const sw = sl.xB - sl.xA;
+      if(sw < 7.5) return;
+      const cx = (sl.xA + sl.xB) / 2;
+      const ty = yBarTop - 5;
+      const t = createEl('text', {
+        x:(cx + sliceFontSz * 0.34).toFixed(1), y:ty.toFixed(1),
+        'text-anchor':'start', 'font-family':GIRO_SMALL_FONT, 'font-weight':'500', 'font-size':sliceFontSz.toFixed(1),
+        transform:`rotate(-90 ${(cx + sliceFontSz * 0.34).toFixed(1)} ${ty.toFixed(1)})`,
+        style:'fill:#1e293b !important'
+      });
+      t.textContent = sl.pct.toFixed(1);
+      gSliceNums.appendChild(t);
+    });
+    sSvg.appendChild(gSliceNums);
+
+    // 5. Profile curve (vibrant magenta + Colle delle Finestre double-line gravel highlight if overlapping PAINT gravel!)
+    const lineCol = sc.lineColor || '#e6007e';
+    sSvg.appendChild(createEl('path', {
+      d:dCurve, fill:'none', stroke:lineCol, 'stroke-width':'4.6', 'stroke-linejoin':'round', 'stroke-linecap':'round'
+    }));
+    if(model.gravelSpans.length){
+      const gGrav = createEl('g', { 'pointer-events':'none' });
+      for(const gs of model.gravelSpans){
+        const gPts = [];
+        gPts.push({ x: xOf(gs.a), y: yOf(model.eleAt(gs.a)) });
+        for(const p of model.pts){ if(p.d > gs.a && p.d < gs.b) gPts.push({ x: xOf(p.d), y: yOf(p.ele) }); }
+        gPts.push({ x: xOf(gs.b), y: yOf(model.eleAt(gs.b)) });
+        if(gPts.length >= 2){
+          const dG = pathFrom(gPts, false);
+          gGrav.appendChild(createEl('path', { d:dG, fill:'none', stroke:lineCol, 'stroke-width':'5.4', 'stroke-linejoin':'round', 'stroke-linecap':'butt' }));
+          gGrav.appendChild(createEl('path', { d:dG, fill:'none', stroke:'#ffffff', 'stroke-width':'2.2', 'stroke-linejoin':'round', 'stroke-linecap':'butt' }));
+        }
+      }
+      sSvg.appendChild(gGrav);
+    }
+
+    // 6. Macro-section pink bar ("spacca la pendenza nelle varie sezioni")
+    const sortedSplits = sc.splits.filter(d=>d > 80 && d < model.L - 80).sort((a,b)=>a-b);
+    const secBounds = [0, ...sortedSplits, model.L];
+    const gBar = createEl('g');
+    for(let i = 0; i < secBounds.length - 1; i++){
+      const dA = secBounds[i], dB = secBounds[i + 1];
+      const xA = xOf(dA), xB = xOf(dB);
+      const secW = Math.max(1, xB - xA);
+      const secPct = ((model.eleAt(dB) - model.eleAt(dA)) / Math.max(1, dB - dA)) * 100;
+      gBar.appendChild(createEl('rect', {
+        x:xA.toFixed(2), y:yBarTop, width:secW.toFixed(2), height:barH,
+        fill:mixColor(lineCol, secPct), stroke:'#111827', 'stroke-width':'1.7'
+      }));
+      if(secW >= 24){
+        const fs = secW < 42 ? 12.5 : 15.5;
+        const txt = createEl('text', {
+          x:((xA + xB) / 2).toFixed(1), y:(yBarTop + barH / 2 + fs * 0.36).toFixed(1),
+          'text-anchor':'middle', 'font-family':GIRO_ENDPOINT_FONT, 'font-weight':'700', 'font-size':fs.toFixed(1),
+          style:'fill:#111827 !important;paint-order:stroke;stroke:#ffffff;stroke-width:3.2px;stroke-linejoin:round'
+        });
+        txt.textContent = `${secPct.toFixed(1)}%`;
+        gBar.appendChild(txt);
+      }
+    }
+    // Interactive clickable split handles (click or right-click to remove a split)
+    sortedSplits.forEach(sd=>{
+      const sx = xOf(sd);
+      const hit = createEl('line', {
+        x1:sx.toFixed(2), y1:yBarTop - 2, x2:sx.toFixed(2), y2:yBarBot + 4,
+        stroke:'transparent', 'stroke-width':'10', 'data-sculpt-split':String(sd)
+      });
+      const titleEl = createEl('title', {});
+      titleEl.textContent = `Taglio a ${(sd/1000).toFixed(2)} km — clicca o clic destro per rimuovere`;
+      hit.appendChild(titleEl);
+      gBar.appendChild(hit);
+    });
+    sSvg.appendChild(gBar);
+
+    // 7. Bottom integer km ruler + partial 3-decimal km markers
+    const gRuler = createEl('g', { 'pointer-events':'none' });
+    const maxWholeKm = Math.floor(model.L / 1000);
+    const kmStep = lenKm > 24 ? 2 : 1;
+    const halfTickD = sliceM;
+    for(let d = halfTickD; d < model.L - 40; d += halfTickD){
+      const tx = xOf(d);
+      const isWhole = Math.abs(d % 1000) < 1;
+      gRuler.appendChild(createEl('line', {
+        x1:tx.toFixed(2), y1:yBarBot, x2:tx.toFixed(2), y2:(yBarBot + (isWhole ? 7 : 4)).toFixed(1),
+        stroke:'#475569', 'stroke-width':isWhole ? '1.1' : '0.8', 'stroke-dasharray':isWhole ? 'none' : '1.5 1.5'
+      }));
+    }
+    for(let k = 0; k <= maxWholeKm; k += kmStep){
+      const kx = xOf(k * 1000);
+      if(k > 0 && xEnd - kx < 14) continue;
+      const tK = createEl('text', {
+        x:kx.toFixed(1), y:(yBarBot + 15.5).toFixed(1), 'text-anchor':'middle',
+        'font-family':GIRO_SMALL_FONT, 'font-weight':'500', 'font-size':'11.5',
+        style:'fill:#334155 !important'
+      });
+      tK.textContent = (lenKm < 8 && k > 0) ? k.toFixed(1) : String(k);
+      gRuler.appendChild(tK);
+    }
+
+    // 3-decimal bold vertical km ticks: 0.000, POIs, splits (if distinct), and total km
+    const bottomPartials = [
+      { d:0, x:x0, label:'0.000', prio:5, dotted:false },
+      { d:model.L, x:xEnd, label:(model.L / 1000).toFixed(3), prio:5, dotted:false }
+    ];
+    sc.pois.forEach(p=>{
+      bottomPartials.push({ d:p.d, x:xOf(p.d), label:(p.d / 1000).toFixed(3), prio:3, dotted:true });
+    });
+    sortedSplits.forEach(sd=>{
+      if(!sc.pois.some(p=>Math.abs(p.d - sd) < 40)){
+        bottomPartials.push({ d:sd, x:xOf(sd), label:(sd / 1000).toFixed(3), prio:2, dotted:false });
+      }
+    });
+    bottomPartials.sort((a,b)=>b.prio - a.prio || a.x - b.x);
+    const usedBottomX = [];
+    for(const bp of bottomPartials){
+      if(usedBottomX.some(ux=>Math.abs(ux - bp.x) < 16)) continue;
+      usedBottomX.push(bp.x);
+      if(bp.d > 0 && bp.d < model.L){
+        gRuler.appendChild(createEl('line', {
+          x1:bp.x.toFixed(2), y1:yBarBot, x2:bp.x.toFixed(2), y2:(yBarBot + 20).toFixed(1),
+          stroke:'#111827', 'stroke-width':bp.dotted ? '1.8' : '1.2',
+          'stroke-dasharray':bp.dotted ? '2.2 2.4' : 'none'
+        }));
+      }
+      const ty = yBarBot + 24;
+      const tP = createEl('text', {
+        x:(bp.x + 4.5).toFixed(1), y:ty.toFixed(1), 'text-anchor':'end',
+        'font-family':GIRO_ENDPOINT_FONT, 'font-weight':'700', 'font-size':'13',
+        transform:`rotate(-90 ${(bp.x + 4.5).toFixed(1)} ${ty.toFixed(1)})`,
+        style:'fill:#0f172a !important'
+      });
+      tP.textContent = bp.label;
+      gRuler.appendChild(tP);
+    }
+    sSvg.appendChild(gRuler);
+
+    // 8. Left (Start) & Right (Summit + Category Badge) thick vertical axes & bold labels
+    const gAxes = createEl('g', { 'pointer-events':'none' });
+    const yStartCurve = yOf(model.startEle);
+    const yEndCurve = yOf(model.endEle);
+    const cat = effectiveCategory(c, sc);
+    const yCatBadge = Math.max(26, Math.min(yEndCurve - 72, 62));
+    const endLineTop = cat ? (yCatBadge + 16) : Math.max(32, yEndCurve - 110);
+
+    // Left vertical axis + large bold start title
+    const leftAxisLine = createEl('line', { x1:x0, y1:yBarBot + 18, x2:x0, y2:Math.max(24, yStartCurve - 210).toFixed(1), stroke:'#111827', 'stroke-width':'2.4', 'stroke-linecap':'round' });
+    gAxes.appendChild(leftAxisLine);
+    const startTxt = `${Math.round(model.startEle)} - ${effectiveStartName(c, sc).toUpperCase()}`;
+    const startTitleY = yBarTop - 8;
+    const tStart = createEl('text', {
+      x:(x0 - 10).toFixed(1), y:startTitleY.toFixed(1), 'text-anchor':'start',
+      'font-family':GIRO_ENDPOINT_FONT, 'font-weight':'700', 'font-size':'24.5', 'letter-spacing':'0.3',
+      transform:`rotate(-90 ${(x0 - 10).toFixed(1)} ${startTitleY.toFixed(1)})`,
+      style:'fill:#0f172a !important'
+    });
+    tStart.textContent = startTxt;
+    gAxes.appendChild(tStart);
+
+    // Right vertical axis + category badge + large bold summit title
+    gAxes.appendChild(createEl('line', { x1:xEnd, y1:yBarBot + 18, x2:xEnd, y2:endLineTop.toFixed(1), stroke:'#111827', 'stroke-width':'2.4', 'stroke-linecap':'round' }));
+    if(cat === 'HC'){
+      gAxes.appendChild(drawCimaCoppiBadge(xEnd, yCatBadge));
+    } else if(cat){
+      const kb = drawGiroKomBadge(0, 0, cat);
+      kb.setAttribute('transform', `translate(${xEnd.toFixed(1)},${yCatBadge.toFixed(1)}) scale(1.16)`);
+      gAxes.appendChild(kb);
+    }
+
+    const summitTxt = `${Math.round(model.endEle)} - ${effectiveSummitName(c, sc).toUpperCase()}`;
+    const summitY = Math.max(endLineTop + 14, yCatBadge + 26);
+    const tEnd = createEl('text', {
+      x:(xEnd + 25).toFixed(1), y:summitY.toFixed(1), 'text-anchor':'end',
+      'font-family':GIRO_ENDPOINT_FONT, 'font-weight':'700', 'font-size':'25.5', 'letter-spacing':'0.3',
+      transform:`rotate(-90 ${(xEnd + 25).toFixed(1)} ${summitY.toFixed(1)})`,
+      style:'fill:#0f172a !important'
+    });
+    tEnd.textContent = summitTxt;
+    gAxes.appendChild(tEnd);
+    sSvg.appendChild(gAxes);
+
+    // Auto-fit very long endpoint titles & match left vertical line height cleanly to start title
+    let summitTitleBottomY = summitY + 220;
+    try{
+      let sLen = tStart.getComputedTextLength();
+      const maxStartLen = Math.max(180, startTitleY - 22);
+      if(sLen > maxStartLen && sLen > 0){
+        tStart.setAttribute('font-size', Math.max(16, 24.5 * (maxStartLen / sLen)).toFixed(1));
+        sLen = tStart.getComputedTextLength();
+      }
+      const leftTopY = Math.max(20, Math.min(yStartCurve - 26, startTitleY - sLen - 8));
+      leftAxisLine.setAttribute('y2', leftTopY.toFixed(1));
+
+      let eLen = tEnd.getComputedTextLength();
+      const maxEndLen = Math.max(180, yBarTop - summitY - 8);
+      if(eLen > maxEndLen && eLen > 0){
+        tEnd.setAttribute('font-size', Math.max(16.5, 25.5 * (maxEndLen / eLen)).toFixed(1));
+        eLen = tEnd.getComputedTextLength();
+      }
+      summitTitleBottomY = summitY + eLen;
+    }catch(_){}
+
+    // Interactive hitbox over plot area (behind draggable annotations so dragging works cleanly)
+    const hitRect = createEl('rect', {
+      x:x0, y:marginT - 20, width:plotW, height:plotH + barH + 20,
+      fill:'transparent', 'pointer-events':'all', id:'sculptHitbox'
+    });
+    sSvg.appendChild(hitRect);
+
+    // 9. SCULPT POIs (heavy dotted vertical line + rotated label + S/F badge)
+    const gPois = createEl('g');
+    sc.pois.forEach((p, idx)=>{
+      const px = xOf(p.d);
+      const py = yOf(model.eleAt(p.d));
+      const ele = Math.round(model.eleAt(p.d));
+      const k = poiKind(p.name);
+      const disp = poiDisplayName(p.name);
+      const isSpec = !!k;
+
+      // Dotted vertical line through profile up past curve
+      const labelBotY = Math.max(58, py - 18) - (p.offsetY || 0);
+      const grp = createEl('g', { 'data-sculpt-drag':`poi:${idx}` });
+      grp.appendChild(createEl('line', {
+        x1:px.toFixed(2), y1:yBarTop, x2:px.toFixed(2), y2:(labelBotY + 5).toFixed(1),
+        stroke:'#111827', 'stroke-width':'1.9', 'stroke-dasharray':'2.2 2.6'
+      }));
+      const tPoi = createEl('text', {
+        x:(px + 5).toFixed(1), y:labelBotY.toFixed(1), 'text-anchor':'start',
+        'font-family':isSpec ? GIRO_KOM_FONT : GIRO_SMALL_FONT,
+        'font-weight':isSpec ? '700' : '500',
+        'font-size':isSpec ? '14.5' : '14',
+        'letter-spacing':isSpec ? '0.2' : '0.1',
+        transform:`rotate(-90 ${(px + 5).toFixed(1)} ${labelBotY.toFixed(1)})`,
+        style:'fill:#0f172a !important'
+      });
+      tPoi.textContent = `${ele} - ${disp.toUpperCase()}`;
+      grp.appendChild(tPoi);
+      gPois.appendChild(grp);
+
+      if(isSpec){
+        // Place circular Sprint (S) or Feed (F) badge cleanly above the rotated text
+        try{
+          const tl = tPoi.getComputedTextLength();
+          const by = Math.max(20, labelBotY - tl - 18);
+          if(k.type === 'sprint') grp.appendChild(drawSculptGiroSprintBadge(px, by));
+          else if(k.type === 'feed') grp.appendChild(drawSculptFeedBadge(px, by));
+        }catch(_){}
+      }
+    });
+    sSvg.appendChild(gPois);
+
+    // 10. Max Gradient Indicator (200 m window — iconic Giro red warning triangle + "max XX %")
+    if(sc.showMax !== false){
+      const mx = xOf(model.maxD);
+      const my = yOf(model.eleAt(model.maxD));
+      const stemTopY = Math.max(46, my - 98 - (sc.maxOffsetY || 0));
+      const gMax = createEl('g', { 'data-sculpt-drag':'max' });
+      gMax.appendChild(createEl('line', {
+        x1:mx.toFixed(2), y1:(my - 4.5).toFixed(2), x2:mx.toFixed(2), y2:(stemTopY + 14).toFixed(2),
+        stroke:'#111827', 'stroke-width':'1.5'
+      }));
+      gMax.appendChild(createEl('circle', {
+        cx:mx.toFixed(2), cy:my.toFixed(2), r:'4.8',
+        fill:'#ffffff', stroke:'#111827', 'stroke-width':'2.1'
+      }));
+      const tMax = createEl('text', {
+        x:mx.toFixed(1), y:(stemTopY + 10).toFixed(1), 'text-anchor':'middle',
+        'font-family':GIRO_ENDPOINT_FONT, 'font-weight':'700', 'font-size':'13.5',
+        style:'fill:#111827 !important;paint-order:stroke;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round'
+      });
+      tMax.textContent = `max ${Math.round(model.maxGrade)} %`;
+      gMax.appendChild(tMax);
+      gMax.appendChild(drawMaxWarningTriangle(mx, stemTopY - 14));
+      sSvg.appendChild(gMax);
+    }
+
+    // 11. User Point-Slope Indicators (S shortcut — local 200 m gradient callouts)
+    const gSlopes = createEl('g');
+    sc.slopes.forEach((sp, idx)=>{
+      const sx = xOf(sp.d);
+      const sy = yOf(model.eleAt(sp.d));
+      const g200 = model.grade200At(sp.d);
+      const pillY = Math.max(28, sy - 46 - (sp.offsetY || 0));
+      const gSp = createEl('g', { 'data-sculpt-drag':`slope:${idx}`, 'data-sculpt-slope-idx':String(idx) });
+      gSp.appendChild(createEl('line', {
+        x1:sx.toFixed(2), y1:(sy - 3.8).toFixed(2), x2:sx.toFixed(2), y2:(pillY + 10).toFixed(2),
+        stroke:'#e6007e', 'stroke-width':'1.3'
+      }));
+      gSp.appendChild(createEl('circle', {
+        cx:sx.toFixed(2), cy:sy.toFixed(2), r:'3.8',
+        fill:'#ffffff', stroke:'#e6007e', 'stroke-width':'2'
+      }));
+      const pw = 48, ph = 20;
+      gSp.appendChild(createEl('rect', {
+        x:(sx - pw / 2).toFixed(1), y:(pillY - ph / 2).toFixed(1), width:pw, height:ph, rx:6,
+        fill:'#ffffff', stroke:'#e6007e', 'stroke-width':'1.5'
+      }));
+      // Small black slope ramp + bold 200m %
+      gSp.appendChild(createEl('polygon', {
+        points:`${(sx - 19).toFixed(1)},${(pillY + 4).toFixed(1)} ${(sx - 11.5).toFixed(1)},${(pillY + 4).toFixed(1)} ${(sx - 11.5).toFixed(1)},${(pillY - 3).toFixed(1)}`,
+        fill:'#e6007e'
+      }));
+      const tSp = createEl('text', {
+        x:(sx + 5.5).toFixed(1), y:(pillY + 4.3).toFixed(1), 'text-anchor':'middle',
+        'font-family':GIRO_ENDPOINT_FONT, 'font-weight':'700', 'font-size':'12',
+        style:'fill:#0f172a !important'
+      });
+      tSp.textContent = `${g200.toFixed(1)}%`;
+      gSp.appendChild(tSp);
+      const tTitle = createEl('title', {});
+      tTitle.textContent = `Pendenza 200m: ${g200.toFixed(1)}% a km ${(sp.d/1000).toFixed(2)} — trascina o clic dx per rimuovere`;
+      gSp.appendChild(tTitle);
+      gSlopes.appendChild(gSp);
+    });
+    sSvg.appendChild(gSlopes);
+
+    // 12. Summary Box (km / m / %) — auto inside lower-right or outside right for short climbs
+    const boxW = 86, boxH = 82;
+    let defaultBoxX = xEnd - boxW - 36;
+    let defaultBoxY = yBarTop - sliceStripH - boxH - 12;
+    const curveAtBoxLeft = yOf(model.eleAt(Math.max(0, ((defaultBoxX - x0) / plotW) * model.L)));
+    if(needsOutsideBox || curveAtBoxLeft > defaultBoxY - 12){
+      defaultBoxY = yBarTop - boxH - 2;
+      defaultBoxX = (summitTitleBottomY < defaultBoxY - 10) ? (xEnd + 16) : (xEnd + 38);
+    }
+    const bx = sc.boxOffset ? Math.max(12, Math.min(W_SVG - boxW - 12, sc.boxOffset.x)) : defaultBoxX;
+    const by = sc.boxOffset ? Math.max(12, Math.min(H_SVG - boxH - 12, sc.boxOffset.y)) : defaultBoxY;
+
+    const gBox = createEl('g', { 'data-sculpt-drag':'box' });
+    gBox.appendChild(createEl('rect', {
+      x:bx.toFixed(1), y:by.toFixed(1), width:boxW, height:boxH, rx:9,
+      fill:'#ffffff', stroke:'#334155', 'stroke-width':'1.5'
+    }));
+    const boxLines = [
+      `${(model.L / 1000).toFixed(1)} km`,
+      `${Math.round(model.gain)} m`,
+      `${model.avgGrade.toFixed(1)}%`
+    ];
+    boxLines.forEach((ln, li)=>{
+      const t = createEl('text', {
+        x:(bx + boxW / 2).toFixed(1), y:(by + 24 + li * 23.5).toFixed(1), 'text-anchor':'middle',
+        'font-family':GIRO_ENDPOINT_FONT, 'font-weight':'700', 'font-size':'18',
+        style:'fill:#0f172a !important'
+      });
+      t.textContent = ln;
+      gBox.appendChild(t);
+    });
+    sSvg.appendChild(gBox);
+
+    // 13. Hover guide layer (stripped on SVG/PNG export)
+    guideG = createEl('g', { id:'sculpt-hover-guide', 'pointer-events':'none' });
+    sSvg.appendChild(guideG);
+
+    lastRenderCtx = { c, sc, model, x0, xEnd, plotW, marginT, yBarTop, yBarBot, xOf, yOf, bx, by };
+    if(hoverRelD !== null) drawHoverGuide(hoverRelD);
+    else sReadout.textContent = `${effectiveSummitName(c, sc)} · ${(model.L/1000).toFixed(1)} km · ${model.avgGrade.toFixed(1)}% · max ${Math.round(model.maxGrade)}%`;
+  }
+
+  function drawHoverGuide(relD){
+    if(!guideG || !lastRenderCtx) return;
+    guideG.innerHTML = '';
+    if(relD == null) return;
+    const { model, xOf, yOf, marginT, yBarTop } = lastRenderCtx;
+    const d = Math.max(0, Math.min(model.L, relD));
+    const x = xOf(d);
+    const ele = model.eleAt(d);
+    const y = yOf(ele);
+    const g200 = model.grade200At(d);
+    guideG.appendChild(createEl('line', {
+      x1:x.toFixed(1), y1:marginT - 10, x2:x.toFixed(1), y2:yBarTop,
+      stroke:'#94a3b8', 'stroke-width':'1.1', 'stroke-dasharray':'4 4'
+    }));
+    const dotCol = mode === 'poi' ? '#9b1b76' : mode === 'slope' ? '#e6007e' : '#0f172a';
+    guideG.appendChild(createEl('circle', {
+      cx:x.toFixed(1), cy:y.toFixed(1), r:'5',
+      fill:dotCol, stroke:'#ffffff', 'stroke-width':'1.8'
+    }));
+    sReadout.textContent = `km ${(d/1000).toFixed(2)} · ${Math.round(ele)} m · pendenza 200m: ${g200.toFixed(1)}%`;
+  }
+
+  function svgPointFromEvent(e){
+    const r = sSvg.getBoundingClientRect();
+    if(!r.width || !r.height) return null;
+    return {
+      x: ((e.clientX - r.left) / r.width) * 980,
+      y: ((e.clientY - r.top) / r.height) * 740
+    };
+  }
+
+  function relDFromSvgX(x, snap50=true){
+    if(!lastRenderCtx) return null;
+    const { x0, xEnd, plotW, model } = lastRenderCtx;
+    if(x < x0 - 6 || x > xEnd + 6) return null;
+    const frac = Math.max(0, Math.min(1, (x - x0) / plotW));
+    let d = frac * model.L;
+    if(snap50) d = Math.round(d / 50) * 50;
+    return Math.max(50, Math.min(model.L - 50, d));
+  }
+
+  function addSplitAt(relD){
+    if(!lastRenderCtx) return;
+    const { sc, model } = lastRenderCtx;
+    const d = Math.max(100, Math.min(model.L - 100, relD));
+    if(sc.splits.some(sd=>Math.abs(sd - d) < 120)){
+      // Toggle off if clicking right onto an existing split
+      pushSculptUndo();
+      sc.splits = sc.splits.filter(sd=>Math.abs(sd - d) >= 120);
+      renderAll();
+      return;
+    }
+    pushSculptUndo();
+    sc.splits.push(d);
+    sc.splits.sort((a,b)=>a-b);
+    renderAll();
+  }
+
+  function addSculptPoiAt(relD){
+    if(!lastRenderCtx) return;
+    const { sc, model } = lastRenderCtx;
+    const d = Math.max(50, Math.min(model.L - 50, relD));
+    pushSculptUndo();
+    const poi = { d, name: '', offsetY: 0 };
+    sc.pois.push(poi);
+    sc.pois.sort((a,b)=>a.d - b.d);
+    if(sc.poiAutoCut !== false && !sc.splits.some(sd=>Math.abs(sd - d) < 120) && d > 100 && d < model.L - 100){
+      sc.splits.push(d);
+      sc.splits.sort((a,b)=>a-b);
+    }
+    setMode('split');
+    renderAll(true);
+    if(state.poiAutofillComune){
+      const ll = model.latLonAt(d);
+      queueComune(ll.lat, ll.lon, (nm)=>{
+        if(!nm || poi.name) return;
+        poi.name = nm;
+        renderSculptPoiList(model, sc);
+        drawSculpt();
+      }, 'poi');
+    }
+  }
+
+  function addSculptSlopeAt(relD){
+    if(!lastRenderCtx) return;
+    const { sc, model } = lastRenderCtx;
+    const d = Math.max(40, Math.min(model.L - 40, relD));
+    pushSculptUndo();
+    sc.slopes.push({ d, offsetY: 0 });
+    sc.slopes.sort((a,b)=>a.d - b.d);
+    setMode('split');
+    renderAll();
+  }
+
+  /* ---- Chart Pointer & Drag Interactions ---- */
+  sSvg.addEventListener('pointerdown', (e)=>{
+    if(e.button !== 0 || !lastRenderCtx) return;
+    const pt = svgPointFromEvent(e);
+    if(!pt) return;
+
+    // 1. Check click on existing split divider -> remove split
+    const splitEl = e.target.closest?.('[data-sculpt-split]');
+    if(splitEl && mode === 'split'){
+      const sd = parseFloat(splitEl.getAttribute('data-sculpt-split'));
+      if(Number.isFinite(sd)){
+        e.preventDefault(); e.stopPropagation();
+        pushSculptUndo();
+        lastRenderCtx.sc.splits = lastRenderCtx.sc.splits.filter(x=>Math.abs(x - sd) > 1);
+        renderAll();
+        return;
+      }
+    }
+
+    // 2. Check drag handle (POI label, max indicator, slope pin, summary box)
+    const dragEl = e.target.closest?.('[data-sculpt-drag]');
+    if(dragEl && mode === 'split'){
+      const kind = dragEl.getAttribute('data-sculpt-drag');
+      e.preventDefault(); e.stopPropagation();
+      pushSculptUndo();
+      const sc = lastRenderCtx.sc;
+      let startVal = 0;
+      if(kind === 'max') startVal = sc.maxOffsetY || 0;
+      else if(kind === 'box') startVal = { x: lastRenderCtx.bx, y: lastRenderCtx.by };
+      else if(kind.startsWith('poi:')){
+        const idx = parseInt(kind.slice(4), 10);
+        startVal = sc.pois[idx]?.offsetY || 0;
+      } else if(kind.startsWith('slope:')){
+        const idx = parseInt(kind.slice(6), 10);
+        startVal = sc.slopes[idx]?.offsetY || 0;
+      }
+      dragCtx = { kind, startPt: pt, startVal, moved: false };
+      sSvg.classList.add('dragging');
+      sSvg.setPointerCapture?.(e.pointerId);
+      return;
+    }
+  });
+
+  sSvg.addEventListener('pointermove', (e)=>{
+    if(!lastRenderCtx) return;
+    const pt = svgPointFromEvent(e);
+    if(!pt) return;
+
+    if(dragCtx){
+      const dx = pt.x - dragCtx.startPt.x;
+      const dy = pt.y - dragCtx.startPt.y;
+      if(Math.hypot(dx, dy) > 2) dragCtx.moved = true;
+      const sc = lastRenderCtx.sc;
+      if(dragCtx.kind === 'max'){
+        sc.maxOffsetY = Math.round(dragCtx.startVal - dy);
+      } else if(dragCtx.kind === 'box'){
+        sc.boxOffset = { x: Math.round(dragCtx.startVal.x + dx), y: Math.round(dragCtx.startVal.y + dy) };
+      } else if(dragCtx.kind.startsWith('poi:')){
+        const idx = parseInt(dragCtx.kind.slice(4), 10);
+        if(sc.pois[idx]) sc.pois[idx].offsetY = Math.round(dragCtx.startVal - dy);
+      } else if(dragCtx.kind.startsWith('slope:')){
+        const idx = parseInt(dragCtx.kind.slice(6), 10);
+        if(sc.slopes[idx]) sc.slopes[idx].offsetY = Math.round(dragCtx.startVal - dy);
+      }
+      drawSculpt();
+      return;
+    }
+
+    const d = relDFromSvgX(pt.x, false);
+    hoverRelD = d;
+    drawHoverGuide(d);
+  });
+
+  sSvg.addEventListener('pointerup', (e)=>{
+    if(dragCtx){
+      sSvg.classList.remove('dragging');
+      const wasMoved = dragCtx.moved;
+      const kind = dragCtx.kind;
+      dragCtx = null;
+      if(!wasMoved){
+        // Undo the unused snapshot if user just clicked without dragging
+        sUndoStack.pop();
+        updateSculptUndoBtns();
+      } else {
+        if(kind.startsWith('poi:')) renderSculptPoiList(lastRenderCtx?.model, lastRenderCtx?.sc);
+        else if(kind.startsWith('slope:')) renderSculptSlopeList(lastRenderCtx?.model, lastRenderCtx?.sc);
+      }
+      return;
+    }
+    if(e.button !== 0 || !lastRenderCtx) return;
+    if(e.target.closest?.('[data-sculpt-split]') || e.target.closest?.('[data-sculpt-drag]')) return;
+    const pt = svgPointFromEvent(e);
+    if(!pt) return;
+    const d = relDFromSvgX(pt.x, !e.altKey);
+    if(d == null) return;
+    if(mode === 'poi') addSculptPoiAt(d);
+    else if(mode === 'slope') addSculptSlopeAt(d);
+    else addSplitAt(d);
+  });
+
+  sSvg.addEventListener('pointerleave', ()=>{
+    if(dragCtx) return;
+    hoverRelD = null;
+    if(guideG) guideG.innerHTML = '';
+    if(lastRenderCtx){
+      const { c, sc, model } = lastRenderCtx;
+      sReadout.textContent = `${effectiveSummitName(c, sc)} · ${(model.L/1000).toFixed(1)} km · ${model.avgGrade.toFixed(1)}% · max ${Math.round(model.maxGrade)}%`;
+    }
+  });
+
+  // Right-click on a slope pin or split removes it immediately
+  sSvg.addEventListener('contextmenu', (e)=>{
+    if(!lastRenderCtx) return;
+    const slopeEl = e.target.closest?.('[data-sculpt-slope-idx]');
+    if(slopeEl){
+      e.preventDefault();
+      const idx = parseInt(slopeEl.getAttribute('data-sculpt-slope-idx'), 10);
+      if(Number.isInteger(idx) && lastRenderCtx.sc.slopes[idx]){
+        pushSculptUndo();
+        lastRenderCtx.sc.slopes.splice(idx, 1);
+        renderAll();
+      }
+      return;
+    }
+    const splitEl = e.target.closest?.('[data-sculpt-split]');
+    if(splitEl){
+      e.preventDefault();
+      const sd = parseFloat(splitEl.getAttribute('data-sculpt-split'));
+      if(Number.isFinite(sd)){
+        pushSculptUndo();
+        lastRenderCtx.sc.splits = lastRenderCtx.sc.splits.filter(x=>Math.abs(x - sd) > 1);
+        renderAll();
+      }
+    }
+  });
+
+  /* ---- Sidebar & Header Control Wiring ---- */
+  sModeSplitBtn.addEventListener('click', ()=> setMode('split'));
+  sModePoiBtn.addEventListener('click', ()=> setMode(mode === 'poi' ? 'split' : 'poi'));
+  sModeSlopeBtn.addEventListener('click', ()=> setMode(mode === 'slope' ? 'split' : 'slope'));
+  sAddPoiBtn.addEventListener('click', ()=> setMode('poi'));
+  sAddSlopeBtn.addEventListener('click', ()=> setMode('slope'));
+  sUndoBtn.addEventListener('click', undo);
+  sRedoBtn.addEventListener('click', redo);
+
+  sClearSplits.addEventListener('click', ()=>{
+    const c = activeClimb(); if(!c) return;
+    const sc = ensureSculpt(c); if(!sc.splits.length) return;
+    pushSculptUndo(); sc.splits = []; renderAll();
+  });
+  sClearPoisBtn.addEventListener('click', ()=>{
+    const c = activeClimb(); if(!c) return;
+    const sc = ensureSculpt(c); if(!sc.pois.length) return;
+    pushSculptUndo(); sc.pois = []; renderAll();
+  });
+  sClearSlopesBtn.addEventListener('click', ()=>{
+    const c = activeClimb(); if(!c) return;
+    const sc = ensureSculpt(c); if(!sc.slopes.length) return;
+    pushSculptUndo(); sc.slopes = []; renderAll();
+  });
+
+  sStartName.addEventListener('input', ()=>{ const c = activeClimb(); if(!c) return; ensureSculpt(c).startName = sStartName.value; drawSculpt(); });
+  sSummitName.addEventListener('input', ()=>{ const c = activeClimb(); if(!c) return; ensureSculpt(c).summitName = sSummitName.value; renderSculptClimbList(); drawSculpt(); });
+  sCatSel.addEventListener('change', ()=>{ const c = activeClimb(); if(!c) return; pushSculptUndo(); ensureSculpt(c).catOverride = sCatSel.value; renderSculptClimbList(); drawSculpt(); });
+  sSliceSel.addEventListener('change', ()=>{ const c = activeClimb(); if(!c) return; pushSculptUndo(); ensureSculpt(c).sliceStep = parseInt(sSliceSel.value, 10) || 500; drawSculpt(); });
+  sYStepSel.addEventListener('change', ()=>{ const c = activeClimb(); if(!c) return; pushSculptUndo(); ensureSculpt(c).yStep = parseInt(sYStepSel.value, 10) || 100; drawSculpt(); });
+  sCalcMode.addEventListener('change', ()=>{ const c = activeClimb(); if(!c) return; pushSculptUndo(); ensureSculpt(c).calcMode = sCalcMode.value; renderAll(); });
+  sSmooth.addEventListener('input', ()=>{ const c = activeClimb(); if(!c) return; const v = Math.max(0, Math.min(1200, parseInt(sSmooth.value, 10) || 0)); ensureSculpt(c).smoothM = v; sSmoothOut.textContent = `${v} m`; const m = buildClimbModel(c); renderSculptSplitList(m, ensureSculpt(c)); renderSculptSlopeList(m, ensureSculpt(c)); drawSculpt(); });
+  sFlagAllBtn.addEventListener('click', ()=>{
+    if(!state.climbs.length) return;
+    const allChecked = flaggedIndices().length === state.climbs.length;
+    state.climbs.forEach(c=>{ ensureSculpt(c).flagged = !allChecked; });
+    renderSculptClimbList();
+  });
+  sVScale.addEventListener('input', ()=>{ const c = activeClimb(); if(!c) return; const v = parseFloat(sVScale.value) || 1.0; ensureSculpt(c).vScale = v; sVScaleOut.textContent = '× ' + v.toFixed(2); drawSculpt(); });
+  sBaselineH.addEventListener('input', ()=>{ const c = activeClimb(); if(!c) return; const v = Math.max(0, Math.min(240, parseInt(sBaselineH.value, 10) || 0)); ensureSculpt(c).baselineHeight = v; sBaselineOut.textContent = `${v} px`; drawSculpt(); });
+  sWidthPct.addEventListener('input', ()=>{ const c = activeClimb(); if(!c) return; const v = parseInt(sWidthPct.value, 10) || 0; ensureSculpt(c).widthPct = v; sWidthOut.textContent = v > 0 ? (v + '%') : 'Auto'; drawSculpt(); });
+  sLineColor.addEventListener('input', ()=>{ const c = activeClimb(); if(!c) return; ensureSculpt(c).lineColor = sLineColor.value; renderSculptSplitList(lastRenderCtx?.model, ensureSculpt(c)); drawSculpt(); });
+  sFillColor.addEventListener('input', ()=>{ const c = activeClimb(); if(!c) return; ensureSculpt(c).fillColor = sFillColor.value; drawSculpt(); });
+  sShowMax.addEventListener('change', ()=>{ const c = activeClimb(); if(!c) return; pushSculptUndo(); ensureSculpt(c).showMax = sShowMax.checked; drawSculpt(); });
+  sPoiAutoCut.addEventListener('change', ()=>{ const c = activeClimb(); if(!c) return; ensureSculpt(c).poiAutoCut = sPoiAutoCut.checked; });
+
+  /* ---- SCULPT Resizer ---- */
+  (function(){
+    const res = document.getElementById('sculptResizer');
+    const left = document.querySelector('#sculptView .sculpt-left');
+    const right = document.querySelector('#sculptView .sculpt-right');
+    if(!res || !left || !right) return;
+    let act = null;
+    res.addEventListener('mousedown', e=>{
+      act = { startX: e.clientX, wL: left.getBoundingClientRect().width, wR: right.getBoundingClientRect().width };
+      document.body.style.cursor = 'col-resize';
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', e=>{
+      if(!act) return;
+      const dx = e.clientX - act.startX;
+      const tot = act.wL + act.wR;
+      const wl = Math.max(250, Math.min(tot - 360, act.wL + dx));
+      left.style.flex = `0 0 ${wl}px`;
+      right.style.flex = `1 1 auto`;
+    });
+    window.addEventListener('mouseup', ()=>{ if(act){ act = null; document.body.style.cursor = ''; } });
+  })();
+
+  /* ---- SCULPT SVG & PNG Export (with full embedded Giro fonts!) ---- */
+  function buildSculptExportSvg(extraStyle=''){
+    const clone = sSvg.cloneNode(true);
+    clone.querySelector('#sculpt-hover-guide')?.remove();
+    clone.querySelector('#sculptHitbox')?.remove();
+    clone.querySelectorAll('[data-sculpt-split]').forEach(el=>el.remove());
+    clone.setAttribute('xmlns', NS); clone.setAttribute('xmlns:xlink', XLINK);
+    clone.setAttribute('width', '980'); clone.setAttribute('height', '740');
+    const styleEl = document.createElementNS(NS, 'style');
+    styleEl.textContent = extraStyle + "\n" + `text{fill:#0f172a} g.badge text{fill:#fff !important} g.giro-kom text{fill:#1d4ed8 !important} g.sculpt-cima-coppi text{fill:#111827 !important}`;
+    clone.insertBefore(styleEl, clone.firstChild);
+    return clone;
+  }
+  function sculptExportFileName(ext, climbObj=null, idxForFallback=null){
+    const c = climbObj || activeClimb();
+    const sc = c ? ensureSculpt(c) : null;
+    let raw = 'salita';
+    if(c){
+      if(sc && sc.summitName && sc.summitName.trim()) raw = sc.summitName.trim();
+      else {
+        const kom = parseKom(c.name);
+        raw = ((kom ? kom.label : c.name) || '').trim() || `salita-${(idxForFallback ?? selectedIdx) + 1}`;
+      }
+    }
+    const slug = String(raw || 'salita').trim().replace(/[^a-zA-Z0-9À-ÿ._-]+/g, '_').replace(/^_+|_+$/g, '') || 'salita';
+    return `${slug}-sculpt.${ext}`;
+  }
+
+  async function renderCurrentSculptToPngBlob(css){
+    const node = buildSculptExportSvg(css);
+    const svgStr = serializeSvg(node);
+    let img = null;
+    try{
+      img = await loadSvgImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr));
+    }catch(_){
+      const blob = new Blob([svgStr], { type:'image/svg+xml;charset=utf-8' });
+      const bUrl = URL.createObjectURL(blob);
+      try{ img = await loadSvgImage(bUrl); } finally { URL.revokeObjectURL(bUrl); }
+    }
+    const scale = 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = 980 * scale; canvas.height = 740 * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const pngBlob = await new Promise(res=>canvas.toBlob(res, 'image/png'));
+    return pngBlob;
+  }
+
+  /* Zero-dependency pure-JS STORE ZIP creator for clean multi-climb batch downloads */
+  const CRC32_TABLE = (()=>{
+    const t = new Uint32Array(256);
+    for(let i = 0; i < 256; i++){
+      let c = i;
+      for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[i] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32Bytes(u8){
+    let c = 0xFFFFFFFF;
+    for(let i = 0; i < u8.length; i++) c = CRC32_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function createZipBlob(entries){
+    const enc = new TextEncoder();
+    const localParts = [];
+    const centralParts = [];
+    let offset = 0;
+    const now = new Date();
+    const dosTime = ((now.getHours() & 0x1F) << 11) | ((now.getMinutes() & 0x3F) << 5) | ((now.getSeconds() >> 1) & 0x1F);
+    const dosDate = (((Math.max(1980, now.getFullYear()) - 1980) & 0x7F) << 9) | (((now.getMonth() + 1) & 0x0F) << 5) | (now.getDate() & 0x1F);
+
+    for(const ent of entries){
+      const nameBytes = enc.encode(ent.name);
+      const data = ent.bytes;
+      const crc = crc32Bytes(data);
+
+      const lh = new Uint8Array(30 + nameBytes.length);
+      const lv = new DataView(lh.buffer);
+      lv.setUint32(0, 0x04034B50, true);
+      lv.setUint16(4, 20, true);
+      lv.setUint16(6, 0x0800, true); // UTF-8 filename flag
+      lv.setUint16(8, 0, true);      // STORE (no compression)
+      lv.setUint16(10, dosTime, true);
+      lv.setUint16(12, dosDate, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, data.length, true);
+      lv.setUint32(22, data.length, true);
+      lv.setUint16(26, nameBytes.length, true);
+      lv.setUint16(28, 0, true);
+      lh.set(nameBytes, 30);
+      localParts.push(lh, data);
+
+      const ch = new Uint8Array(46 + nameBytes.length);
+      const cv = new DataView(ch.buffer);
+      cv.setUint32(0, 0x02014B50, true);
+      cv.setUint16(4, 20, true);
+      cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0x0800, true);
+      cv.setUint16(10, 0, true);
+      cv.setUint16(12, dosTime, true);
+      cv.setUint16(14, dosDate, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, data.length, true);
+      cv.setUint32(24, data.length, true);
+      cv.setUint16(28, nameBytes.length, true);
+      cv.setUint16(30, 0, true);
+      cv.setUint16(32, 0, true);
+      cv.setUint16(34, 0, true);
+      cv.setUint16(36, 0, true);
+      cv.setUint32(38, 0, true);
+      cv.setUint32(42, offset, true);
+      ch.set(nameBytes, 46);
+      centralParts.push(ch);
+
+      offset += lh.length + data.length;
+    }
+
+    const centralSize = centralParts.reduce((a, b)=>a + b.length, 0);
+    const eocd = new Uint8Array(22);
+    const ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054B50, true);
+    ev.setUint16(4, 0, true);
+    ev.setUint16(6, 0, true);
+    ev.setUint16(8, entries.length, true);
+    ev.setUint16(10, entries.length, true);
+    ev.setUint32(12, centralSize, true);
+    ev.setUint32(16, offset, true);
+    ev.setUint16(20, 0, true);
+
+    return new Blob([...localParts, ...centralParts, eocd], { type:'application/zip' });
+  }
+
+  async function downloadFlaggedClimbs(format){
+    const idxs = flaggedIndices();
+    if(!idxs.length) return;
+    const prevIdx = selectedIdx;
+    const prevHover = hoverRelD;
+    hoverRelD = null;
+    try{
+      sDlFlagSvg.disabled = true;
+      sDlFlagPng.disabled = true;
+      if(document.fonts?.ready) await document.fonts.ready;
+      const css = await buildEmbeddedFontCSS();
+      const enc = new TextEncoder();
+      const files = [];
+      const usedNames = new Set();
+
+      for(let k = 0; k < idxs.length; k++){
+        const idx = idxs[k];
+        selectedIdx = idx;
+        drawSculpt();
+        const c = state.climbs[idx];
+        const prefix = idxs.length > 1 ? String(k + 1).padStart(2, '0') + '-' : '';
+        let fname = prefix + sculptExportFileName(format, c, idx);
+        while(usedNames.has(fname)){
+          fname = fname.replace(new RegExp(`\.${format}$`), `_${k + 1}.${format}`);
+        }
+        usedNames.add(fname);
+
+        if(format === 'svg'){
+          const node = buildSculptExportSvg(css);
+          const svgStr = serializeSvg(node);
+          files.push({ name: fname, bytes: enc.encode(svgStr), blob: new Blob([svgStr], { type:'image/svg+xml;charset=utf-8' }) });
+        } else {
+          const pngBlob = await renderCurrentSculptToPngBlob(css);
+          if(pngBlob){
+            const buf = await pngBlob.arrayBuffer();
+            files.push({ name: fname, bytes: new Uint8Array(buf), blob: pngBlob });
+          }
+        }
+      }
+
+      if(files.length === 1){
+        const url = URL.createObjectURL(files[0].blob);
+        download(files[0].name, url);
+        setTimeout(()=>URL.revokeObjectURL(url), 4000);
+        window.showAppToast?.(`Scaricata 1 altimetria (${format.toUpperCase()})`);
+      } else if(files.length > 1){
+        const zipBlob = createZipBlob(files);
+        const baseProj = String(state.projectName || 'salite').trim().replace(/[^a-zA-Z0-9À-ÿ._-]+/g, '_').replace(/^_+|_+$/g, '') || 'salite';
+        const url = URL.createObjectURL(zipBlob);
+        download(`${baseProj}-sculpt-${format}.zip`, url);
+        setTimeout(()=>URL.revokeObjectURL(url), 5000);
+        window.showAppToast?.(`Scaricate ${files.length} altimetrie flaggate in ZIP (${format.toUpperCase()})`);
+      }
+    }catch(_){
+      alert(`Download multiplo ${format.toUpperCase()} fallito.`);
+    }finally{
+      selectedIdx = prevIdx;
+      hoverRelD = prevHover;
+      syncControlsFromClimb();
+      renderAll();
+    }
+  }
+
+  sDlFlagSvg.addEventListener('click', ()=> downloadFlaggedClimbs('svg'));
+  sDlFlagPng.addEventListener('click', ()=> downloadFlaggedClimbs('png'));
+
+  sExportSvgBtn.addEventListener('click', async ()=>{
+    if(!activeClimb()) return;
+    try{
+      if(document.fonts?.ready) await document.fonts.ready;
+      const css = await buildEmbeddedFontCSS();
+      const node = buildSculptExportSvg(css);
+      const svgStr = serializeSvg(node);
+      const blob = new Blob([svgStr], { type:'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      download(sculptExportFileName('svg'), url);
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }catch(_){ alert('Export SVG SCULPT fallito.'); }
+  });
+
+  sExportPngBtn.addEventListener('click', async ()=>{
+    if(!activeClimb()) return;
+    try{
+      if(document.fonts?.ready) await document.fonts.ready;
+      const css = await buildEmbeddedFontCSS();
+      const pngBlob = await renderCurrentSculptToPngBlob(css);
+      if(pngBlob){
+        const pUrl = URL.createObjectURL(pngBlob);
+        download(sculptExportFileName('png'), pUrl);
+        setTimeout(()=>URL.revokeObjectURL(pUrl), 4000);
+      }
+    }catch(_){ alert('Export PNG SCULPT fallito.'); }
+  });
+
+  function renderAll(focusLastPoi=false){
+    renderSculptClimbList();
+    const c = activeClimb();
+    if(!c){
+      setControlsEnabled(false);
+      renderSculptSplitList(null, null);
+      renderSculptPoiList(null, null);
+      renderSculptSlopeList(null, null);
+      drawSculpt();
+      return;
+    }
+    const sc = ensureSculpt(c);
+    const model = buildClimbModel(c);
+    renderSculptSplitList(model, sc);
+    renderSculptPoiList(model, sc, focusLastPoi);
+    renderSculptSlopeList(model, sc);
+    drawSculpt();
+  }
+
+  window.SculptEnv = {
+    onActivate(){
+      syncControlsFromClimb();
+      renderAll();
+    },
+    onClimbsChanged(){
+      if(selectedIdx >= state.climbs.length) selectedIdx = Math.max(0, state.climbs.length - 1);
+      if(activeEnv === 'sculpt'){
+        syncControlsFromClimb();
+        renderAll();
+      }
+    },
+    setMode,
+    onPressS(){
+      if(!activeClimb()) return;
+      if(hoverRelD !== null && lastRenderCtx){
+        addSculptSlopeAt(hoverRelD);
+      } else {
+        setMode('slope');
+      }
+    },
+    onEscape(){
+      if(mode !== 'split') setMode('split');
+    },
+    undo,
+    redo
+  };
 })();
 </script>
 </body>
