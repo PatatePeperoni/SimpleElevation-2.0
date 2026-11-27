@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Simple Elevation v2.22 — DRAW &amp; PAINT</title>
+<title>Simple Elevation v2.24 — DRAW &amp; PAINT</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700&family=Inter:wght@400;600;700&family=Montserrat:wght@300;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -346,6 +346,14 @@
   .arch-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .arch-toolbar input[type="search"]{flex:1 1 200px;padding:8px 12px;font-size:13px;border-radius:10px}
   .arch-toolbar select{flex:0 0 165px;padding:8px 10px;font-size:12.5px;border-radius:10px}
+  .arch-disk-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 11px;border-radius:11px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px}
+  .arch-disk-bar.linked{border-color:#86efac;background:#f0fdf4}
+  .arch-disk-bar.needs-perm{border-color:#fde68a;background:#fffbeb}
+  .arch-disk-info{display:flex;align-items:center;gap:7px;min-width:0;flex:1 1 220px;color:#334155;font-weight:600}
+  .arch-disk-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex:0 0 auto}
+  .arch-disk-bar.linked .arch-disk-dot{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.2)}
+  .arch-disk-bar.needs-perm .arch-disk-dot{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.22)}
+  .arch-disk-acts{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
   .arch-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);flex-wrap:wrap}
   .arch-list{display:flex;flex-direction:column;gap:8px;min-height:120px}
   .arch-empty{text-align:center;padding:34px 16px;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:14px;background:#fafcff}
@@ -395,7 +403,7 @@
 
 <header class="top">
   <div class="brand-wrap">
-    <div class="brand-title"><h1>Simple Elevation</h1><span class="ver-badge" title="Versione corrente">v2.22</span></div>
+    <div class="brand-title"><h1>Simple Elevation</h1><span class="ver-badge" title="Versione corrente">v2.24</span></div>
     <div class="env-tabs" role="tablist" aria-label="Ambiente">
       <button id="tabDraw" class="env-tab active" role="tab" aria-selected="true">1. DRAW</button>
       <button id="tabPaint" class="env-tab" role="tab" aria-selected="false">2. PAINT</button>
@@ -740,6 +748,7 @@
           <div id="templateBar" class="tpl-bar" role="group" aria-label="Template altimetria">
             <button type="button" class="tpl-btn active" data-tpl="classic"><span class="tpl-swatch" style="background:linear-gradient(135deg,#ff2d96 50%,#fbf6ea 50%)"></span>Classico</button>
             <button type="button" class="tpl-btn" data-tpl="giro"><span class="tpl-swatch" style="background:linear-gradient(135deg,#e6007e 50%,#99c24d 50%)"></span>Giro d'Italia</button>
+            <button type="button" class="tpl-btn" data-tpl="giro_old"><span class="tpl-swatch" style="background:linear-gradient(135deg,#94a3b8 30%,#dc2626 30% 52%,#e8f0d0 52% 76%,#d27d62 76%)"></span>Giro Old (3D)</button>
             <button type="button" class="tpl-btn" data-tpl="tour_modern"><span class="tpl-swatch" style="background:linear-gradient(135deg,#fde017 55%,#111827 55%)"></span>Tour de France</button>
             <button type="button" class="tpl-btn" data-tpl="vuelta"><span class="tpl-swatch" style="background:linear-gradient(135deg,#e52d1a 55%,#c65a96 55%)"></span>La Vuelta</button>
           </div>
@@ -902,13 +911,24 @@
           <input id="archiveImportJsonInput" type="file" accept=".json,application/json" style="display:none" />
         </label>
       </div>
+      <div id="archiveDiskBar" class="arch-disk-bar">
+        <div class="arch-disk-info">
+          <span class="arch-disk-dot" aria-hidden="true"></span>
+          <span id="archiveDiskStatus">Archivio locale browser (IndexedDB + localStorage)</span>
+        </div>
+        <div class="arch-disk-acts">
+          <button id="archiveLinkFileBtn" type="button" class="sv-mini" title="Collega un file JSON fisso sul disco per mantenere l'archivio tra tutte le versioni">🔗 Collega file su disco</button>
+          <button id="archiveNewFileBtn" type="button" class="sv-mini" title="Crea un nuovo file JSON archivio auto-sincronizzato su disco">+ Crea file</button>
+          <button id="archiveUnlinkFileBtn" type="button" class="sv-mini" style="display:none" title="Scollega il file su disco">Scollega</button>
+        </div>
+      </div>
       <div class="arch-summary">
-        <span id="archiveSummaryText">Salvataggio locale persistente (IndexedDB) + export/import JSON esterno.</span>
+        <span id="archiveSummaryText">Salvataggio locale persistente (IndexedDB + localStorage) + file su disco opzionale.</span>
       </div>
       <div id="archiveList" class="arch-list"></div>
     </div>
     <div class="se-modal-foot">
-      <span class="muted">Suggerimento: usa <strong>Esporta Archivio JSON</strong> per creare un backup portatile tra dispositivi o browser.</span>
+      <span class="muted">Per conservare l'archivio ad ogni aggiornamento: collega un <strong>file JSON su disco</strong> oppure sovrascrivi sempre lo stesso file HTML locale.</span>
       <button id="archiveSaveFromModalBtn" type="button" class="pink">+ Salva traccia corrente</button>
     </div>
   </div>
@@ -1031,6 +1051,7 @@ function pathFrom(points, close, margin, h){ if(!points.length) return ''; const
 const TEMPLATE_DEFAULTS={
   classic:     { fillColor:'#fbf6ea', lineColor:'#ff2d96', noProfileFill:false, noProfileLine:false, climbColor:'#15a34a', climbFillColor:'#15a34a' },
   giro:        { fillColor:'#fcfbe6', lineColor:'#e6007e', noProfileFill:false, noProfileLine:false, climbColor:'#78a82e', climbFillColor:'#99c24d' },
+  giro_old:    { fillColor:'#eef3d8', lineColor:'#dc2626', noProfileFill:false, noProfileLine:false, climbColor:'#dc2626', climbFillColor:'#dc2626' },
   tour_modern: { fillColor:'#fde017', lineColor:'#e5b800', noProfileFill:false, noProfileLine:true,  climbColor:'#d91e18', climbFillColor:'#eab308' },
   vuelta:      { fillColor:'#e52d1a', lineColor:'#c81e12', noProfileFill:false, noProfileLine:true,  climbColor:'#7f1d1d', climbFillColor:'#7f1d1d' }
 };
@@ -1063,6 +1084,7 @@ function getScales(){
   const tpl=normalizeTemplateKey(state.template);
   let baseT=84, baseB=76, baseL=70, baseR=28;
   if(tpl==='giro'){ baseL=62; baseR=66; baseT=44; baseB=76; }
+  else if(tpl==='giro_old'){ baseL=76; baseR=76; baseT=114; baseB=96; }
   else if(tpl==='tour_modern'){ baseL=70; baseR=90; baseT=92; baseB=50; }
   else if(tpl==='vuelta'){ baseL=76; baseR=74; baseT=124; baseB=46; }
   let margin={l:baseL,r:baseR,t:baseT,b:baseB}; let w=1280-margin.l-margin.r; let h=520-margin.t-margin.b;
@@ -1076,9 +1098,20 @@ function getScales(){
   w=1280-margin.l-margin.r;
   const viewStart=Math.max(0, Math.min(state.viewStart, Math.max(0,dMax-1)));
   const viewEnd=Math.max(viewStart+1, Math.min(state.viewEnd, dMax));
+  const isGiroOld=(tpl==='giro_old');
+  const tiltRise=isGiroOld ? 70 : 0;
+  const xMid=margin.l + w/2;
+  const tiltSlope=isGiroOld ? (-tiltRise / Math.max(1, w)) : 0;
+  const tiltDeg=isGiroOld ? (Math.atan(tiltSlope) * 180 / Math.PI) : 0;
+  const tiltAtX=x=> isGiroOld ? (tiltSlope * (x - xMid)) : 0;
+  const yScaleRaw=y=>{ const base=(y-min)/Math.max(1,max-min); return margin.t + h - base*h*state.vExag; };
+  const yScaleF=y=>{ let Y=yScaleRaw(y); if(Y<margin.t)Y=margin.t; if(Y>margin.t+h)Y=margin.t+h; return Y; };
   return { margin,w,h,
     xScale:{ f:x=> (margin.l + ((x-viewStart)/(viewEnd-viewStart))*w) },
-    yScale:{ f:y=>{ const base=(y-min)/(max-min); let Y=margin.t + h - base*h*state.vExag; if(Y<margin.t)Y=margin.t; if(Y>margin.t+h)Y=margin.t+h; return Y; }, min,max },
+    yScale:{ f:yScaleF, raw:yScaleRaw, min,max },
+    tiltRise, tiltSlope, tiltDeg, tiltAtX,
+    baseYAt:x=> (margin.t + h + tiltAtX(x)),
+    profileY:(x, ele)=> (isGiroOld ? Math.max(46, yScaleF(ele) + tiltAtX(x)) : yScaleF(ele)),
     viewStart, viewEnd };
 }
 function calculateProfileElevations(){
@@ -2005,6 +2038,224 @@ function fitGiroEndpointPills(pills){
   }catch(_){}
 }
 
+/* ---- Giro Old (3D Isometric) Helpers: Badges & Altitude-Shaded Gradient ---- */
+function buildGiroOldHypsometricGradient(defs, sc){
+  const xMid = sc.margin.l + sc.w / 2;
+  const eBot = Math.min(0, sc.yScale.min);
+  const eTop = Math.max(2800, sc.yScale.max);
+  const yBot = sc.yScale.raw(eBot);
+  const yTop = sc.yScale.raw(eTop);
+  const H = Math.max(1, yBot - yTop);
+  const k = sc.tiltSlope;
+  const denom = 1 + k * k;
+  const x1 = xMid;
+  const y1 = yBot;
+  const x2 = xMid + (k * H) / denom;
+  const y2 = yBot - H / denom;
+
+  const grad = createEl('linearGradient', {
+    id: 'giroOldAltGrad',
+    gradientUnits: 'userSpaceOnUse',
+    x1: x1.toFixed(2), y1: y1.toFixed(2),
+    x2: x2.toFixed(2), y2: y2.toFixed(2)
+  });
+
+  const baseFill = (state.fillColor && state.fillColor.toLowerCase() !== '#eef3d8') ? state.fillColor : '#e8f0d0';
+  const lowMid   = (state.fillColor && state.fillColor.toLowerCase() !== '#eef3d8') ? state.fillColor : '#eef3d8';
+  // True altitude-anchored color stops: gentle pale sage-cream below ~900m,
+  // smoothly shading into warm golden-apricot -> peach -> alpine terracotta above ~1000m!
+  const stops = [
+    { ele: 0,    col: baseFill },
+    { ele: 420,  col: lowMid },
+    { ele: 780,  col: '#f5f0ce' },
+    { ele: 1020, col: '#f3dba4' },
+    { ele: 1360, col: '#e9b784' },
+    { ele: 1760, col: '#dc906a' },
+    { ele: 2240, col: '#cc725c' },
+    { ele: 2800, col: '#ba5a51' }
+  ];
+  for(const s of stops){
+    const pct = Math.max(0, Math.min(100, ((s.ele - eBot) / Math.max(1, eTop - eBot)) * 100));
+    grad.appendChild(createEl('stop', { offset: `${pct.toFixed(2)}%`, 'stop-color': s.col }));
+  }
+  defs.appendChild(grad);
+
+  // Metallic silver-grey gradient for the 3D top road surface
+  const topGrad = createEl('linearGradient', { id: 'giroOldTopRoad', x1: '0%', y1: '0%', x2: '0%', y2: '100%' });
+  topGrad.appendChild(createEl('stop', { offset: '0%', 'stop-color': '#cbd2d9' }));
+  topGrad.appendChild(createEl('stop', { offset: '55%', 'stop-color': '#a8b1bc' }));
+  topGrad.appendChild(createEl('stop', { offset: '100%', 'stop-color': '#858f9b' }));
+  defs.appendChild(topGrad);
+
+  // Side end-cap gradient (left 3D edge at km 0)
+  const capGrad = createEl('linearGradient', { id: 'giroOldEndCap', x1: '0%', y1: '0%', x2: '100%', y2: '100%' });
+  capGrad.appendChild(createEl('stop', { offset: '0%', 'stop-color': '#b4bcc5' }));
+  capGrad.appendChild(createEl('stop', { offset: '100%', 'stop-color': '#8c96a2' }));
+  defs.appendChild(capGrad);
+
+  // Glossy red gradient for R (Rifornimento) circular badge
+  const rGrad = createEl('radialGradient', { id: 'giroOldRGrad', cx: '35%', cy: '30%', r: '70%' });
+  rGrad.appendChild(createEl('stop', { offset: '0%', 'stop-color': '#fca5a5' }));
+  rGrad.appendChild(createEl('stop', { offset: '45%', 'stop-color': '#dc2626' }));
+  rGrad.appendChild(createEl('stop', { offset: '100%', 'stop-color': '#991b1b' }));
+  defs.appendChild(rGrad);
+
+  // Green gradient for PARTENZA badge
+  const pGrad = createEl('linearGradient', { id: 'giroOldPartenzaGrad', x1: '0%', y1: '0%', x2: '0%', y2: '100%' });
+  pGrad.appendChild(createEl('stop', { offset: '0%', 'stop-color': '#ecfccb' }));
+  pGrad.appendChild(createEl('stop', { offset: '60%', 'stop-color': '#bef264' }));
+  pGrad.appendChild(createEl('stop', { offset: '100%', 'stop-color': '#84cc16' }));
+  defs.appendChild(pGrad);
+}
+
+function drawGiroOldGpmBadge(cx, cy, tier, tiltDeg){
+  const styles = {
+    HC:  { fill: '#7cc2cf', stroke: '#0f172a', cls: 'giro-old-dark',  topTxt: 'CIMA', botTxt: 'HC' },
+    '1': { fill: '#e65c5c', stroke: '#0f172a', cls: 'giro-old-white', topTxt: 'GPM',  botTxt: '1' },
+    '2': { fill: '#f5d442', stroke: '#0f172a', cls: 'giro-old-dark',  topTxt: 'GPM',  botTxt: '2' },
+    '3': { fill: '#fb923c', stroke: '#0f172a', cls: 'giro-old-dark',  topTxt: 'GPM',  botTxt: '3' },
+    '4': { fill: '#d1d5db', stroke: '#0f172a', cls: 'giro-old-dark',  topTxt: 'GPM',  botTxt: '4' },
+    '0': { fill: '#d1d5db', stroke: '#0f172a', cls: 'giro-old-dark',  topTxt: 'GPM',  botTxt: '▼' }
+  };
+  const st = styles[tier] || styles['4'];
+  const g = createEl('g', {
+    transform: `translate(${cx.toFixed(1)},${cy.toFixed(1)}) skewY(${tiltDeg.toFixed(2)})`,
+    class: `badge giro-old-badge ${st.cls}`,
+    'data-g3-cx': cx, 'data-g3-cy': cy
+  });
+  g.appendChild(createEl('polygon', {
+    points: '-17,-14 17,-14 0,16',
+    fill: st.fill, stroke: st.stroke, 'stroke-width': '1.35', 'stroke-linejoin': 'round'
+  }));
+  g.appendChild(createEl('polygon', {
+    points: '-14.2,-12.4 14.2,-12.4 0,12.5',
+    fill: 'none', stroke: 'rgba(255,255,255,0.42)', 'stroke-width': '1'
+  }));
+  const col = st.cls === 'giro-old-white' ? '#ffffff' : '#111827';
+  const tTop = createEl('text', {
+    x: 0, y: -4.2, 'text-anchor': 'middle',
+    'font-family': GIRO_ENDPOINT_FONT, 'font-weight': '700', 'font-size': '8.2', 'letter-spacing': '0.2',
+    style: `fill:${col} !important`
+  });
+  tTop.textContent = st.topTxt;
+  const tBot = createEl('text', {
+    x: 0, y: 6.5, 'text-anchor': 'middle',
+    'font-family': GIRO_ENDPOINT_FONT, 'font-weight': '700', 'font-size': tier === 'HC' ? '10.2' : '11.5',
+    style: `fill:${col} !important`
+  });
+  tBot.textContent = st.botTxt;
+  g.append(tTop, tBot);
+  return g;
+}
+
+function drawGiroOldTvBadge(cx, cy, tiltDeg){
+  const g = createEl('g', {
+    transform: `translate(${cx.toFixed(1)},${cy.toFixed(1)}) skewY(${tiltDeg.toFixed(2)})`,
+    class: 'badge giro-old-badge giro-old-red',
+    'data-g3-cx': cx, 'data-g3-cy': cy
+  });
+  g.appendChild(createEl('rect', {
+    x: -14.5, y: -13.5, width: 29, height: 27, rx: 5,
+    fill: '#ffffff', stroke: '#111827', 'stroke-width': '1.2'
+  }));
+  g.appendChild(createEl('rect', {
+    x: -12.3, y: -11.3, width: 24.6, height: 22.6, rx: 3.5,
+    fill: '#fff5f5', stroke: '#dc2626', 'stroke-width': '1.8'
+  }));
+  const t = createEl('text', {
+    x: 0, y: 6.2, 'text-anchor': 'middle',
+    'font-family': GIRO_ENDPOINT_FONT, 'font-weight': '700', 'font-size': '16.5', 'letter-spacing': '0.3',
+    style: 'fill:#dc2626 !important'
+  });
+  t.textContent = 'TV';
+  g.appendChild(t);
+  return g;
+}
+
+function drawGiroOldFeedBadge(cx, cy, tiltDeg){
+  const g = createEl('g', {
+    transform: `translate(${cx.toFixed(1)},${cy.toFixed(1)}) skewY(${tiltDeg.toFixed(2)})`,
+    class: 'badge giro-old-badge giro-old-white',
+    'data-g3-cx': cx, 'data-g3-cy': cy
+  });
+  g.appendChild(createEl('circle', {
+    cx: 0, cy: 0, r: 14,
+    fill: 'url(#giroOldRGrad)', stroke: '#111827', 'stroke-width': '1.3'
+  }));
+  g.appendChild(createEl('circle', {
+    cx: 0, cy: 0, r: 11.4,
+    fill: 'none', stroke: 'rgba(255,255,255,0.45)', 'stroke-width': '0.9'
+  }));
+  const t = createEl('text', {
+    x: 0, y: 6.0, 'text-anchor': 'middle',
+    'font-family': GIRO_ENDPOINT_FONT, 'font-weight': '700', 'font-size': '16.5',
+    style: 'fill:#ffffff !important'
+  });
+  t.textContent = 'R';
+  g.appendChild(t);
+  return g;
+}
+
+function drawGiroOldPartenzaBadge(cx, cy, tiltDeg){
+  const g = createEl('g', {
+    transform: `translate(${cx.toFixed(1)},${cy.toFixed(1)}) skewY(${tiltDeg.toFixed(2)})`,
+    class: 'badge giro-old-dark'
+  });
+  g.appendChild(createEl('rect', {
+    x: -17, y: -15, width: 34, height: 30, rx: 5.5,
+    fill: 'url(#giroOldPartenzaGrad)', stroke: '#14532d', 'stroke-width': '1.5'
+  }));
+  const flagG = createEl('g', { transform: 'translate(-8,-10.5)' });
+  flagG.appendChild(createEl('line', { x1: 0, y1: 0, x2: 0, y2: 14.5, stroke: '#14532d', 'stroke-width': '1.6', 'stroke-linecap': 'round' }));
+  const cw = 3.6, ch = 3.2;
+  for(let r = 0; r < 3; r++){
+    for(let c = 0; c < 4; c++){
+      flagG.appendChild(createEl('rect', {
+        x: 1 + c * cw, y: r * ch, width: cw, height: ch,
+        fill: (r + c) % 2 === 0 ? '#14532d' : '#ffffff'
+      }));
+    }
+  }
+  flagG.appendChild(createEl('rect', { x: 1, y: 0, width: cw * 4, height: ch * 3, fill: 'none', stroke: '#14532d', 'stroke-width': '0.8' }));
+  g.appendChild(flagG);
+  const t = createEl('text', {
+    x: 0, y: 12.2, 'text-anchor': 'middle',
+    'font-family': GIRO_ENDPOINT_FONT, 'font-weight': '700', 'font-size': '7.4', 'letter-spacing': '0.1',
+    style: 'fill:#111827 !important'
+  });
+  t.textContent = 'PARTENZA';
+  g.appendChild(t);
+  return g;
+}
+
+function drawGiroOldArrivoBadge(cx, cy, tiltDeg){
+  const g = createEl('g', {
+    transform: `translate(${cx.toFixed(1)},${cy.toFixed(1)}) skewY(${tiltDeg.toFixed(2)})`,
+    class: 'badge giro-old-white'
+  });
+  g.appendChild(createEl('rect', {
+    x: -17, y: -15, width: 34, height: 30, rx: 5.5,
+    fill: '#ffffff', stroke: '#991b1b', 'stroke-width': '1.6'
+  }));
+  g.appendChild(createEl('rect', {
+    x: -15.2, y: -13.2, width: 30.4, height: 10.2, rx: 3,
+    fill: '#dc2626'
+  }));
+  const t = createEl('text', {
+    x: 0, y: -5.4, 'text-anchor': 'middle',
+    'font-family': GIRO_ENDPOINT_FONT, 'font-weight': '700', 'font-size': '8.4', 'letter-spacing': '0.25',
+    style: 'fill:#ffffff !important'
+  });
+  t.textContent = 'ARRIVO';
+  g.appendChild(t);
+  g.appendChild(createEl('path', {
+    d: 'M -8.5 11.5 V 1.5 H 8.5 V 11.5 M -5.5 11.5 V 4.5 H 5.5 V 11.5',
+    fill: 'none', stroke: '#dc2626', 'stroke-width': '2', 'stroke-linejoin': 'round'
+  }));
+  g.appendChild(createEl('circle', { cx: 0, cy: 8.5, r: 2.3, fill: '#dc2626' }));
+  return g;
+}
+
 /* ---- Tour de France Flag & Black Ribbon Helpers ---- */
 function drawTourSlantedFlag(cx,cy,kind,label){
   const w=28, h=19, skew=3.6;
@@ -2212,6 +2463,7 @@ function packBoundedColumns(items, leftLimit, rightLimit, gap){
 
 function resolveVerticalLabelCollisions(margin,h){
   const tpl=normalizeTemplateKey(state.template);
+  const isGiroOld=(tpl==='giro_old');
   const isTour=(tpl==='tour_modern');
   const isVuelta=(tpl==='vuelta');
   const all=[...svg.querySelectorAll('[data-auto-label]')].map(el=>{
@@ -2233,8 +2485,8 @@ function resolveVerticalLabelCollisions(margin,h){
   if(!all.length) return;
   all.sort((a,b)=>a.originalX-b.originalX);
 
-  const leftLimit=margin.l + (isTour ? 20 : isVuelta ? 20 : 6);
-  const rightLimit=1280 - margin.r - (isTour ? 18 : isVuelta ? 20 : 6);
+  const leftLimit=margin.l + (isTour ? 20 : isVuelta ? 20 : isGiroOld ? 10 : 6);
+  const rightLimit=1280 - margin.r - (isTour ? 18 : isVuelta ? 20 : isGiroOld ? 14 : 6);
   const gap=isVuelta ? 5 : isTour ? 6 : 6;
 
   const unlocked=all.filter(it=>!it.locked);
@@ -2257,7 +2509,12 @@ function resolveVerticalLabelCollisions(margin,h){
   }
 
   const packedX=packBoundedColumns(activeItems, leftLimit, rightLimit, gap);
-  const endpointBoxes=[...svg.querySelectorAll('[data-endpoint-label]')].map(svgBoxForElement).filter(Boolean);
+  const endpointBoxes=[];
+  svg.querySelectorAll('[data-endpoint-label]').forEach(ep=>{
+    const sub=[...ep.querySelectorAll('[data-endpoint-obstacle]')];
+    if(sub.length){ sub.forEach(s=>{ const b=svgBoxForElement(s); if(b) endpointBoxes.push(b); }); }
+    else { const b=svgBoxForElement(ep); if(b) endpointBoxes.push(b); }
+  });
   const lockedBoxes=activeItems.filter(it=>it.locked).map(it=>it.box);
   const obstacles=endpointBoxes.concat(lockedBoxes);
   const overlap=(r,other,pad=4)=>r.x<other.x+other.w+pad && r.x+r.w+pad>other.x && r.y<other.y+other.h+pad && r.y+r.h+pad>other.y;
@@ -2330,10 +2587,13 @@ function draw(){
   if(!state.points.length){ const t=createEl('text',{x:640,y:260,'text-anchor':'middle',fill:'#94a3b8','font-size':'18'}); t.textContent='Traccia un percorso in DRAW oppure carica un GPX'; svg.appendChild(t); return; }
   const tpl=normalizeTemplateKey(state.template);
   const isGiro=(tpl==='giro');
+  const isGiroOld=(tpl==='giro_old');
   const isTour=(tpl==='tour_modern');
   const isVuelta=(tpl==='vuelta');
 
-  const {margin,w,h,xScale,yScale,viewStart,viewEnd}=getScales();
+  const sc=getScales();
+  const {margin,w,h,xScale,yScale,viewStart,viewEnd,tiltDeg,tiltAtX,baseYAt,profileY}=sc;
+  const G3_EX=16, G3_EY=10, G3_RIB=5.5;
   svg.appendChild(createEl('rect',{x:0,y:0,width:1280,height:520,fill:'#fff'}));
   const yStep = Math.max(50, Math.min(200, parseInt(state.yStep||parseInt(yStepSel.value||'100',10),10)));
   const firstY = Math.ceil(yScale.min / yStep) * yStep;
@@ -2360,12 +2620,22 @@ function draw(){
   const iS=Math.max(0, state.points.findIndex(p=>p.d>=viewStart));
   const iE=state.points.findIndex(p=>p.d>=viewEnd);
   const endIndex=(iE===-1? state.points.length-1 : iE);
-  const winPts=state.points.slice(Math.max(0,iS-1), Math.min(state.points.length,endIndex+2)).map((p,i)=>({x:xScale.f(p.d), y:yScale.f(visibleElevation(Math.max(0,iS-1)+i))}));
-  const dArea=pathFrom(winPts,true,margin,h);
+  const winSliceStart=Math.max(0,iS-1);
+  const winPts=state.points.slice(winSliceStart, Math.min(state.points.length,endIndex+2)).map((p,i)=>{
+    const px=xScale.f(p.d);
+    const ele=visibleElevation(winSliceStart+i);
+    return { x:px, y:isGiroOld ? profileY(px, ele) : yScale.f(ele) };
+  });
+  let dArea=pathFrom(winPts,true,margin,h);
+  if(isGiroOld && winPts.length>=2){
+    const xFirst=winPts[0].x, xLastPt=winPts[winPts.length-1].x;
+    dArea=pathFrom(winPts,false) + ` L ${xLastPt.toFixed(2)} ${baseYAt(xLastPt).toFixed(2)} L ${xFirst.toFixed(2)} ${baseYAt(xFirst).toFixed(2)} Z`;
+  }
   const dTopLine=pathFrom(winPts,false);
   const defs=createEl('defs');
   const clip=createEl('clipPath',{id:'areaClip'}); clip.appendChild(createEl('path',{d:dArea})); defs.appendChild(clip);
   const clipPlot=createEl('clipPath',{id:'plotClip'}); clipPlot.appendChild(createEl('rect',{x:margin.l,y:margin.t,width:w,height:h})); defs.appendChild(clipPlot);
+  if(isGiroOld) buildGiroOldHypsometricGradient(defs, sc);
   svg.appendChild(defs);
 
   // 1. Background grid & left altitude scale
@@ -2396,8 +2666,67 @@ function draw(){
     }
   }
 
-  // 2. Profile area fill
-  if(!state.noProfileFill){
+  // Helper for Giro Old: exact back-ridge points + visible silhouette top Y at any x (eliminates all floating stem gaps!)
+  const giroOldBackPts=(isGiroOld && winPts.length>=2) ? winPts.map(p=>({ x:p.x - G3_EX, y:p.y - G3_EY })) : null;
+  function giroOldVisibleTopY(xq, yFront){
+    if(!giroOldBackPts || giroOldBackPts.length<2) return yFront;
+    const n=giroOldBackPts.length;
+    if(xq < giroOldBackPts[0].x || xq > giroOldBackPts[n-1].x) return yFront;
+    let lo=0, hi=n-1;
+    while(hi - lo > 1){
+      const mid=(lo+hi)>>1;
+      if(giroOldBackPts[mid].x <= xq) lo=mid; else hi=mid;
+    }
+    const p0=giroOldBackPts[lo], p1=giroOldBackPts[hi];
+    const span=p1.x - p0.x;
+    const t=span>1e-4 ? Math.max(0, Math.min(1, (xq - p0.x)/span)) : 0;
+    const yBack=p0.y + (p1.y - p0.y)*t;
+    return Math.min(yFront, yBack);
+  }
+
+  // 2. Profile area fill (for Giro Old 3D: Painter's algorithm -> per-segment 3D road quads + summit ridge creases -> left end-cap -> shaded front face!)
+  if(isGiroOld && winPts.length>=2){
+    const backPts=giroOldBackPts;
+    const xFirst=winPts[0].x, yFirst=winPts[0].y;
+    const xLastPt=winPts[winPts.length-1].x, yLastPt=winPts[winPts.length-1].y;
+    const yBaseFirst=baseYAt(xFirst);
+    const g3dBack=createEl('g',{'pointer-events':'none'});
+    // Non-self-intersecting extruded 3D road top quads
+    let quadD='';
+    for(let qi=0; qi<winPts.length-1; qi++){
+      const b0=backPts[qi], b1=backPts[qi+1], f1=winPts[qi+1], f0=winPts[qi];
+      quadD += `M ${b0.x.toFixed(2)} ${b0.y.toFixed(2)} L ${b1.x.toFixed(2)} ${b1.y.toFixed(2)} L ${f1.x.toFixed(2)} ${f1.y.toFixed(2)} L ${f0.x.toFixed(2)} ${f0.y.toFixed(2)} Z `;
+    }
+    g3dBack.appendChild(createEl('path',{d:quadD,fill:'url(#giroOldTopRoad)',stroke:'url(#giroOldTopRoad)','stroke-width':0.55,'stroke-linejoin':'round'}));
+    // Crisp black back-ridge outline
+    g3dBack.appendChild(createEl('path',{d:pathFrom(backPts,false),fill:'none',stroke:'#111827','stroke-width':2.2,'stroke-linejoin':'round','stroke-linecap':'round'}));
+    // Connect every climb summit (and highest overall peak) from front peak diagonally to the back ridge!
+    const crestXs=[];
+    const addSummitCrease=(idx)=>{
+      if(!state.points[idx]) return;
+      const sx=xScale.f(state.points[idx].d);
+      if(sx < margin.l - 1 || sx > margin.l + w + 1) return;
+      if(crestXs.some(px=>Math.abs(px - sx) < 10)) return;
+      crestXs.push(sx);
+      const sy=profileY(sx, visibleElevation(idx));
+      g3dBack.appendChild(createEl('line',{
+        x1:sx.toFixed(2), y1:sy.toFixed(2),
+        x2:(sx - G3_EX).toFixed(2), y2:(sy - G3_EY).toFixed(2),
+        stroke:'#111827', 'stroke-width':1.7, 'stroke-linecap':'round'
+      }));
+    };
+    state.climbs.forEach(c=> addSummitCrease(c.endIdx));
+    if(state.points[peakIdx]) addSummitCrease(peakIdx);
+    // Right end edge of 3D road top surface
+    g3dBack.appendChild(createEl('line',{x1:(xLastPt-G3_EX).toFixed(2),y1:(yLastPt-G3_EY).toFixed(2),x2:xLastPt.toFixed(2),y2:yLastPt.toFixed(2),stroke:'#111827','stroke-width':2,'stroke-linecap':'round'}));
+    // Left 3D slab end-cap (at km 0)
+    const endCapD=`M ${xFirst.toFixed(2)} ${yFirst.toFixed(2)} L ${(xFirst-G3_EX).toFixed(2)} ${(yFirst-G3_EY).toFixed(2)} L ${(xFirst-G3_EX).toFixed(2)} ${(yBaseFirst-G3_EY).toFixed(2)} L ${xFirst.toFixed(2)} ${yBaseFirst.toFixed(2)} Z`;
+    g3dBack.appendChild(createEl('path',{d:endCapD,fill:'url(#giroOldEndCap)',stroke:'#111827','stroke-width':2.0,'stroke-linejoin':'round'}));
+    svg.appendChild(g3dBack);
+    if(!state.noProfileFill){
+      svg.appendChild(createEl('path',{d:dArea,fill:'url(#giroOldAltGrad)'}));
+    }
+  } else if(!state.noProfileFill){
     svg.appendChild(createEl('path',{d:dArea,fill:state.fillColor}));
   }
 
@@ -2441,7 +2770,13 @@ function draw(){
     const xA=xScale.f(a.d), xB=xScale.f(b.d);
     const seg=state.points.slice(c.startIdx, c.endIdx+1).map((p,idx)=>({x:xScale.f(p.d), y:yScale.f(visibleElevation(c.startIdx+idx))}));
     const overlayInfo=drawClimbOverlay(gClimbs,c.startIdx,c.endIdx,xScale,yScale,margin,h);
-    if(isGiro){
+    if(isGiroOld){
+      if(state.climbOverlayMode==='avggrade' && overlayInfo.avg>=10 && seg.length>=2){
+        const seg3=state.points.slice(c.startIdx, c.endIdx+1).map((p,idx)=>{ const px=xScale.f(p.d); return {x:px, y:profileY(px, visibleElevation(c.startIdx+idx))}; });
+        gClimbs.appendChild(createEl('rect',{x:xA,y:0,width:Math.max(0,xB-xA),height:520,fill:overlayInfo.rectColor,'clip-path':'url(#areaClip)'}));
+        gClimbs.appendChild(createEl('path',{d:pathFrom(seg3,false),fill:'none',stroke:overlayInfo.lineColor,'stroke-width':3.4}));
+      }
+    } else if(isGiro){
       const fillC = state.climbOverlayMode==='avggrade' ? overlayInfo.rectColor : hexToRgba(state.climbFillColor, 0.42);
       gClimbs.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:fillC,'clip-path':'url(#areaClip)'}));
       if(state.climbOverlayMode==='avggrade' && seg.length>=2){
@@ -2470,7 +2805,9 @@ function draw(){
     const a=state.points[g.startIdx], b=state.points[g.endIdx];
     const xA=xScale.f(a.d), xB=xScale.f(b.d);
     const seg=state.points.slice(g.startIdx,g.endIdx+1).map((p,idx)=>({x:xScale.f(p.d), y:yScale.f(visibleElevation(g.startIdx+idx))}));
-    if(isVuelta){
+    if(isGiroOld){
+      gGravel.appendChild(createEl('rect',{x:xA,y:0,width:Math.max(0,xB-xA),height:520,fill:'rgba(107, 114, 128, 0.22)','clip-path':'url(#areaClip)'}));
+    } else if(isVuelta){
       gGravel.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:'rgba(234, 179, 8, 0.56)','clip-path':'url(#areaClip)'}));
     } else {
       gGravel.appendChild(createEl('rect',{x:xA,y:margin.t,width:Math.max(0,xB-xA),height:h,fill:hexToRgba(COLORS.gravel,isTour?0.24:0.18),'clip-path':'url(#areaClip)'}));
@@ -2481,8 +2818,27 @@ function draw(){
   if(isVuelta){ svg.appendChild(gClimbs); svg.appendChild(gGravel); }
   else { svg.appendChild(gGravel); svg.appendChild(gClimbs); }
 
-  // 4. Profile top stroke line
-  if(!state.noProfileLine){
+  // Internal vertical drop lines layer (for Giro Old: crisp lines inside front face, below red ribbon)
+  const gGiroOldDrops=isGiroOld ? createEl('g',{'pointer-events':'none'}) : null;
+  if(gGiroOldDrops) svg.appendChild(gGiroOldDrops);
+
+  // 4. Profile top stroke line (for Giro Old 3D: CONSTANT perpendicular thickness red ribbon & black borders via clipped strokes!)
+  if(isGiroOld && winPts.length>=2){
+    const gRib=createEl('g',{'pointer-events':'none'});
+    if(!state.noProfileLine){
+      const gRibClip=createEl('g',{'clip-path':'url(#areaClip)'});
+      // Outer black bottom border (extends 7.2px perpendicularly inside front face everywhere!)
+      gRibClip.appendChild(createEl('path',{d:dTopLine,fill:'none',stroke:'#111827','stroke-width':14.4,'stroke-linejoin':'round','stroke-linecap':'butt'}));
+      // Crimson red ribbon (extends 5.5px perpendicularly inside -> exact 1.7px black bottom edge on ALL gradients!)
+      gRibClip.appendChild(createEl('path',{d:dTopLine,fill:'none',stroke:state.lineColor,'stroke-width':11.0,'stroke-linejoin':'round','stroke-linecap':'butt'}));
+      gRib.appendChild(gRibClip);
+      // Crisp 2.0px black top ridge outline -> exact 4.5px uniform crimson ribbon everywhere!
+      gRib.appendChild(createEl('path',{d:dTopLine,fill:'none',stroke:'#111827','stroke-width':2.0,'stroke-linejoin':'round','stroke-linecap':'round'}));
+    }
+    const xLastPt=winPts[winPts.length-1].x, yLastPt=winPts[winPts.length-1].y;
+    gRib.appendChild(createEl('line',{x1:xLastPt.toFixed(2),y1:yLastPt.toFixed(2),x2:xLastPt.toFixed(2),y2:baseYAt(xLastPt).toFixed(2),stroke:'#111827','stroke-width':1.6}));
+    svg.appendChild(gRib);
+  } else if(!state.noProfileLine){
     svg.appendChild(createEl('path',{d:isGiro?dTopLine:dArea,fill:'none',stroke:state.lineColor,'stroke-width':isGiro?3.5:(isTour||isVuelta?1.8:3),'stroke-linejoin':'round','stroke-linecap':'round'}));
   }
 
@@ -2493,7 +2849,7 @@ function draw(){
     const xA=xScale.f(a.d), xB=xScale.f(b.d);
     if(xB<margin.l || xA>margin.l+w) return;
     const xMid=Math.max(margin.l+8, Math.min(margin.l+w-8, (xA+xB)/2));
-    gBadges.appendChild(drawTunnelPortalBadge(xMid, yBase, tpl));
+    gBadges.appendChild(drawTunnelPortalBadge(xMid, isGiroOld ? baseYAt(xMid) : yBase, tpl));
   });
 
   // Giro internal altitude scale drawn along highest peak's vertical line
@@ -2512,9 +2868,10 @@ function draw(){
 
   // 5. Annotation guide helper
   function addAnnotationGuide(anchorX,sourceY,baselineX,labelY,key,opts={}){
-    const strokeCol=opts.stroke || (isGiro?'#64748b':isTour?'#475569':isVuelta?'#64748b':COLORS.guide);
+    const strokeCol=opts.stroke || (isGiro||isGiroOld?'#64748b':isTour?'#475569':isVuelta?'#64748b':COLORS.guide);
+    const gBaseY=(opts.baseY!=null)?opts.baseY:yBase;
     const attrs={
-      'data-annotation-guide':key,'data-guide-anchor-x':anchorX,'data-guide-base-y':yBase,'data-guide-source-y':sourceY,
+      'data-annotation-guide':key,'data-guide-anchor-x':anchorX,'data-guide-base-y':gBaseY,'data-guide-source-y':sourceY,
       fill:'none',stroke:strokeCol,'stroke-width':opts.width||1,'stroke-opacity':opts.opacity??0.85,'pointer-events':'none'
     };
     if(opts.dashed) attrs['stroke-dasharray']='3 3';
@@ -2522,6 +2879,16 @@ function draw(){
     gGuideLayer.appendChild(guide);
     setAnnotationGuideAt(key, baselineX, labelY, !!opts.manualOverride && Math.abs(baselineX-anchorX)>1.5);
   }
+  function addGiroOldInternalDrop(x, yFront, strong=false){
+    if(!gGiroOldDrops || x<margin.l-1 || x>margin.l+w+1) return;
+    gGiroOldDrops.appendChild(createEl('line',{
+      x1:x.toFixed(2), y1:yFront.toFixed(2), x2:x.toFixed(2), y2:baseYAt(x).toFixed(2),
+      stroke: strong ? '#1e293b' : '#475569',
+      'stroke-width': strong ? 1.05 : 0.75,
+      'stroke-opacity': strong ? 0.85 : 0.65
+    }));
+  }
+  const giroOldLabelMeta=[];
   svg.appendChild(gGuideLayer);
 
   const bottomMarkers=[];
@@ -2532,9 +2899,24 @@ function draw(){
   state.gravels.forEach((g,i)=>{
     if(!(state.points[g.startIdx]&&state.points[g.endIdx])) return;
     const a=state.points[g.startIdx], b=state.points[g.endIdx];
-    const x=xScale.f(b.d), xMid=xScale.f((a.d+b.d)/2), yEndV=yScale.f(visibleElevation(g.endIdx));
+    const x=xScale.f(b.d), xMid=xScale.f((a.d+b.d)/2), yEndV=isGiroOld ? profileY(x, visibleElevation(g.endIdx)) : yScale.f(visibleElevation(g.endIdx));
     const len=(b.d-a.d)/1000;
     const displayName=(g.name && g.name.trim())? g.name.trim() : (isVuelta?'Tramo de Tierra':'GRAVEL');
+    if(isGiroOld){
+      const yAnchor=giroOldVisibleTopY(x, yEndV);
+      const labelX=(x-4)+(g.offsetX||0);
+      const pivotX=labelX+4;
+      const labelY=(Math.max(66, yAnchor - 14) - (g.offsetY||0));
+      addGiroOldInternalDrop(x, yEndV, false);
+      addAnnotationGuide(x, yAnchor, pivotX, labelY+4, `g${i}`, { baseY:yAnchor, stroke:'#475569', width:0.9, manualOverride:!!g.manualPos && Math.abs(g.offsetX||0)>0.5 });
+      const text=createEl('text',{x:labelX,y:labelY,fill:'#1e293b','font-size':'12.5',transform:`rotate(-90 ${labelX} ${labelY})`,'data-auto-label':`g${i}`,'data-col-text':'1','data-label-anchor-x':x,'data-label-anchor-y':labelY+4,'data-label-source-y':yAnchor,'data-label-pivot-x':pivotX});
+      const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-family',GIRO_SMALL_FONT); t1.setAttribute('font-weight','700'); t1.setAttribute('x',labelX); t1.setAttribute('y',labelY); t1.textContent=displayName; text.appendChild(t1);
+      const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-family',GIRO_SMALL_FONT); t2.setAttribute('font-weight','400'); t2.setAttribute('font-size','11'); t2.setAttribute('x',labelX); t2.setAttribute('dy',12.5); t2.setAttribute('style','fill:#475569 !important'); t2.textContent=`${len.toFixed(1)} km`; text.appendChild(t2);
+      annotationLayer.appendChild(text);
+      giroOldLabelMeta.push({ el:text, textEl:text, key:`g${i}`, origPivotX:pivotX, baseFs:12.5, badge:null, x, locked:!!g.manualPos });
+      bottomMarkers.push({x, d:b.d, label:(b.d/1000).toFixed(1), bold:false, prio:1});
+      return;
+    }
 
     if(isVuelta){
       const cx=xMid+(g.offsetX||0);
@@ -2563,6 +2945,7 @@ function draw(){
 
   let tourSummitFinishInfo=null;
   let vueltaSummitFinishInfo=null;
+  let giroOldSummitFinishInfo=null;
 
   // 7. Climb labels, summit dots, badges & bottom markers
   state.climbs.forEach((c,i)=>{
@@ -2570,14 +2953,46 @@ function draw(){
     const a=state.points[c.startIdx], b=state.points[c.endIdx];
     const len=b.d-a.d;
     const avgPct=((b.ele - a.ele)/Math.max(1,len))*100;
-    const xA=xScale.f(a.d), x=xScale.f(b.d), yEnd=yScale.f(visibleElevation(c.endIdx));
+    const xA=xScale.f(a.d), x=xScale.f(b.d), yEnd=isGiroOld ? profileY(x, visibleElevation(c.endIdx)) : yScale.f(visibleElevation(c.endIdx));
     const kom=parseKom(c.name);
     const dispName=(kom?kom.label:c.name)||'';
     const hasName=!!dispName.trim();
     const isSummitFinish=(dMax - b.d) <= Math.max(500, dMax * 0.015);
     const sameAsFinish=hasName && normCmp(dispName)===normCmp(fTxt);
 
-    if(isGiro){
+    if(isGiroOld){
+      if(isSummitFinish){
+        giroOldSummitFinishInfo={ lenKm:(len/1000).toFixed(1), avgPct:avgPct.toFixed(1), tier:kom?kom.tier:'', hasKom:!!kom };
+        if(!hasName || sameAsFinish) return;
+      }
+      const yAnchor=giroOldVisibleTopY(x, yEnd);
+      addGiroOldInternalDrop(x, yEnd, !!(kom || hasName));
+      const labelY=(Math.max(76, yAnchor - 14) - (c.offsetY||0));
+      const badgeSpec=(kom && state.showKom && !isSummitFinish) ? { type:'gpm', tier:kom.tier } : null;
+      if(hasName){
+        const labelX=(x-4)+(c.offsetX||0);
+        const pivotX=labelX+4;
+        addAnnotationGuide(x, yAnchor, pivotX, labelY+4, `c${i}`, { baseY:yAnchor, stroke:'#111827', width:1.15, opacity:0.92, manualOverride:!!c.manualPos && Math.abs(c.offsetX||0)>0.5 });
+        const grp=createEl('g',{'data-auto-label':`c${i}`,'data-label-anchor-x':x,'data-label-anchor-y':labelY+4,'data-label-source-y':yAnchor,'data-label-pivot-x':pivotX});
+        const text=createEl('text',{x:labelX,y:labelY,fill:'#0f172a','font-size':'13.5','letter-spacing':'0.2','data-col-text':'1',transform:`rotate(-90 ${labelX} ${labelY})`});
+        const t1=document.createElementNS(NS,'tspan'); t1.setAttribute('font-family',GIRO_KOM_FONT); t1.setAttribute('font-weight','700'); t1.setAttribute('x',labelX); t1.setAttribute('y',labelY); t1.textContent=`${Math.round(b.ele)} - ${dispName.toUpperCase()}`; text.appendChild(t1);
+        const t2=document.createElementNS(NS,'tspan'); t2.setAttribute('font-family',GIRO_SMALL_FONT); t2.setAttribute('font-weight','400'); t2.setAttribute('font-size','11'); t2.setAttribute('letter-spacing','0'); t2.setAttribute('x',labelX); t2.setAttribute('dy',12.5); t2.setAttribute('style','fill:#475569 !important'); t2.textContent=`${(len/1000).toFixed(1)} km · ${avgPct.toFixed(1)}%`; text.appendChild(t2);
+        grp.appendChild(text);
+        annotationLayer.appendChild(grp);
+        giroOldLabelMeta.push({ el:grp, textEl:text, key:`c${i}`, origPivotX:pivotX, baseFs:13.5, badge:badgeSpec, x, locked:!!c.manualPos });
+      } else {
+        const labelX=(x+4)+(c.offsetX||0);
+        const pivotX=labelX-4;
+        addAnnotationGuide(x, yAnchor, pivotX, labelY+4, `c${i}`, { baseY:yAnchor, stroke:kom?'#111827':'#64748b', width:kom?1.05:0.9, opacity:0.85, manualOverride:!!c.manualPos && Math.abs(c.offsetX||0)>0.5 });
+        const grp=createEl('g',{'data-auto-label':`c${i}`,'data-label-anchor-x':x,'data-label-anchor-y':labelY+4,'data-label-source-y':yAnchor,'data-label-pivot-x':pivotX});
+        const text=createEl('text',{x:labelX,y:labelY,'font-family':GIRO_SMALL_FONT,'font-weight':'400','font-size':'11.5','data-col-text':'1',transform:`rotate(-90 ${labelX} ${labelY})`,style:'fill:#475569 !important'});
+        text.textContent=`${(len/1000).toFixed(1)} km · ${avgPct.toFixed(1)}%`;
+        grp.appendChild(text);
+        annotationLayer.appendChild(grp);
+        giroOldLabelMeta.push({ el:grp, textEl:text, key:`c${i}`, origPivotX:pivotX, baseFs:11.5, badge:badgeSpec, x, locked:!!c.manualPos });
+      }
+      bottomMarkers.push({x, d:b.d, label:(b.d/1000).toFixed(1), bold:true, prio:3});
+    } else if(isGiro){
       if(kom && state.showKom){ gBadges.appendChild(drawGiroKomBadge(x, yBase, kom.tier)); }
       if(isSummitFinish){
         const bandW=Math.max(18, x - xA);
@@ -2744,12 +3159,29 @@ function draw(){
   state.pois.forEach((p,i)=>{
     if(!state.points[p.idx]) return;
     const pt=state.points[p.idx];
-    const x=xScale.f(pt.d), yEnd=yScale.f(visibleElevation(p.idx));
+    const x=xScale.f(pt.d), yEnd=isGiroOld ? profileY(x, visibleElevation(p.idx)) : yScale.f(visibleElevation(p.idx));
     const ele=Math.round(visibleElevation(p.idx));
     const k=poiKind(p.name);
     const disp=poiDisplayName(p.name);
 
-    if(isGiro){
+    if(isGiroOld){
+      const isSpecial=!!k;
+      const yAnchor=giroOldVisibleTopY(x, yEnd);
+      addGiroOldInternalDrop(x, yEnd, isSpecial);
+      const labelX=(x+4.5)+(p.offsetX||0);
+      const pivotX=labelX-4.5;
+      const labelY=(Math.max(76, yAnchor - 14) - (p.offsetY||0));
+      addAnnotationGuide(x, yAnchor, pivotX, labelY+4, `p${i}`, { baseY:yAnchor, stroke:isSpecial?'#111827':'#64748b', width:isSpecial?1.1:0.85, manualOverride:!!p.manualPos && Math.abs(p.offsetX||0)>0.5 });
+      const poiFs=isSpecial?13.5:12.0;
+      const grp=createEl('g',{'data-auto-label':`p${i}`,'data-label-anchor-x':x,'data-label-anchor-y':labelY+4,'data-label-source-y':yAnchor,'data-label-pivot-x':pivotX});
+      const text=createEl('text',{x:labelX,y:labelY,'font-size':String(poiFs),'letter-spacing':isSpecial?'0.2':'0.05','text-anchor':'start','data-col-text':'1',transform:`rotate(-90 ${labelX} ${labelY})`,style:isSpecial?'fill:#0f172a !important':'fill:#1e293b !important'});
+      const tName=document.createElementNS(NS,'tspan'); tName.setAttribute('font-family',isSpecial?GIRO_KOM_FONT:GIRO_SMALL_FONT); tName.setAttribute('font-weight',isSpecial?'700':'400'); tName.setAttribute('x',labelX); tName.setAttribute('y',labelY); tName.textContent=`${ele} - ${isSpecial?disp.toUpperCase():disp}`; text.appendChild(tName);
+      grp.appendChild(text);
+      annotationLayer.appendChild(grp);
+      const badgeSpec=(state.showSprint && k) ? { type:k.type } : null;
+      giroOldLabelMeta.push({ el:grp, textEl:text, key:`p${i}`, origPivotX:pivotX, baseFs:poiFs, badge:badgeSpec, x, locked:!!p.manualPos });
+      bottomMarkers.push({x, d:pt.d, label:(pt.d/1000).toFixed(1), bold:isSpecial, prio:isSpecial?2:1});
+    } else if(isGiro){
       const isSpecial=!!k;
       const labelX=(x+4.5)+(p.offsetX||0);
       const labelY=(Math.max(margin.t+14, yEnd-16) - (p.offsetY||0));
@@ -2843,6 +3275,35 @@ function draw(){
       const tx=createEl('text',{x:m.x,y:ty,'text-anchor':'middle','font-size':'13',fill:'#111827',transform:`rotate(-90 ${m.x} ${ty})`});
       tx.textContent=m.label; gTicks.appendChild(tx);
     }
+  } else if(isGiroOld){
+    const xFirst=winPts.length?winPts[0].x:margin.l;
+    const xLastPt=winPts.length?winPts[winPts.length-1].x:(margin.l+w);
+    const yB0=baseYAt(xFirst), yB1=baseYAt(xLastPt);
+    gTicks.appendChild(createEl('line',{x1:xFirst.toFixed(2),y1:yB0.toFixed(2),x2:xLastPt.toFixed(2),y2:yB1.toFixed(2),stroke:'#111827','stroke-width':3.4,'stroke-linecap':'round'}));
+    gTicks.appendChild(createEl('line',{x1:xFirst.toFixed(2),y1:(yB0+4.8).toFixed(2),x2:xLastPt.toFixed(2),y2:(yB1+4.8).toFixed(2),stroke:'#64748b','stroke-width':0.9}));
+    for(let km=firstTick; km<=Math.min(lastWhole, Math.ceil(vEndKm/step)*step); km+=step){
+      const x=xScale.f(km*1000); if(x>xMax-8 || x<margin.l+8) continue;
+      const yb=baseYAt(x);
+      gTicks.appendChild(createEl('line',{x1:x,y1:yb+1,x2:x,y2:yb+6.5,stroke:'#334155','stroke-width':0.9}));
+      const tKm=createEl('text',{x:0,y:0,'text-anchor':'middle','font-family':GIRO_SMALL_FONT,'font-weight':'500','font-size':'10.5',transform:`translate(${x.toFixed(1)},${(yb+15.5).toFixed(1)}) skewY(${tiltDeg.toFixed(2)})`,style:'fill:#334155 !important'});
+      tKm.textContent=String(km); gTicks.appendChild(tKm);
+    }
+    const giroOldPartials=[
+      {x:xScale.f(0), label:'0.0', bold:true, prio:4},
+      {x:xMax, label:dMaxKm.toFixed(1), bold:true, prio:4},
+      ...bottomMarkers.filter(m=>m.x>margin.l+14 && m.x<margin.l+w-14)
+    ].sort((a,b)=>b.prio-a.prio || a.x-b.x);
+    const usedX=[];
+    for(const m of giroOldPartials){
+      if(m.x<margin.l-2 || m.x>margin.l+w+2) continue;
+      if(usedX.some(ux=>Math.abs(ux-m.x)<13)) continue;
+      usedX.push(m.x);
+      const yb=baseYAt(m.x);
+      gTicks.appendChild(createEl('line',{x1:m.x,y1:yb,x2:m.x,y2:yb+19,stroke:m.bold?'#111827':'#64748b','stroke-width':m.bold?1.15:0.75}));
+      const ty=yb+22;
+      const tx=createEl('text',{x:m.x+4,y:ty,'text-anchor':'end','font-family':m.bold?GIRO_ENDPOINT_FONT:GIRO_SMALL_FONT,'font-size':m.bold?'12.5':'11.5','font-weight':m.bold?'700':'400',transform:`rotate(-90 ${m.x+4} ${ty})`,style:m.bold?'fill:#0f172a !important':'fill:#334155 !important'});
+      tx.textContent=m.label; gTicks.appendChild(tx);
+    }
   } else if(isGiro){
     gTicks.appendChild(createEl('line',{x1:margin.l,y1:yBase,x2:margin.l+w,y2:yBase,stroke:'#111827','stroke-width':2}));
     gTicks.appendChild(createEl('line',{x1:margin.l,y1:margin.t+10,x2:margin.l,y2:yBase+18,stroke:'#111827','stroke-width':1.8}));
@@ -2924,7 +3385,64 @@ function draw(){
   const altYOffset=16;
   const gTop=createEl('g',{'pointer-events':'none'});
 
-  if(isGiro){
+  let giroOldHeaders=null;
+  if(isGiroOld){
+    const xStartBack=margin.l - G3_EX;
+    const yStartBack=Math.max(40, profileY(margin.l, visibleElevation(0)) - G3_EY);
+    const yFinishFront=profileY(margin.l+w, visibleElevation(state.points.length-1));
+    const yStartHead=Math.max(22, Math.min(yStartBack - 44, 96 - state.startOffset));
+    const yFinishHead=Math.max(20, Math.min(yFinishFront - 44, 24 - state.finishOffset));
+
+    const gS=createEl('g',{'data-endpoint-label':'start','data-name-y':yStartHead,'pointer-events':'visiblePainted'});
+    gS.appendChild(createEl('line',{x1:xStartBack.toFixed(1),y1:(yStartHead+16).toFixed(1),x2:xStartBack.toFixed(1),y2:yStartBack.toFixed(1),stroke:'#111827','stroke-width':1.5}));
+    const gSHead=createEl('g',{'data-endpoint-obstacle':'1'});
+    gSHead.appendChild(drawGiroOldPartenzaBadge(xStartBack, yStartHead, tiltDeg));
+    const tS=createEl('text',{
+      x:0, y:0, 'text-anchor':'start',
+      'font-family':GIRO_ENDPOINT_FONT, 'font-weight':'700', 'font-size':'18.5', 'letter-spacing':'0.3',
+      transform:`translate(${(xStartBack+23).toFixed(1)},${(yStartHead+4).toFixed(1)}) skewY(${tiltDeg.toFixed(2)})`,
+      style:'fill:#0f172a !important'
+    });
+    tS.textContent=`${Math.round(state.points[0].eleS)} - ${sTxt}`;
+    gSHead.appendChild(tS);
+    gS.appendChild(gSHead);
+    gTop.appendChild(gS);
+
+    const xFin=margin.l + w;
+    const gF=createEl('g',{'data-endpoint-label':'finish','data-name-y':yFinishHead,'pointer-events':'visiblePainted'});
+    const hasSummitKom=!!(giroOldSummitFinishInfo && giroOldSummitFinishInfo.hasKom && state.showKom);
+    const stemTopFin=hasSummitKom ? (yFinishHead + 48) : (yFinishHead + 16);
+    if(yFinishFront > stemTopFin + 2){
+      gF.appendChild(createEl('line',{x1:xFin.toFixed(1),y1:stemTopFin.toFixed(1),x2:xFin.toFixed(1),y2:yFinishFront.toFixed(1),stroke:'#111827','stroke-width':1.5}));
+    }
+    const gFHead=createEl('g',{'data-endpoint-obstacle':'1'});
+    gFHead.appendChild(drawGiroOldArrivoBadge(xFin, yFinishHead, tiltDeg));
+    if(hasSummitKom){
+      gFHead.appendChild(drawGiroOldGpmBadge(xFin, yFinishHead + 32, giroOldSummitFinishInfo.tier, tiltDeg));
+    }
+    const tF=createEl('text',{
+      x:0, y:0, 'text-anchor':'end',
+      'font-family':GIRO_ENDPOINT_FONT, 'font-weight':'700', 'font-size':'18.5', 'letter-spacing':'0.3',
+      transform:`translate(${(xFin-23).toFixed(1)},${(yFinishHead+4).toFixed(1)}) skewY(${tiltDeg.toFixed(2)})`,
+      style:'fill:#0f172a !important'
+    });
+    tF.textContent=`${Math.round(state.points[state.points.length-1].eleS)} - ${fTxt}`;
+    gFHead.appendChild(tF);
+    if(giroOldSummitFinishInfo){
+      const tFSub=createEl('text',{
+        x:0, y:0, 'text-anchor':'end',
+        'font-family':GIRO_SMALL_FONT, 'font-weight':'500', 'font-size':'12',
+        transform:`translate(${(xFin-23).toFixed(1)},${(yFinishHead+19).toFixed(1)}) skewY(${tiltDeg.toFixed(2)})`,
+        style:'fill:#475569 !important'
+      });
+      tFSub.textContent=`${giroOldSummitFinishInfo.lenKm} km · ${giroOldSummitFinishInfo.avgPct}%`;
+      gFHead.appendChild(tFSub);
+    }
+    gF.appendChild(gFHead);
+    gTop.appendChild(gF);
+    svg.appendChild(gTop);
+    giroOldHeaders={ gSHead, gFHead, tS, tF, xStartBack, yStartHead, xFin, yFinishHead, hasSummitKom, hasSub:!!giroOldSummitFinishInfo };
+  } else if(isGiro){
     const yStartEle=yScale.f(visibleElevation(0));
     const yFinishEle=yScale.f(visibleElevation(state.points.length-1));
     const sAnchorBot=Math.min(yBase+4, Math.max(margin.t+110, yStartEle+28)) - state.startOffset;
@@ -3083,6 +3601,138 @@ function draw(){
   }
 
   resolveVerticalLabelCollisions(margin,h);
+
+  if(isGiroOld && giroOldHeaders && giroOldLabelMeta.length){
+    try{
+      const bStartText=svgBoxForElement(giroOldHeaders.tS);
+      const bFinText=svgBoxForElement(giroOldHeaders.tF);
+      const bStartAll=svgBoxForElement(giroOldHeaders.gSHead);
+      const bFinAll=svgBoxForElement(giroOldHeaders.gFHead);
+      const headerCeilingAt=(xq, halfW=18)=>{
+        let ceil=12;
+        if(bStartAll && xq + halfW >= bStartAll.x - 4 && xq - halfW <= bStartAll.x + bStartAll.w + 8){
+          const ySlant=giroOldHeaders.yStartHead + 14 + sc.tiltSlope * (xq - giroOldHeaders.xStartBack);
+          ceil=Math.max(ceil, Math.min(bStartAll.y + bStartAll.h, ySlant) + 10);
+        }
+        if(bFinAll && xq + halfW >= bFinAll.x - 8 && xq - halfW <= bFinAll.x + bFinAll.w + 4){
+          const rightNearBadge=(xq + halfW >= giroOldHeaders.xFin - 24);
+          const extraH=rightNearBadge ? (giroOldHeaders.hasSummitKom ? 52 : 20) : (giroOldHeaders.hasSub ? 28 : 14);
+          const ySlant=giroOldHeaders.yFinishHead + extraH + sc.tiltSlope * (xq - giroOldHeaders.xFin);
+          ceil=Math.max(ceil, Math.max(ySlant, rightNearBadge ? (bFinAll.y + bFinAll.h) : ySlant) + 10);
+        }
+        return ceil;
+      };
+
+      const overlapRect=(a,b,pad=3)=>a.x<b.x+b.w+pad && a.x+a.w+pad>b.x && a.y<b.y+b.h+pad && a.y+a.h+pad>b.y;
+      const badgedEntries=[];
+      const textBoxes=[];
+
+      for(const meta of giroOldLabelMeta){
+        if(meta.el.style.display==='none') continue;
+        const tr=parseTranslatePrefix(meta.el.getAttribute('transform'));
+        const finalPivotX=meta.origPivotX + tr.x;
+        let box=svgBoxForElement(meta.textEl);
+        if(!box) continue;
+
+        const hasBadge=!!meta.badge;
+        const ceilY=headerCeilingAt(finalPivotX, hasBadge ? 20 : 8);
+        const minTextTop=hasBadge ? Math.max(46, ceilY + 42) : Math.max(14, ceilY + 6);
+
+        if(box.y < minTextTop && box.h > 10){
+          const bottomY=box.y + box.h;
+          const availH=Math.max(36, bottomY - minTextTop);
+          const ratio=Math.max(0.68, availH / box.h);
+          const nextFs=Math.max(9.2, meta.baseFs * ratio);
+          meta.textEl.setAttribute('font-size', nextFs.toFixed(1));
+          box=svgBoxForElement(meta.textEl) || box;
+        }
+        textBoxes.push({ key:meta.key, box });
+
+        if(hasBadge){
+          const minBadgeY=Math.max(20, ceilY + 17);
+          const maxBadgeY=box.y - 24;
+          const skylineY=Math.max(minBadgeY, 62 + tiltAtX(finalPivotX)*0.6);
+          const idealY=(maxBadgeY >= minBadgeY) ? Math.min(skylineY, maxBadgeY) : Math.max(18, maxBadgeY);
+          badgedEntries.push({
+            meta, dx:tr.x, dy:tr.y,
+            pivotX:finalPivotX,
+            textTopY:box.y,
+            minBadgeY, idealY
+          });
+        }
+      }
+
+      // Place top badges left-to-right with zero overlap against slanted headers, other badges, and vertical texts!
+      badgedEntries.sort((a,b)=>a.pivotX - b.pivotX);
+      const placedBadgeBoxes=[];
+      const headerObs=[];
+      if(bStartAll) headerObs.push(bStartAll);
+      if(bFinAll) headerObs.push(bFinAll);
+
+      for(const entry of badgedEntries){
+        const bw=34, bh=31;
+        const minX=margin.l - 10, maxX=margin.l + w + 8;
+        const hitsAnything=(cx, cy)=>{
+          const r={ x:cx - bw/2, y:cy - bh/2, w:bw, h:bh };
+          if(r.x < minX - 18 || r.x + r.w > maxX + 18 || r.y < 4) return true;
+          const localCeil=headerCeilingAt(cx, bw/2 + 2);
+          if(cy - bh/2 < localCeil) return true;
+          if(placedBadgeBoxes.some(pb=>overlapRect(r, pb, 4))) return true;
+          if(cy + bh/2 > entry.textTopY - 6 && Math.abs(cx - entry.pivotX) < 18) return true;
+          if(textBoxes.some(tb=>tb.key !== entry.meta.key && overlapRect(r, tb.box, 3))) return true;
+          return false;
+        };
+
+        const cands=[
+          [0,0], [0,-16], [0,-28], [0,14],
+          [-34,0], [34,0], [-34,-18], [34,-18], [-48,0], [48,0],
+          [-34,16], [34,16], [-62,0], [62,0], [0,26]
+        ];
+        let bestX=entry.pivotX, bestY=entry.idealY, found=false;
+        for(const [ox, oy] of cands){
+          const cx=Math.max(minX, Math.min(maxX, entry.pivotX + ox));
+          const cy=entry.idealY + oy;
+          if(!hitsAnything(cx, cy)){
+            bestX=cx; bestY=cy; found=true; break;
+          }
+        }
+        if(!found){
+          // Last-resort fallback: keep strictly below slanted header at bestX
+          bestY=Math.max(headerCeilingAt(bestX, bw/2) + bh/2 + 2, Math.min(entry.textTopY - 22, entry.idealY));
+        }
+
+        placedBadgeBoxes.push({ x:bestX - bw/2, y:bestY - bh/2, w:bw, h:bh });
+
+        const localPivotX=entry.pivotX - entry.dx;
+        const localBadgeX=bestX - entry.dx;
+        const localBadgeY=bestY - entry.dy;
+        const localStemBot=(entry.textTopY - 4) - entry.dy;
+        const localStemTop=localBadgeY + 15;
+
+        if(Math.abs(bestX - entry.pivotX) <= 1.5){
+          if(localStemBot > localStemTop + 1){
+            entry.meta.el.appendChild(createEl('line',{
+              x1:localPivotX.toFixed(1), y1:localStemBot.toFixed(1),
+              x2:localPivotX.toFixed(1), y2:localStemTop.toFixed(1),
+              stroke:'#111827', 'stroke-width':1.1, 'data-g3-stem':'1'
+            }));
+          }
+        } else {
+          // Authentic Giro Old dog-leg elbow stem when a badge nudges sideways (like Knocknagulliagh GPM 4 + TV!)
+          const jogY=Math.min(localStemBot - 6, Math.max(localStemTop + 10, (localStemBot + localStemTop)/2));
+          const dStem=`M ${localPivotX.toFixed(1)} ${localStemBot.toFixed(1)} V ${jogY.toFixed(1)} L ${localBadgeX.toFixed(1)} ${Math.max(localStemTop+2, jogY-10).toFixed(1)} V ${localStemTop.toFixed(1)}`;
+          entry.meta.el.appendChild(createEl('path',{
+            d:dStem, fill:'none', stroke:'#111827', 'stroke-width':1.1, 'stroke-linejoin':'round', 'data-g3-stem':'1'
+          }));
+        }
+
+        const sp=entry.meta.badge;
+        if(sp.type==='gpm') entry.meta.el.appendChild(drawGiroOldGpmBadge(localBadgeX, localBadgeY, sp.tier, tiltDeg));
+        else if(sp.type==='sprint') entry.meta.el.appendChild(drawGiroOldTvBadge(localBadgeX, localBadgeY, tiltDeg));
+        else if(sp.type==='feed') entry.meta.el.appendChild(drawGiroOldFeedBadge(localBadgeX, localBadgeY, tiltDeg));
+      }
+    }catch(_){}
+  }
 
   refreshMapOverlays();
   if(state.hoverIndex!=null && state.points[state.hoverIndex]) showCrosshairAtIndex(state.hoverIndex,false);
@@ -3246,10 +3896,10 @@ function showCrosshairAtIndex(idx,followChart=false,followMap=false){
   state.hoverIndex=idx;
   if(followChart) revealIndexInChart(idx);
   ensureGuide();
-  const sc=getScales(),p=state.points[idx],x=sc.xScale.f(p.d),y=sc.yScale.f(visibleElevation(idx));
+  const sc=getScales(),p=state.points[idx],x=sc.xScale.f(p.d),y=sc.profileY(x, visibleElevation(idx));
   guideGroup.innerHTML='';
   if(x>=sc.margin.l-0.01&&x<=sc.margin.l+sc.w+0.01){
-    guideGroup.appendChild(createEl('line',{x1:x,y1:sc.margin.t,x2:x,y2:sc.margin.t+sc.h,stroke:COLORS.guide,'stroke-dasharray':'4 4'}));
+    guideGroup.appendChild(createEl('line',{x1:x,y1:Math.min(sc.margin.t, y-20),x2:x,y2:sc.baseYAt(x),stroke:COLORS.guide,'stroke-dasharray':'4 4'}));
     guideGroup.appendChild(createEl('circle',{cx:x,cy:y,r:5,fill:hoverDotColor(),stroke:'#fff','stroke-width':1.5}));
   }
   updateMapCursorAtIndex(idx,followMap);
@@ -3712,7 +4362,7 @@ function currentSvgNode(extraStyle=''){
   clone.setAttribute('xmlns',NS); clone.setAttribute('xmlns:xlink',XLINK);
   clone.setAttribute('width','1280'); clone.setAttribute('height','520');
   const styleEl=document.createElementNS(NS,'style');
-  styleEl.textContent=extraStyle+"\n"+`text{fill:${COLORS.text}} g.badge text{fill:#fff !important} g.giro-kom text{fill:#1d4ed8 !important} g.vuelta-badge-dark text{fill:#111827 !important} text.tdf-km{fill:#fde017 !important} text.giro-muted{fill:#64748b !important}`;
+  styleEl.textContent=extraStyle+"\n"+`text{fill:${COLORS.text}} g.badge text{fill:#fff !important} g.giro-kom text{fill:#1d4ed8 !important} g.giro-old-dark text{fill:#111827 !important} g.giro-old-red text{fill:#dc2626 !important} g.giro-old-white text{fill:#ffffff !important} g.vuelta-badge-dark text{fill:#111827 !important} text.tdf-km{fill:#fde017 !important} text.giro-muted{fill:#64748b !important}`;
   clone.insertBefore(styleEl, clone.firstChild);
   return clone;
 }
@@ -6340,13 +6990,17 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
 (function(){
   const DB_NAME = 'se_track_archive_v1';
   const DB_STORE = 'tracks';
+  const DB_META_STORE = 'meta';
   const LS_FALLBACK_KEY = 'se_track_archive_ls_v1';
+  const LS_DELETED_KEY = 'se_track_archive_deleted_v1';
 
   let dbPromise = null;
   let cachedTracks = [];
   let activeArchiveId = null;
   let editingRowId = null;
   let toastTimer = null;
+  let linkedFileHandle = null;
+  let linkedFileReady = false;
 
   const elSaveOpenBtn = document.getElementById('archiveSaveOpenBtn');
   const elArchOpenBtn = document.getElementById('archiveOpenBtn');
@@ -6378,6 +7032,11 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   const elArchList = document.getElementById('archiveList');
   const elArchSummary = document.getElementById('archiveSummaryText');
   const elArchSaveFromModal = document.getElementById('archiveSaveFromModalBtn');
+  const elDiskBar = document.getElementById('archiveDiskBar');
+  const elDiskStatus = document.getElementById('archiveDiskStatus');
+  const elLinkFileBtn = document.getElementById('archiveLinkFileBtn');
+  const elNewFileBtn = document.getElementById('archiveNewFileBtn');
+  const elUnlinkFileBtn = document.getElementById('archiveUnlinkFileBtn');
 
   let pendingSaveContext = null;
 
@@ -6413,17 +7072,20 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     return Math.round(gain);
   }
 
-  /* ---- IndexedDB with localStorage fallback ---- */
+  /* ---- Dual-Mirror Persistent Storage (IndexedDB v2 + localStorage merge + optional linked JSON file on disk) ---- */
   function openDb(){
     if(dbPromise) return dbPromise;
     dbPromise = new Promise((resolve)=>{
       if(typeof indexedDB === 'undefined'){ resolve(null); return; }
       try{
-        const req = indexedDB.open(DB_NAME, 1);
+        const req = indexedDB.open(DB_NAME, 2);
         req.onupgradeneeded = ()=>{
           const db = req.result;
           if(!db.objectStoreNames.contains(DB_STORE)){
             db.createObjectStore(DB_STORE, { keyPath:'id' });
+          }
+          if(!db.objectStoreNames.contains(DB_META_STORE)){
+            db.createObjectStore(DB_META_STORE);
           }
         };
         req.onsuccess = ()=> resolve(req.result);
@@ -6431,6 +7093,32 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
       }catch(_){ resolve(null); }
     });
     return dbPromise;
+  }
+
+  async function metaGet(key){
+    const db = await openDb();
+    if(!db || !db.objectStoreNames.contains(DB_META_STORE)) return null;
+    return new Promise((resolve)=>{
+      try{
+        const tx = db.transaction(DB_META_STORE, 'readonly');
+        const req = tx.objectStore(DB_META_STORE).get(key);
+        req.onsuccess = ()=> resolve(req.result ?? null);
+        req.onerror = ()=> resolve(null);
+      }catch(_){ resolve(null); }
+    });
+  }
+  async function metaSet(key, val){
+    const db = await openDb();
+    if(!db || !db.objectStoreNames.contains(DB_META_STORE)) return;
+    return new Promise((resolve)=>{
+      try{
+        const tx = db.transaction(DB_META_STORE, 'readwrite');
+        if(val === null || val === undefined) tx.objectStore(DB_META_STORE).delete(key);
+        else tx.objectStore(DB_META_STORE).put(val, key);
+        tx.oncomplete = ()=> resolve();
+        tx.onerror = ()=> resolve();
+      }catch(_){ resolve(); }
+    });
   }
 
   function readLsFallback(){
@@ -6442,44 +7130,74 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
   function writeLsFallback(arr){
     try{ localStorage.setItem(LS_FALLBACK_KEY, JSON.stringify(arr)); }catch(_){}
   }
+  function readDeletedMap(){
+    try{
+      const obj = JSON.parse(localStorage.getItem(LS_DELETED_KEY) || '{}');
+      return (obj && typeof obj === 'object') ? obj : {};
+    }catch(_){ return {}; }
+  }
+  function markDeletedId(id, ts){
+    try{
+      const m = readDeletedMap();
+      m[id] = ts || new Date().toISOString();
+      localStorage.setItem(LS_DELETED_KEY, JSON.stringify(m));
+    }catch(_){}
+  }
+  function unmarkDeletedId(id){
+    try{
+      const m = readDeletedMap();
+      if(m[id]){ delete m[id]; localStorage.setItem(LS_DELETED_KEY, JSON.stringify(m)); }
+    }catch(_){}
+  }
 
-  async function dbGetAll(){
+  function mergeTrackArrays(arrA, arrB){
+    const delMap = readDeletedMap();
+    const map = new Map();
+    const ingest = (list)=>{
+      for(const r of (list || [])){
+        if(!r || !r.id) continue;
+        const delTs = delMap[r.id];
+        if(delTs && (!r.updatedAt || delTs > r.updatedAt)) continue;
+        const cur = map.get(r.id);
+        if(!cur || (r.updatedAt || '') > (cur.updatedAt || '')){
+          map.set(r.id, r);
+        }
+      }
+    };
+    ingest(arrA);
+    ingest(arrB);
+    return Array.from(map.values());
+  }
+
+  async function idbGetAllRaw(){
     const db = await openDb();
-    if(!db) return readLsFallback();
+    if(!db) return [];
     return new Promise((resolve)=>{
       try{
         const tx = db.transaction(DB_STORE, 'readonly');
         const req = tx.objectStore(DB_STORE).getAll();
         req.onsuccess = ()=> resolve(Array.isArray(req.result) ? req.result : []);
-        req.onerror = ()=> resolve(readLsFallback());
-      }catch(_){ resolve(readLsFallback()); }
+        req.onerror = ()=> resolve([]);
+      }catch(_){ resolve([]); }
     });
   }
 
-  async function dbPut(record){
+  async function idbPutRaw(record){
     const db = await openDb();
-    if(!db){
-      const all = readLsFallback().filter(r=>r.id !== record.id);
-      all.push(record);
-      writeLsFallback(all);
-      return;
-    }
-    return new Promise((resolve, reject)=>{
+    if(!db) return;
+    return new Promise((resolve)=>{
       try{
         const tx = db.transaction(DB_STORE, 'readwrite');
         tx.objectStore(DB_STORE).put(record);
         tx.oncomplete = ()=> resolve();
-        tx.onerror = ()=> reject(tx.error);
-      }catch(err){ reject(err); }
+        tx.onerror = ()=> resolve();
+      }catch(_){ resolve(); }
     });
   }
 
-  async function dbDelete(id){
+  async function idbDeleteRaw(id){
     const db = await openDb();
-    if(!db){
-      writeLsFallback(readLsFallback().filter(r=>r.id !== id));
-      return;
-    }
+    if(!db) return;
     return new Promise((resolve)=>{
       try{
         const tx = db.transaction(DB_STORE, 'readwrite');
@@ -6490,12 +7208,151 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     });
   }
 
+  function updateDiskBarUi(){
+    if(!elDiskBar) return;
+    const canFs = typeof window.showOpenFilePicker === 'function' && typeof window.showSaveFilePicker === 'function';
+    elDiskBar.classList.remove('linked', 'needs-perm');
+    if(linkedFileHandle){
+      const fn = linkedFileHandle.name || 'archivio.json';
+      if(linkedFileReady){
+        elDiskBar.classList.add('linked');
+        elDiskStatus.textContent = `Sincronizzato automaticamente su disco: ${fn}`;
+        elLinkFileBtn.textContent = '↻ Cambia file';
+        elNewFileBtn.style.display = 'none';
+        elUnlinkFileBtn.style.display = '';
+      } else {
+        elDiskBar.classList.add('needs-perm');
+        elDiskStatus.textContent = `File collegato (${fn}) — clicca per riattivare la sincronizzazione`;
+        elLinkFileBtn.textContent = '🔓 Riattiva sync';
+        elNewFileBtn.style.display = 'none';
+        elUnlinkFileBtn.style.display = '';
+      }
+    } else {
+      elDiskStatus.textContent = canFs
+        ? 'Archivio nel browser (IndexedDB + localStorage) — collega un file JSON per condividerlo tra versioni'
+        : 'Archivio locale nel browser (IndexedDB + localStorage) — usa Esporta/Importa JSON tra versioni';
+      elLinkFileBtn.textContent = '🔗 Collega file su disco';
+      elLinkFileBtn.style.display = canFs ? '' : 'none';
+      elNewFileBtn.style.display = canFs ? '' : 'none';
+      elUnlinkFileBtn.style.display = 'none';
+    }
+  }
+
+  async function verifyHandlePerm(handle, ask=false){
+    if(!handle) return false;
+    try{
+      const opts = { mode: 'readwrite' };
+      if((await handle.queryPermission(opts)) === 'granted') return true;
+      if(ask && (await handle.requestPermission(opts)) === 'granted') return true;
+    }catch(_){}
+    return false;
+  }
+
+  async function writeTracksToLinkedDiskFile(tracks){
+    if(!linkedFileHandle || !linkedFileReady) return;
+    try{
+      const payload = {
+        type: 'se_archive_bundle',
+        version: '2.4.0',
+        exportedAt: new Date().toISOString(),
+        tracks: tracks || cachedTracks
+      };
+      const writable = await linkedFileHandle.createWritable();
+      await writable.write(JSON.stringify(payload, null, 2));
+      await writable.close();
+    }catch(err){
+      console.warn('Disk archive sync write failed:', err);
+      linkedFileReady = false;
+      updateDiskBarUi();
+    }
+  }
+
+  async function syncMergeWithLinkedDiskFile(askPerm=false){
+    if(!linkedFileHandle) return false;
+    const ok = await verifyHandlePerm(linkedFileHandle, askPerm);
+    linkedFileReady = ok;
+    updateDiskBarUi();
+    if(!ok) return false;
+    try{
+      const file = await linkedFileHandle.getFile();
+      const text = (await file.text()).trim();
+      let diskTracks = [];
+      if(text){
+        const parsed = JSON.parse(text);
+        if(parsed?.type === 'se_archive_bundle' && Array.isArray(parsed.tracks)) diskTracks = parsed.tracks;
+        else if(parsed?.type === 'se_track_record' && parsed.track) diskTracks = [parsed.track];
+        else if(Array.isArray(parsed)) diskTracks = parsed;
+      }
+      const localAll = await dbGetAll();
+      const merged = mergeTrackArrays(localAll, diskTracks);
+      for(const r of merged) await idbPutRaw(r);
+      writeLsFallback(merged);
+      cachedTracks = merged;
+      cachedTracks.sort((a,b)=> (b.updatedAt||'').localeCompare(a.updatedAt||''));
+      elCountBadge.textContent = String(cachedTracks.length);
+      elModalCount.textContent = String(cachedTracks.length);
+      await writeTracksToLinkedDiskFile(cachedTracks);
+      return true;
+    }catch(err){
+      console.warn('Disk archive sync read failed:', err);
+      return false;
+    }
+  }
+
+  async function dbGetAll(){
+    const idbArr = await idbGetAllRaw();
+    const lsArr = readLsFallback();
+    const merged = mergeTrackArrays(idbArr, lsArr);
+    // Heal whichever local store missed records (e.g. Chrome file:// localStorage surviving across HTML versions!)
+    if(merged.length > idbArr.length){
+      for(const r of merged) await idbPutRaw(r);
+    }
+    if(merged.length !== lsArr.length){
+      writeLsFallback(merged);
+    }
+    return merged;
+  }
+
+  async function dbPut(record){
+    unmarkDeletedId(record.id);
+    await idbPutRaw(record);
+    const lsAll = readLsFallback().filter(r=>r.id !== record.id);
+    lsAll.push(record);
+    writeLsFallback(lsAll);
+    const all = await dbGetAll();
+    if(linkedFileHandle && linkedFileReady) await writeTracksToLinkedDiskFile(all);
+  }
+
+  async function dbDelete(id){
+    markDeletedId(id);
+    await idbDeleteRaw(id);
+    writeLsFallback(readLsFallback().filter(r=>r.id !== id));
+    const all = await dbGetAll();
+    if(linkedFileHandle && linkedFileReady) await writeTracksToLinkedDiskFile(all);
+  }
+
   async function refreshCache(){
     cachedTracks = await dbGetAll();
     cachedTracks.sort((a,b)=> (b.updatedAt||'').localeCompare(a.updatedAt||''));
     elCountBadge.textContent = String(cachedTracks.length);
     elModalCount.textContent = String(cachedTracks.length);
+    updateDiskBarUi();
     return cachedTracks;
+  }
+
+  async function restoreLinkedFileHandleOnBoot(){
+    try{
+      const saved = await metaGet('linkedDiskHandle');
+      if(saved){
+        linkedFileHandle = saved;
+        linkedFileReady = await verifyHandlePerm(saved, false);
+        updateDiskBarUi();
+        if(linkedFileReady){
+          await syncMergeWithLinkedDiskFile(false);
+        }
+      }
+    }catch(_){}
+    updateDiskBarUi();
   }
 
   /* ---- Gather current active track from DRAW or PAINT ---- */
@@ -7013,6 +7870,70 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
 
   window.showAppToast = showToast;
 
+  if(elLinkFileBtn){
+    elLinkFileBtn.addEventListener('click', async ()=>{
+      if(linkedFileHandle && !linkedFileReady){
+        const ok = await syncMergeWithLinkedDiskFile(true);
+        if(ok){
+          renderArchiveList();
+          showToast(`Archivio sincronizzato con ${linkedFileHandle.name}`);
+          return;
+        }
+      }
+      if(typeof window.showOpenFilePicker !== 'function'){
+        showToast('Usa "Importa JSON" su questo browser');
+        return;
+      }
+      try{
+        const [handle] = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{ description: 'Archivio Simple Elevation (JSON)', accept: { 'application/json': ['.json'] } }]
+        });
+        if(!handle) return;
+        linkedFileHandle = handle;
+        await metaSet('linkedDiskHandle', handle);
+        const ok = await syncMergeWithLinkedDiskFile(true);
+        renderArchiveList();
+        if(ok) showToast(`Collegato a ${handle.name} (${cachedTracks.length} tracce)`);
+      }catch(err){
+        if(err?.name !== 'AbortError') showToast('Impossibile collegare il file');
+      }
+    });
+  }
+
+  if(elNewFileBtn){
+    elNewFileBtn.addEventListener('click', async ()=>{
+      if(typeof window.showSaveFilePicker !== 'function') return;
+      try{
+        const handle = await window.showSaveFilePicker({
+          suggestedName: 'simple-elevation-archivio.json',
+          types: [{ description: 'Archivio Simple Elevation (JSON)', accept: { 'application/json': ['.json'] } }]
+        });
+        if(!handle) return;
+        linkedFileHandle = handle;
+        linkedFileReady = await verifyHandlePerm(handle, true);
+        await metaSet('linkedDiskHandle', handle);
+        await refreshCache();
+        await writeTracksToLinkedDiskFile(cachedTracks);
+        updateDiskBarUi();
+        renderArchiveList();
+        showToast(`Creato file archivio sincronizzato: ${handle.name}`);
+      }catch(err){
+        if(err?.name !== 'AbortError') showToast('Impossibile creare il file su disco');
+      }
+    });
+  }
+
+  if(elUnlinkFileBtn){
+    elUnlinkFileBtn.addEventListener('click', async ()=>{
+      linkedFileHandle = null;
+      linkedFileReady = false;
+      await metaSet('linkedDiskHandle', null);
+      updateDiskBarUi();
+      showToast('File su disco scollegato (i dati restano nel browser)');
+    });
+  }
+
   window.TrackArchive = {
     openSaveModal,
     openArchiveModal,
@@ -7024,7 +7945,7 @@ if(location.protocol==='file:'){const note=document.getElementById('tileHint');i
     refreshCache
   };
 
-  refreshCache();
+  refreshCache().then(()=> restoreLinkedFileHandleOnBoot());
 })();
 </script>
 </body>
